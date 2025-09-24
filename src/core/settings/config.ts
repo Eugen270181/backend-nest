@@ -3,6 +3,7 @@ config(); // добавление переменных из файла .env в p
 export const appConfig = {
   // все хардкодные значения должны быть здесь, для удобства их изменения
   PORT: process.env.PORT || 3003,
+  IOC_LOG: process.env.IOC_LOG || false,
   //ADMIN: process.env.ADMIN || 'admin:qwerty',
   MONGO_URL: process.env.MONGO_URL as string,
   DB_NAME: (process.env.DB_NAME as string) || 'BlogsPosts',

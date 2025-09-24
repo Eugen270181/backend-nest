@@ -1,10 +1,11 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { PaginatedViewDto } from '../../../../../core/dto/base.paginated.view-dto';
 import { FilterQuery } from 'mongoose';
 import { Post, PostDocument, PostModelType } from '../../domain/post.entity';
 import { PostViewDto } from '../../api/view-dto/post.view-dto';
 import { GetPostsQueryParams } from '../../../blogs/api/input-dto/get-posts-query-params.input-dto';
+import { appConfig } from '../../../../../core/settings/config';
 
 @Injectable()
 export class PostsQueryRepository {
@@ -12,7 +13,7 @@ export class PostsQueryRepository {
     @InjectModel(Post.name)
     private readonly PostModel: PostModelType,
   ) {
-    console.log('PostsQueryRepository created');
+    if (appConfig.IOC_LOG) console.log('PostsQueryRepository created');
   }
 
   async findById(id: string): Promise<PostDocument | null> {
@@ -22,41 +23,40 @@ export class PostsQueryRepository {
     }).catch(() => null);
   }
 
-  async getByIdOrNotFoundFail(id: string): Promise<PostViewDto> {
+  async getById(id: string): Promise<PostViewDto | null> {
     const postDocument: PostDocument | null = await this.findById(id);
 
-    if (!postDocument) {
-      throw new NotFoundException('post not found');
-    }
+    if (!postDocument) return null;
 
     return PostViewDto.mapToView(postDocument);
   }
-  //todo with userId
+
   async getAll(
     query: GetPostsQueryParams,
-    blogId?: string,
   ): Promise<PaginatedViewDto<PostViewDto[]>> {
-    const filter: FilterQuery<Post> = {
-      deletedAt: null,
-    };
+    return this.getPosts({ deletedAt: null }, query);
+  }
 
-    if (blogId) {
-      filter.$and = filter.$and || [];
-      filter.$and.push({
-        blogId,
-      });
-    }
-
+  async getBlogPosts(
+    blogId: string,
+    query: GetPostsQueryParams,
+  ): Promise<PaginatedViewDto<PostViewDto[]>> {
+    return this.getPosts({ deletedAt: null, blogId }, query);
+  }
+  //todo with userId
+  private async getPosts(
+    filter: FilterQuery<Post>,
+    query: GetPostsQueryParams,
+  ): Promise<PaginatedViewDto<PostViewDto[]>> {
     const posts: PostDocument[] = await this.PostModel.find(filter)
       .sort({ [query.sortBy]: query.sortDirection })
       .skip(query.calculateSkip())
       .limit(query.pageSize)
       .lean();
+
     const totalCount = await this.PostModel.countDocuments(filter);
 
-    const items: PostViewDto[] = posts.map((el: PostDocument) =>
-      PostViewDto.mapToView(el),
-    );
+    const items = posts.map((el: PostDocument) => PostViewDto.mapToView(el));
 
     return PaginatedViewDto.mapToView<PostViewDto[]>({
       items,

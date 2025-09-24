@@ -7,13 +7,14 @@ import { PostViewDto } from '../../../src/modules/blogers-platform/posts/api/vie
 import { App } from 'supertest/types';
 import request from 'supertest';
 import { PaginatedViewDto } from '../../../src/core/dto/base.paginated.view-dto';
+import { fullPathTo } from '../../getFullPath';
 
 export const createPost = async (
   server: App,
   dto: PostDto,
 ): Promise<PostViewDto> => {
   const resp = await request(server)
-    .post('/posts')
+    .post(fullPathTo.posts)
     //.auth(ADMIN_LOGIN, ADMIN_PASS)
     .send(dto)
     .expect(201);
@@ -44,7 +45,7 @@ export const createBlogPost = async (
 
   const resp = await request(server)
     //todo
-    .post(`/blogs/${blogId}/posts`)
+    .post(`${fullPathTo.blogs}/${blogId}/posts`)
     //.auth(ADMIN_LOGIN, ADMIN_PASS)
     .send(dto)
     .expect(201);
@@ -55,7 +56,7 @@ export const createBlogPost = async (
 export const getPosts = async (
   server: App,
 ): Promise<PaginatedViewDto<PostViewDto>> => {
-  const resp = await request(server).get('/posts').expect(200);
+  const resp = await request(server).get(fullPathTo.posts).expect(200);
 
   return resp.body as PaginatedViewDto<PostViewDto>;
 };
@@ -68,7 +69,7 @@ export const getPostById = async (
   postId: string,
   //acessToken?: string,
 ): Promise<PostViewDto> => {
-  const resp = await request(server).get(`/posts/${postId}`);
+  const resp = await request(server).get(`${fullPathTo.posts}/${postId}`);
   //.set('Authorization', acessToken ? `bearer ${acessToken}` : ``);
   expect(200);
 
@@ -79,7 +80,9 @@ export const getBlogPosts = async (
   server: App,
   blogId: string,
 ): Promise<PaginatedViewDto<PostViewDto>> => {
-  const resp = await request(server).get(`/blogs/${blogId}/posts`).expect(200);
+  const resp = await request(server)
+    .get(`${fullPathTo.blogs}/${blogId}/posts`)
+    .expect(200);
 
   return resp.body as PaginatedViewDto<PostViewDto>;
 };

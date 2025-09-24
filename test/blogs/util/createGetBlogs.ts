@@ -3,6 +3,7 @@ import { BlogDto, testingDtosCreator } from '../../testingDtosCreator';
 import { BlogViewDto } from '../../../src/modules/blogers-platform/blogs/api/view-dto/blog.view-dto';
 import request from 'supertest';
 import { PaginatedViewDto } from '../../../src/core/dto/base.paginated.view-dto';
+import { fullPathTo } from '../../getFullPath';
 
 export const createBlog = async (
   server: App,
@@ -11,7 +12,7 @@ export const createBlog = async (
   const dto = blogDto ?? testingDtosCreator.createBlogDto({});
 
   const resp = await request(server)
-    .post('/blogs')
+    .post(fullPathTo.blogs)
     //.auth(ADMIN_LOGIN, ADMIN_PASS)
     .send(dto)
     .expect(201);
@@ -22,7 +23,7 @@ export const createBlog = async (
 export const getBlogs = async (
   server: App,
 ): Promise<PaginatedViewDto<BlogViewDto>> => {
-  const resp = await request(server).get('/blogs').expect(200);
+  const resp = await request(server).get(fullPathTo.blogs).expect(200);
 
   return resp.body as PaginatedViewDto<BlogViewDto>;
 };
@@ -34,7 +35,9 @@ export const getBlogById = async (
   server: App,
   blogId: string,
 ): Promise<BlogViewDto> => {
-  const resp = await request(server).get(`/blogs/${blogId}`).expect(200);
+  const resp = await request(server)
+    .get(`${fullPathTo.blogs}/${blogId}`)
+    .expect(200);
 
   return resp.body as BlogViewDto;
 };
@@ -49,7 +52,7 @@ export const createBlogs = async (
 
   for (let i = 0; i < count; i++) {
     const resp = await request(server)
-      .post('/blogs')
+      .post(fullPathTo.blogs)
       //.auth(ADMIN_LOGIN, ADMIN_PASS)
       .send(blogDtos[i])
       .expect(201);

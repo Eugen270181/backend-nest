@@ -17,28 +17,35 @@ import { BlogViewDto } from './view-dto/blog.view-dto';
 import { GetBlogsQueryParams } from './input-dto/get-blogs-query-params.input-dto';
 import { PaginatedViewDto } from '../../../../core/dto/base.paginated.view-dto';
 import { CreateBlogInputDto } from './input-dto/create-blog.input-dto';
-import { UpdateBlogInputDto } from './input-dto/update-blog.input-dto';
+import {
+  TestsBlogInputDto,
+  UpdateBlogInputDto,
+} from './input-dto/update-blog.input-dto';
 import { PostViewDto } from '../../posts/api/view-dto/post.view-dto';
-import { PostsQueryRepository } from '../../posts/infrastructure/query/posts.query-repository';
 import { GetPostsQueryParams } from './input-dto/get-posts-query-params.input-dto';
 import { PostsService } from '../../posts/application/posts.service';
 import { CreateBlogPostInputDto } from './input-dto/create-blog-post.input-dto';
 import { CreatePostDto } from '../../posts/dto/post.dto';
+import { BlogsQueryService } from '../application/query/blogs.query-service';
+import { PostsQueryService } from '../../posts/application/query/posts.query-service';
+import { UpdateBlogDto } from '../dto/blog.dto';
+import { appConfig } from '../../../../core/settings/config';
 
 @Controller('blogs')
 export class BlogsController {
   constructor(
     private readonly blogsQueryRepository: BlogsQueryRepository,
+    private readonly blogsQueryService: BlogsQueryService,
     private readonly blogsService: BlogsService,
-    private readonly postsQueryRepository: PostsQueryRepository,
+    private readonly postsQueryService: PostsQueryService,
     private readonly postsService: PostsService,
   ) {
-    console.log('BlogsController created');
+    if (appConfig.IOC_LOG) console.log('BlogsController created');
   }
 
   @Get(':id')
   async getById(@Param('id') id: string): Promise<BlogViewDto> {
-    return this.blogsQueryRepository.getByIdOrNotFoundFail(id);
+    return this.blogsQueryService.getBlogViewDtoOrFail(id);
   }
 
   @Get()
@@ -49,10 +56,12 @@ export class BlogsController {
   }
 
   @Post()
-  async createBlog(@Body() body: CreateBlogInputDto): Promise<BlogViewDto> {
-    const blogId = await this.blogsService.createBlog(body);
+  async createBlog(
+    @Body() createBlogInputDto: CreateBlogInputDto,
+  ): Promise<BlogViewDto> {
+    const blogId = await this.blogsService.createBlog(createBlogInputDto);
 
-    return this.blogsQueryRepository.getByIdOrNotFoundFail(blogId);
+    return this.blogsQueryService.getBlogViewDtoOrFail(blogId, true);
   }
 
   @ApiParam({ name: 'id' }) //для сваггера
@@ -60,40 +69,43 @@ export class BlogsController {
   @HttpCode(HttpStatus.NO_CONTENT)
   async updateBlog(
     @Param('id') id: string,
-    @Body() body: UpdateBlogInputDto,
-  ): Promise<BlogViewDto> {
-    const blogId = await this.blogsService.updateBlog(id, body);
-
-    return this.blogsQueryRepository.getByIdOrNotFoundFail(blogId);
+    @Body() updateBlogInputDto: UpdateBlogInputDto,
+  ) {
+    const updateBlogDto: UpdateBlogDto = {
+      ...updateBlogInputDto,
+      id,
+    };
+    await this.blogsService.updateBlog(updateBlogDto);
   }
 
   @ApiParam({ name: 'id' }) //для сваггера
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async deleteBlog(@Param('id') id: string): Promise<void> {
+  async deleteBlog(@Param() id: string): Promise<void> {
     return this.blogsService.deleteBlogById(id);
   }
 
   //////////////////////////////////////////////////////////
-  //todo get&post for blog/blogId/Post
-  @Get(':id/posts')
+  @Get(':blogId/posts')
   async getBlogPosts(
+    @Param('blogId') blogId: string,
     @Query() query: GetPostsQueryParams,
-    @Param('id') id: string,
   ): Promise<PaginatedViewDto<PostViewDto[]>> {
-    await this.blogsQueryRepository.getByIdOrNotFoundFail(id);
-    //todo move this check for id to next method
-    return this.postsQueryRepository.getAll(query, id);
+    return this.postsQueryService.getBlogPosts(blogId, query);
   }
 
-  @Post(':id/posts')
+  @Post(':blogId/posts')
   async createBlogPost(
-    @Body() body: CreateBlogPostInputDto,
-    @Param('id') blogId: string,
+    @Param('blogId') blogId: string,
+    @Body() createBlogPostInputDto: CreateBlogPostInputDto,
   ): Promise<PostViewDto> {
-    const createPostDto: CreatePostDto = { ...body, blogId };
+    const createPostDto: CreatePostDto = {
+      ...createBlogPostInputDto,
+      blogId,
+    };
+
     const postId = await this.postsService.createPost(createPostDto);
 
-    return this.postsQueryRepository.getByIdOrNotFoundFail(postId);
+    return this.postsQueryService.getPostViewDtoOrFail(postId, true);
   }
 }

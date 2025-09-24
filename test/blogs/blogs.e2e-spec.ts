@@ -15,6 +15,7 @@ import {
   getBlogs,
   getBlogsQty,
 } from './util/createGetBlogs';
+import { getFullPath } from '../getFullPath';
 
 describe('<<BLOGS>> ENDPOINTS TESTING!!!(e2e)', () => {
   let app: INestApplication<App>;
@@ -39,7 +40,7 @@ describe('<<BLOGS>> ENDPOINTS TESTING!!!(e2e)', () => {
   afterAll((done) => {
     done();
   });
-
+  const blogsPath = getFullPath(`/blogs`);
   let blogDtos: BlogDto[];
   //let blogDtos: UserDto[];
   const blogs: BlogViewDto[] = [];
@@ -91,7 +92,7 @@ describe('<<BLOGS>> ENDPOINTS TESTING!!!(e2e)', () => {
     it(`PUT -> "/blogs/:id": Can't found with id. STATUS 404; used additional methods: GET -> /blogs/:id`, async () => {
       //запрос на обонвление блога по неверному/несуществующему id
       await request(server)
-        .put('/blogs/555')
+        .put(`${blogsPath}/555`)
         //.auth(ADMIN_LOGIN, ADMIN_PASS)
         .send(blogDtos[1])
         .expect(404);
@@ -103,7 +104,7 @@ describe('<<BLOGS>> ENDPOINTS TESTING!!!(e2e)', () => {
     it(`PUT -> "/blogs/:id": Updatete new blog; STATUS 204; no content;`, async () => {
       //запрос на обонвление существующего блога по id
       await request(server)
-        .put(`/blogs/${blogs[0].id}`)
+        .put(`${blogsPath}/${blogs[0].id}`)
         //.auth(ADMIN_LOGIN, ADMIN_PASS)
         .send(blogDtos[1])
         .expect(204);
@@ -118,7 +119,7 @@ describe('<<BLOGS>> ENDPOINTS TESTING!!!(e2e)', () => {
     it(`DELETE -> "/blogs/:id": Can't found with id. STATUS 404; used additional methods: GET -> /blogs`, async () => {
       //запрос на удаление блога по неверному/несуществующему id
       await request(server)
-        .delete('/blogs/555')
+        .delete(`${blogsPath}/555`)
         //.auth(ADMIN_LOGIN, ADMIN_PASS)
         .expect(404);
       //запрос на получение блогов, проверка на ошибочное удаление блога в БД
@@ -129,7 +130,7 @@ describe('<<BLOGS>> ENDPOINTS TESTING!!!(e2e)', () => {
     it(`DELETE -> "/blogs/:id": Delete updated blog; STATUS 204; no content; used additional methods: GET -> /blogs`, async () => {
       //запрос на удаление существующего блога по id
       await request(server)
-        .delete(`/blogs/${blogs[0].id}`)
+        .delete(`${blogsPath}/${blogs[0].id}`)
         //.auth(ADMIN_LOGIN, ADMIN_PASS)
         .expect(204);
       //запрос на получение блогов, проверка на удаление блога в БД

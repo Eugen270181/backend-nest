@@ -1,6 +1,7 @@
 import { InjectModel } from '@nestjs/mongoose';
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { Post, PostDocument, PostModelType } from '../domain/post.entity';
+import { appConfig } from '../../../../core/settings/config';
 
 @Injectable()
 export class PostsRepository {
@@ -8,7 +9,7 @@ export class PostsRepository {
   constructor(
     @InjectModel(Post.name) private readonly PostModel: PostModelType,
   ) {
-    console.log('PostsRepository created');
+    if (appConfig.IOC_LOG) console.log('PostsRepository created');
   }
 
   async findById(id: string): Promise<PostDocument | null> {
@@ -20,16 +21,5 @@ export class PostsRepository {
 
   async save(postDocument: PostDocument) {
     await postDocument.save();
-  }
-
-  async findOrNotFoundFail(id: string): Promise<PostDocument> {
-    const postDocument = await this.findById(id);
-
-    if (!postDocument) {
-      //TODO: replace with domain exception
-      throw new NotFoundException('post not found');
-    }
-
-    return postDocument;
   }
 }

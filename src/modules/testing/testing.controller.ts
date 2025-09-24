@@ -1,13 +1,14 @@
 import { Controller, Delete, HttpCode, HttpStatus } from '@nestjs/common';
 import { InjectConnection } from '@nestjs/mongoose';
 import { Connection } from 'mongoose';
+import { appConfig } from '../../core/settings/config';
 
 @Controller('testing')
 export class TestingController {
   constructor(
     @InjectConnection() private readonly databaseConnection: Connection,
   ) {
-    console.log('testingController created');
+    if (appConfig.IOC_LOG) console.log('testingController created');
   }
 
   @Delete('all-data')

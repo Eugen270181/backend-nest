@@ -1,4 +1,4 @@
-export const routersPaths = {
+export const routerPaths = {
   common: '/',
   users: '/users',
   blogs: '/blogs',
@@ -18,4 +18,5 @@ export const routersPaths = {
   newPassword: '/new-password',
   refreshToken: '/refresh-token',
   logout: '/logout',
+  docs: '/docs',
 };

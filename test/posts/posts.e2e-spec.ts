@@ -25,6 +25,7 @@ import {
   getPostsQty,
 } from './util/createGetPosts';
 import request from 'supertest';
+import { fullPathTo } from '../getFullPath';
 
 describe('<<POSTS>> ENDPOINTS TESTING!!!(e2e)', () => {
   let app: INestApplication<App>;
@@ -87,7 +88,7 @@ describe('<<POSTS>> ENDPOINTS TESTING!!!(e2e)', () => {
   describe(`POST -> "/blogs/:id/posts":`, () => {
     it(`POST -> "/blogs/:id/posts": Can't found with id. STATUS 404;`, async () => {
       await request(server)
-        .post(`/blogs/1/posts`)
+        .post(`${fullPathTo.blogs}/1/posts`)
         //.auth(ADMIN_LOGIN, ADMIN_PASS)
         .send({})
         .expect(404);
@@ -139,7 +140,7 @@ describe('<<POSTS>> ENDPOINTS TESTING!!!(e2e)', () => {
 
   describe(`GET -> "/posts/:id":`, () => {
     it(`GET -> "/posts/:id": Can't found with id. STATUS 404;`, async () => {
-      await request(server).get('/posts/1').expect(404);
+      await request(server).get('${fullPathTo.posts}/1').expect(404);
     });
 
     it(`GET -> "/posts/:id": STATUS 200;`, async () => {
@@ -151,7 +152,7 @@ describe('<<POSTS>> ENDPOINTS TESTING!!!(e2e)', () => {
 
   describe(`GET -> "/blogs/:id/posts":`, () => {
     it(`GET -> "/blogs/:id/posts": Can't found with id. STATUS 404;`, async () => {
-      await request(server).get(`/blogs/1/posts`).expect(404);
+      await request(server).get(`${fullPathTo.blogs}/1/posts`).expect(404);
     });
 
     it(`GET -> "/blogs/:id/posts": found blogId posts: STATUS 200;`, async () => {
@@ -172,7 +173,7 @@ describe('<<POSTS>> ENDPOINTS TESTING!!!(e2e)', () => {
     it(`PUT -> "/posts/:id": Can't found with id. STATUS 404;`, async () => {
       //запрос на обонвление блога по неверному/несуществующему id
       await request(server)
-        .put('/posts/1')
+        .put(`${fullPathTo.posts}/1`)
         //.auth(ADMIN_LOGIN, ADMIN_PASS)
         .send(postDtos[1])
         .expect(404);
@@ -184,7 +185,7 @@ describe('<<POSTS>> ENDPOINTS TESTING!!!(e2e)', () => {
     it(`PUT -> "/posts/:id": Update new blogPost; STATUS 204; no content;`, async () => {
       //запрос на обонвление существующего по id
       await request(server)
-        .put(`/posts/${posts[2].id}`)
+        .put(`${fullPathTo.posts}/${posts[2].id}`)
         //.auth(ADMIN_LOGIN, ADMIN_PASS)
         .send(postDtos[1])
         .expect(204);
@@ -209,7 +210,7 @@ describe('<<POSTS>> ENDPOINTS TESTING!!!(e2e)', () => {
     it(`DELETE -> "/posts/:id": Can't found with id. STATUS 404;`, async () => {
       //запрос на удаление поста по неверному/несуществующему id
       await request(server)
-        .delete('/posts/1')
+        .delete(`${fullPathTo.posts}/1`)
         //.auth(ADMIN_LOGIN, ADMIN_PASS)
         .expect(404);
       //запрос на получение постов, проверка на ошибочное удаление поста в БД
@@ -220,7 +221,7 @@ describe('<<POSTS>> ENDPOINTS TESTING!!!(e2e)', () => {
     it(`DELETE -> "/posts/:id": Delete updated blog; STATUS 204; no content; used additional methods: GET -> /blogs`, async () => {
       //запрос на удаление существующего поста по id
       await request(server)
-        .delete(`/posts/${posts[2].id}`)
+        .delete(`${fullPathTo.posts}/${posts[2].id}`)
         //.auth(ADMIN_LOGIN, ADMIN_PASS)
         .expect(204);
       //запрос на получение постов, проверка на ошибочное удаление поста в БД
