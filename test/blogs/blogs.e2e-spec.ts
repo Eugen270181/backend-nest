@@ -2,12 +2,17 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { App } from 'supertest/types';
-import { Connection } from 'mongoose';
+import { Connection, Types } from 'mongoose';
 import { AppModule } from '../../src/app.module';
 import { appSetup } from '../../src/setup/app.setup';
 import { getConnectionToken } from '@nestjs/mongoose';
 import { dropDbCollections } from '../dropDbCollections';
-import { BlogDto, testingDtosCreator } from '../testingDtosCreator';
+import {
+  BlogDto,
+  createString,
+  testingDtosCreator,
+  validObjectIdString,
+} from '../testingDtosCreator';
 import { BlogViewDto } from '../../src/modules/blogers-platform/blogs/api/view-dto/blog.view-dto';
 import {
   createBlog,
@@ -15,7 +20,13 @@ import {
   getBlogs,
   getBlogsQty,
 } from './util/createGetBlogs';
-import { getFullPath } from '../getFullPath';
+import { fullPathTo } from '../getFullPath';
+import { ErrorResponseBody } from '../../src/core/exceptions/filters/error-responce-body.type';
+import {
+  OutputErrorsType,
+  validateErrorsObject,
+} from '../validateErrorsObject';
+import { getUsersQty } from '../users/util/createGetUsers';
 
 describe('<<BLOGS>> ENDPOINTS TESTING!!!(e2e)', () => {
   let app: INestApplication<App>;
@@ -40,13 +51,31 @@ describe('<<BLOGS>> ENDPOINTS TESTING!!!(e2e)', () => {
   afterAll((done) => {
     done();
   });
-  const blogsPath = getFullPath(`/blogs`);
+
+  const noValidBlogDto = {
+    name: createString(16),
+    description: createString(501),
+    websiteUrl: createString(101),
+  };
   let blogDtos: BlogDto[];
-  //let blogDtos: UserDto[];
   const blogs: BlogViewDto[] = [];
 
   describe(`POST -> "/blogs":`, () => {
-    it('should create blog: STATUS 201', async () => {
+    it('STATUS 400: shouldn`t create blog with no valid data', async () => {
+      const resPost = await request(server)
+        .post(fullPathTo.blogs)
+        .send(noValidBlogDto)
+        .expect(400);
+
+      const resPostBody: ErrorResponseBody = resPost.body;
+      const expectedErrorsFields = ['name', 'description', 'websiteUrl'];
+      validateErrorsObject(resPostBody, expectedErrorsFields);
+
+      const blogCounter = await getBlogsQty(server);
+      expect(blogCounter).toEqual(0);
+    });
+
+    it('STATUS 201: should create blog', async () => {
       blogDtos = testingDtosCreator.createBlogDtos(2);
       blogs.push(await createBlog(server, blogDtos[0]));
 
@@ -59,17 +88,11 @@ describe('<<BLOGS>> ENDPOINTS TESTING!!!(e2e)', () => {
         ),
         isMembership: false,
       });
-      //на всякий случай проверяем не произошла ли ошибка записи в БД:
-      const blogCounter = await getBlogsQty(server);
-      expect(blogCounter).toEqual(1);
-      //запрос на получение созданного блога по Id - проверка создания в БД нового блога
-      const foundBlog = await getBlogById(server, blogs[0].id);
-      expect(foundBlog).toEqual(blogs[0]);
     });
   });
 
   describe(`GET -> "/blogs":`, () => {
-    it(`GET -> "/blogs": Return pagination Object with blogs items array. STATUS 200;`, async () => {
+    it(`STATUS 200: Return pagination Object with blogs items array`, async () => {
       //запрос на получение блогов - проверка создания в БД нового блога
       const foundBlogs = await getBlogs(server);
       expect(foundBlogs).toEqual({
@@ -83,16 +106,18 @@ describe('<<BLOGS>> ENDPOINTS TESTING!!!(e2e)', () => {
   });
 
   describe(`GET -> "/blogs/:id":`, () => {
-    it(`GET -> "/blogs/:id": Can't found with id. STATUS 404;`, async () => {
-      await request(server).get('/blogs/555').expect(404);
+    it(`STATUS 404: Can't found with id`, async () => {
+      await request(server)
+        .get(`${fullPathTo.blogs}/${validObjectIdString}`)
+        .expect(404);
     });
   });
 
   describe(`PUT -> "/blogs/:id"`, () => {
-    it(`PUT -> "/blogs/:id": Can't found with id. STATUS 404; used additional methods: GET -> /blogs/:id`, async () => {
+    it(`STATUS 404: Can't found with id. Used additional methods: GET -> /blogs/:id`, async () => {
       //запрос на обонвление блога по неверному/несуществующему id
       await request(server)
-        .put(`${blogsPath}/555`)
+        .put(`${fullPathTo.blogs}/${validObjectIdString}`)
         //.auth(ADMIN_LOGIN, ADMIN_PASS)
         .send(blogDtos[1])
         .expect(404);
@@ -101,10 +126,26 @@ describe('<<BLOGS>> ENDPOINTS TESTING!!!(e2e)', () => {
       expect(foundBlog).toEqual(blogs[0]);
     });
 
-    it(`PUT -> "/blogs/:id": Updatete new blog; STATUS 204; no content;`, async () => {
+    it(`STATUS 400: Can't update blog with not valid data; Should return errors if passed body is incorrect;`, async () => {
+      //запрос на обонвление существующего блога по id с невалидными данными
+      const resPut = await request(server)
+        .put(`${fullPathTo.blogs}/${blogs[0].id}`)
+        //.auth(ADMIN_LOGIN, ADMIN_PASS)
+        .send(noValidBlogDto)
+        .expect(400);
+      const resPostBody: ErrorResponseBody = resPut.body;
+      const expectedErrorsFields = ['name', 'description', 'websiteUrl'];
+      validateErrorsObject(resPostBody, expectedErrorsFields);
+
+      //запрос на получение блога по id, проверка на ошибочное обновление блога в БД
+      const foundBlog = await getBlogById(server, blogs[0].id);
+      expect(foundBlog).toEqual(blogs[0]);
+    });
+
+    it(`STATUS 204: Updated new blog; no content;`, async () => {
       //запрос на обонвление существующего блога по id
       await request(server)
-        .put(`${blogsPath}/${blogs[0].id}`)
+        .put(`${fullPathTo.blogs}/${blogs[0].id}`)
         //.auth(ADMIN_LOGIN, ADMIN_PASS)
         .send(blogDtos[1])
         .expect(204);
@@ -116,10 +157,10 @@ describe('<<BLOGS>> ENDPOINTS TESTING!!!(e2e)', () => {
   });
 
   describe(`DELETE -> "/blogs/:id"`, () => {
-    it(`DELETE -> "/blogs/:id": Can't found with id. STATUS 404; used additional methods: GET -> /blogs`, async () => {
+    it(`STATUS 404: Can't found with id. Used additional methods: GET -> /blogs`, async () => {
       //запрос на удаление блога по неверному/несуществующему id
       await request(server)
-        .delete(`${blogsPath}/555`)
+        .delete(`${fullPathTo.blogs}/${validObjectIdString}`)
         //.auth(ADMIN_LOGIN, ADMIN_PASS)
         .expect(404);
       //запрос на получение блогов, проверка на ошибочное удаление блога в БД
@@ -127,10 +168,10 @@ describe('<<BLOGS>> ENDPOINTS TESTING!!!(e2e)', () => {
       expect(blogCounter).toEqual(1);
     });
 
-    it(`DELETE -> "/blogs/:id": Delete updated blog; STATUS 204; no content; used additional methods: GET -> /blogs`, async () => {
+    it(`STATUS 204: Delete updated blog; no content; used additional methods: GET -> /blogs`, async () => {
       //запрос на удаление существующего блога по id
       await request(server)
-        .delete(`${blogsPath}/${blogs[0].id}`)
+        .delete(`${fullPathTo.blogs}/${blogs[0].id}`)
         //.auth(ADMIN_LOGIN, ADMIN_PASS)
         .expect(204);
       //запрос на получение блогов, проверка на удаление блога в БД

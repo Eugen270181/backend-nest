@@ -1,3 +1,5 @@
+import { Types } from 'mongoose';
+
 export enum LikeStatus {
   None = 'None',
   Like = 'Like',
@@ -65,6 +67,7 @@ export const createString = (length: number) => {
   return s;
 };
 export const passTestsDefault = '123456789';
+export const validObjectIdString = new Types.ObjectId().toString();
 /////////////////////////////////////////////
 /////////////////////////////////////////////
 export const testingDtosCreator = {

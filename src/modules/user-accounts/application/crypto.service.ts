@@ -1,10 +1,11 @@
 import bcrypt from 'bcrypt';
 import { Injectable } from '@nestjs/common';
-import { appConfig } from '../../settings/config';
+import { appConfig } from '../../../core/settings/config';
+
 @Injectable()
-export class HashService {
+export class CryptoService {
   constructor() {
-    if (appConfig.IOC_LOG) console.log('HashService created');
+    if (appConfig.IOC_LOG) console.log('CryptoService created');
   }
   async getHash(password: string, saltRounds?: number) {
     const saltRound = saltRounds ? saltRounds : 10;

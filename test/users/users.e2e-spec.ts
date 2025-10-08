@@ -8,24 +8,25 @@ import { UserViewDto } from '../../src/modules/user-accounts/api/view-dto/user.v
 import { Connection } from 'mongoose';
 import { getConnectionToken } from '@nestjs/mongoose';
 import { dropDbCollections } from '../dropDbCollections';
-import { testingDtosCreator, UserDto } from '../testingDtosCreator';
 import { createUserBySa, getUsersQty } from './util/createGetUsers';
 import { PaginatedViewDto } from '../../src/core/dto/base.paginated.view-dto';
-import { Types } from 'mongoose';
 import { fullPathTo } from '../getFullPath';
 import { validateErrorsObject } from '../validateErrorsObject';
 import { ErrorResponseBody } from '../../src/core/exceptions/filters/error-responce-body.type';
 import { DomainExceptionCode } from '../../src/core/exceptions/domain-exception-codes';
+import {
+  testingDtosCreator,
+  UserDto,
+  validObjectIdString,
+} from '../testingDtosCreator';
 
 describe('<<USERS>> ENDPOINTS TESTING!!!(e2e)', () => {
   let app: INestApplication<App>;
   let connection: Connection;
   let server: App;
 
-  // MOVE shared variables here so all describes can reference them
   let userDtos: UserDto[];
   const users: UserViewDto[] = [];
-  const validObjectIdString = new Types.ObjectId().toString();
   const noValidUserDto = { login: '', email: 'hhh', password: 'hh' };
 
   beforeAll(async () => {
@@ -47,7 +48,7 @@ describe('<<USERS>> ENDPOINTS TESTING!!!(e2e)', () => {
   });
 
   describe(`POST -> "/users":`, () => {
-    it('shouldn`t create user with no valid data: STATUS 400', async () => {
+    it('STATUS 400: shouldn`t create user with no valid data', async () => {
       const resPost = await request(server)
         .post(fullPathTo.users)
         .send(noValidUserDto)
@@ -61,7 +62,7 @@ describe('<<USERS>> ENDPOINTS TESTING!!!(e2e)', () => {
       expect(userCounter).toEqual(0);
     });
 
-    it('should create user with valid data: STATUS 201', async () => {
+    it('STATUS 201: should create user with valid data', async () => {
       userDtos = testingDtosCreator.createUserDtos(2);
       users.push(await createUserBySa(server, userDtos[0]));
       expect(users[0]).toEqual({
@@ -74,7 +75,7 @@ describe('<<USERS>> ENDPOINTS TESTING!!!(e2e)', () => {
       });
     });
 
-    it('should not create not unique user: STATUS 400', async () => {
+    it('STATUS 400: should not create not unique user', async () => {
       const resPost = await request(server)
         .post(fullPathTo.users)
         .send(userDtos[0])
@@ -89,7 +90,7 @@ describe('<<USERS>> ENDPOINTS TESTING!!!(e2e)', () => {
   });
 
   describe(`GET -> "/users":`, () => {
-    it('should get all user: STATUS 200. Return pagination Object with users items array', async () => {
+    it(' STATUS 200: should get all user. Return pagination Object with users items array', async () => {
       users.push(await createUserBySa(server, userDtos[1]));
       const resp = await request(server).get(fullPathTo.users).expect(200);
 
@@ -106,7 +107,7 @@ describe('<<USERS>> ENDPOINTS TESTING!!!(e2e)', () => {
   });
 
   describe(`DELETE -> "/users":`, () => {
-    it('shouldn`t delete user by id if specified user is not exists: STATUS 404', async () => {
+    it('STATUS 404: shouldn`t delete user by id if specified user is not exists', async () => {
       await request(server)
         .delete(`${fullPathTo.users}/${validObjectIdString}`)
         .expect(404);
@@ -115,7 +116,7 @@ describe('<<USERS>> ENDPOINTS TESTING!!!(e2e)', () => {
       expect(userCounter).toEqual(2);
     });
 
-    it('should delete user by id: STATUS 204', async () => {
+    it('STATUS 204: should delete user by id', async () => {
       await request(server)
         .delete(`${fullPathTo.users}/${users[1].id}`)
         .expect(204);

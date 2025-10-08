@@ -4,7 +4,7 @@ import { Global, Module } from '@nestjs/common';
 @Global()
 @Module({
   // exports: [GlobalLogerService],
-  //providers: [HashService],
-  //exports: [HashService],
+  //providers: [CryptoService],
+  //exports: [CryptoService],
 })
 export class CoreModule {}

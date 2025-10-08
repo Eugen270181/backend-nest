@@ -64,7 +64,6 @@ export class BlogsController {
     return this.blogsQueryService.getBlogViewDtoOrFail(blogId, true);
   }
 
-  @ApiParam({ name: 'id' }) //для сваггера
   @Put(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   async updateBlog(
@@ -78,10 +77,9 @@ export class BlogsController {
     await this.blogsService.updateBlog(updateBlogDto);
   }
 
-  @ApiParam({ name: 'id' }) //для сваггера
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async deleteBlog(@Param() id: string): Promise<void> {
+  async deleteBlog(@Param('id') id: string): Promise<void> {
     return this.blogsService.deleteBlogById(id);
   }
 
