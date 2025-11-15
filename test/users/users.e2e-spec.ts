@@ -19,9 +19,11 @@ import {
   UserDto,
   validObjectIdString,
 } from '../testingDtosCreator';
+import { NestExpressApplication } from '@nestjs/platform-express';
+import { appConfig } from '../../src/core/settings/config';
 
 describe('<<USERS>> ENDPOINTS TESTING!!!(e2e)', () => {
-  let app: INestApplication<App>;
+  let app: NestExpressApplication;
   let connection: Connection;
   let server: App;
 
@@ -48,9 +50,20 @@ describe('<<USERS>> ENDPOINTS TESTING!!!(e2e)', () => {
   });
 
   describe(`POST -> "/users":`, () => {
+    it('STATUS 401: shouldn`t create user without basic admin creds', async () => {
+      await request(server)
+        .post(fullPathTo.users)
+        .send(noValidUserDto)
+        .expect(401);
+
+      const userCounter = await getUsersQty(server);
+      expect(userCounter).toEqual(0);
+    });
+
     it('STATUS 400: shouldn`t create user with no valid data', async () => {
       const resPost = await request(server)
         .post(fullPathTo.users)
+        .auth(appConfig.SA_LOGIN, appConfig.SA_PASS)
         .send(noValidUserDto)
         .expect(400);
 
@@ -78,6 +91,7 @@ describe('<<USERS>> ENDPOINTS TESTING!!!(e2e)', () => {
     it('STATUS 400: should not create not unique user', async () => {
       const resPost = await request(server)
         .post(fullPathTo.users)
+        .auth(appConfig.SA_LOGIN, appConfig.SA_PASS)
         .send(userDtos[0])
         .expect(400);
 
@@ -90,9 +104,16 @@ describe('<<USERS>> ENDPOINTS TESTING!!!(e2e)', () => {
   });
 
   describe(`GET -> "/users":`, () => {
+    it('STATUS 401: shouldn`t get users without basic admin creds', async () => {
+      await request(server).get(fullPathTo.users).expect(401);
+    });
+
     it(' STATUS 200: should get all user. Return pagination Object with users items array', async () => {
       users.push(await createUserBySa(server, userDtos[1]));
-      const resp = await request(server).get(fullPathTo.users).expect(200);
+      const resp = await request(server)
+        .get(fullPathTo.users)
+        .auth(appConfig.SA_LOGIN, appConfig.SA_PASS)
+        .expect(200);
 
       const data = resp.body as PaginatedViewDto<UserViewDto[]>;
       expect(data.totalCount).toEqual(2);
@@ -107,9 +128,19 @@ describe('<<USERS>> ENDPOINTS TESTING!!!(e2e)', () => {
   });
 
   describe(`DELETE -> "/users":`, () => {
+    it('STATUS 401: shouldn`t del user without basic admin creds', async () => {
+      await request(server)
+        .delete(`${fullPathTo.users}/${validObjectIdString}`)
+        .expect(401);
+
+      const userCounter = await getUsersQty(server);
+      expect(userCounter).toEqual(2);
+    });
+
     it('STATUS 404: shouldn`t delete user by id if specified user is not exists', async () => {
       await request(server)
         .delete(`${fullPathTo.users}/${validObjectIdString}`)
+        .auth(appConfig.SA_LOGIN, appConfig.SA_PASS)
         .expect(404);
 
       const userCounter = await getUsersQty(server);
@@ -119,6 +150,7 @@ describe('<<USERS>> ENDPOINTS TESTING!!!(e2e)', () => {
     it('STATUS 204: should delete user by id', async () => {
       await request(server)
         .delete(`${fullPathTo.users}/${users[1].id}`)
+        .auth(appConfig.SA_LOGIN, appConfig.SA_PASS)
         .expect(204);
 
       const userCounter = await getUsersQty(server);

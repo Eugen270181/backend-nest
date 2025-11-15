@@ -5,7 +5,9 @@ import { PaginatedViewDto } from '../../../../core/dto/base.paginated.view-dto';
 import { GetUsersQueryParams } from '../../api/input-dto/get-users-query-params.input-dto';
 import { FilterQuery } from 'mongoose';
 import { appConfig } from '../../../../core/settings/config';
+import { Injectable } from '@nestjs/common';
 
+@Injectable()
 export class UsersQueryRepository {
   constructor(
     @InjectModel(User.name)
@@ -14,11 +16,8 @@ export class UsersQueryRepository {
     if (appConfig.IOC_LOG) console.log('UsersQueryRepository created');
   }
 
-  async findById(id: string): Promise<UserDocument | null> {
-    return this.UserModel.findOne({
-      _id: id,
-      deletedAt: null,
-    }).catch(() => null);
+  async findById(_id: string): Promise<UserDocument | null> {
+    return this.UserModel.findOne({ _id }).catch(() => null);
   }
 
   async getById(id: string): Promise<UserViewDto | null> {

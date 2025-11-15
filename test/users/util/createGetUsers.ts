@@ -4,6 +4,7 @@ import { UserViewDto } from '../../../src/modules/user-accounts/api/view-dto/use
 import request from 'supertest';
 import { PaginatedViewDto } from '../../../src/core/dto/base.paginated.view-dto';
 import { fullPathTo } from '../../getFullPath';
+import { appConfig } from '../../../src/core/settings/config';
 
 export const createUserBySa = async (
   server: App,
@@ -13,7 +14,7 @@ export const createUserBySa = async (
 
   const resp = await request(server)
     .post(fullPathTo.users)
-    //.auth(ADMIN_LOGIN, ADMIN_PASS)
+    .auth(appConfig.SA_LOGIN, appConfig.SA_PASS)
     .send(dto)
     .expect(201);
 
@@ -23,7 +24,7 @@ export const createUserBySa = async (
 export const getUsersQty = async (server: App): Promise<number> => {
   const resp = await request(server)
     .get(fullPathTo.users)
-    //.auth(ADMIN_LOGIN, ADMIN_PASS)
+    .auth(appConfig.SA_LOGIN, appConfig.SA_PASS)
     .expect(200);
   const data = resp.body as PaginatedViewDto<UserViewDto[]>;
   return data.totalCount;

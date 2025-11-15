@@ -9,11 +9,11 @@ export const validateErrorsObject = (
   errorsObj: ErrorResponseBody,
   expectedErrorsFields: Array<string>,
 ) => {
-  expect(errorsObj.errorMessages).toBeDefined();
-  if (!errorsObj.errorMessages) return;
+  expect(errorsObj.errorsMessages).toBeDefined();
+  if (!errorsObj.errorsMessages) return;
   const expectedErrorsFieldsSet = new Set(expectedErrorsFields);
   const receivedErrorsFieldsSet = new Set(
-    errorsObj.errorMessages.map((error) => error.field),
+    errorsObj.errorsMessages.map((error) => error.field),
   );
 
   expect(expectedErrorsFieldsSet).toEqual(receivedErrorsFieldsSet);

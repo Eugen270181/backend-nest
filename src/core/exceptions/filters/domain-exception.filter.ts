@@ -7,7 +7,10 @@ import {
 import { DomainException } from '../domain-exceptions';
 import { Request, Response } from 'express';
 import { DomainExceptionCode } from '../domain-exception-codes';
-import { ErrorResponseBody } from './error-responce-body.type';
+import {
+  DomainErrorResponseBody,
+  ErrorResponseBody,
+} from './error-responce-body.type';
 
 //https://docs.nestjs.com/exception-filters#exception-filters-1
 //Ошибки класса DomainException (instanceof DomainException)
@@ -51,13 +54,13 @@ export class DomainHttpExceptionsFilter
   private buildErrResponseBody(
     exception: DomainException,
     requestUrl: string,
-  ): ErrorResponseBody {
+  ): DomainErrorResponseBody {
     return {
-      timestamp: new Date().toISOString(),
-      path: requestUrl,
-      message: exception.message,
-      code: exception.code,
-      errorMessages: exception.errorMessages,
+      //timestamp: new Date().toISOString(),
+      //path: requestUrl,
+      //message: exception.message,
+      //code: exception.code,
+      errorsMessages: exception.errorsMessages,
     };
   }
 }

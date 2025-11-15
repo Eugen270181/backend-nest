@@ -2,28 +2,28 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { DomainExceptionCode } from '../core/exceptions/domain-exception-codes';
 import {
   DomainException,
-  ErrorMessages,
+  ErrorsMessages,
 } from '../core/exceptions/domain-exceptions';
 import { ValidationError } from 'class-validator';
 import { ObjectIdInParamsValidationPipe } from '../core/pipes/object-id-in-params-validation-pipe.service';
 
 const errorFormatter = (
   errors: ValidationError[],
-  errorMessages: ErrorMessages[] = [],
+  errorsMessages: ErrorsMessages[] = [],
   parentName: string = '',
-): ErrorMessages[] | undefined => {
+): ErrorsMessages[] | undefined => {
   for (const error of errors) {
     if (!error.constraints && error.children?.length) {
       errorFormatter(
         error.children,
-        errorMessages,
+        errorsMessages,
         `${parentName}${error.property}.`,
       );
     } else if (error.constraints) {
       const constrainKeys = Object.keys(error.constraints);
 
       for (const key of constrainKeys) {
-        errorMessages.push({
+        errorsMessages.push({
           message: error.constraints[key]
             ? `${parentName}${error.constraints[key]}; Received value: ${error?.value || 'undefined'}`
             : '',
@@ -34,7 +34,7 @@ const errorFormatter = (
   }
 
   // Возвращаем undefined если массив пустой, иначе сам массив
-  return errorMessages.length > 0 ? errorMessages : undefined;
+  return errorsMessages.length > 0 ? errorsMessages : undefined;
 };
 
 export function pipesSetup(app: INestApplication) {
@@ -43,13 +43,14 @@ export function pipesSetup(app: INestApplication) {
     new ObjectIdInParamsValidationPipe(),
     new ValidationPipe({
       transform: true,
+      stopAtFirstError: true,
       exceptionFactory: (errors) => {
         const formattedErrors = errorFormatter(errors);
 
         throw new DomainException({
           code: DomainExceptionCode.ValidationError,
           message: 'Validation failed',
-          errorMessages: formattedErrors,
+          errorsMessages: formattedErrors,
         });
       },
     }),

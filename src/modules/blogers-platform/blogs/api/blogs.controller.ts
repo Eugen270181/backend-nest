@@ -9,6 +9,7 @@ import {
   Post,
   Put,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import { BlogsService } from '../application/blogs.service';
 import { ApiParam } from '@nestjs/swagger';
@@ -17,10 +18,7 @@ import { BlogViewDto } from './view-dto/blog.view-dto';
 import { GetBlogsQueryParams } from './input-dto/get-blogs-query-params.input-dto';
 import { PaginatedViewDto } from '../../../../core/dto/base.paginated.view-dto';
 import { CreateBlogInputDto } from './input-dto/create-blog.input-dto';
-import {
-  TestsBlogInputDto,
-  UpdateBlogInputDto,
-} from './input-dto/update-blog.input-dto';
+import { UpdateBlogInputDto } from './input-dto/update-blog.input-dto';
 import { PostViewDto } from '../../posts/api/view-dto/post.view-dto';
 import { GetPostsQueryParams } from './input-dto/get-posts-query-params.input-dto';
 import { PostsService } from '../../posts/application/posts.service';
@@ -30,7 +28,10 @@ import { BlogsQueryService } from '../application/query/blogs.query-service';
 import { PostsQueryService } from '../../posts/application/query/posts.query-service';
 import { UpdateBlogDto } from '../dto/blog.dto';
 import { appConfig } from '../../../../core/settings/config';
+import { BasicAuthGuard } from '../../../user-accounts/guards/basic/basic-auth.guard';
+import { Public } from '../../../user-accounts/guards/decorators/public.decorator';
 
+@UseGuards(BasicAuthGuard)
 @Controller('blogs')
 export class BlogsController {
   constructor(
@@ -43,11 +44,13 @@ export class BlogsController {
     if (appConfig.IOC_LOG) console.log('BlogsController created');
   }
 
+  @Public()
   @Get(':id')
   async getById(@Param('id') id: string): Promise<BlogViewDto> {
     return this.blogsQueryService.getBlogViewDtoOrFail(id);
   }
 
+  @Public()
   @Get()
   async getAll(
     @Query() query: GetBlogsQueryParams,
@@ -84,6 +87,7 @@ export class BlogsController {
   }
 
   //////////////////////////////////////////////////////////
+  @Public()
   @Get(':blogId/posts')
   async getBlogPosts(
     @Param('blogId') blogId: string,

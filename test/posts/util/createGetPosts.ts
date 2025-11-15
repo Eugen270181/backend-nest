@@ -8,6 +8,7 @@ import { App } from 'supertest/types';
 import request from 'supertest';
 import { PaginatedViewDto } from '../../../src/core/dto/base.paginated.view-dto';
 import { fullPathTo } from '../../getFullPath';
+import { appConfig } from '../../../src/core/settings/config';
 
 export const createPost = async (
   server: App,
@@ -15,7 +16,7 @@ export const createPost = async (
 ): Promise<PostViewDto> => {
   const resp = await request(server)
     .post(fullPathTo.posts)
-    //.auth(ADMIN_LOGIN, ADMIN_PASS)
+    .auth(appConfig.SA_LOGIN, appConfig.SA_PASS)
     .send(dto)
     .expect(201);
 
@@ -44,9 +45,8 @@ export const createBlogPost = async (
   const dto = blogPostDto ?? testingDtosCreator.createBlogPostDto({});
 
   const resp = await request(server)
-    //todo
     .post(`${fullPathTo.blogs}/${blogId}/posts`)
-    //.auth(ADMIN_LOGIN, ADMIN_PASS)
+    .auth(appConfig.SA_LOGIN, appConfig.SA_PASS)
     .send(dto)
     .expect(201);
 

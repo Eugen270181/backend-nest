@@ -4,6 +4,7 @@ import { BlogViewDto } from '../../../src/modules/blogers-platform/blogs/api/vie
 import request from 'supertest';
 import { PaginatedViewDto } from '../../../src/core/dto/base.paginated.view-dto';
 import { fullPathTo } from '../../getFullPath';
+import { appConfig } from '../../../src/core/settings/config';
 
 export const createBlog = async (
   server: App,
@@ -13,7 +14,7 @@ export const createBlog = async (
 
   const resp = await request(server)
     .post(fullPathTo.blogs)
-    //.auth(ADMIN_LOGIN, ADMIN_PASS)
+    .auth(appConfig.SA_LOGIN, appConfig.SA_PASS)
     .send(dto)
     .expect(201);
 
@@ -53,7 +54,7 @@ export const createBlogs = async (
   for (let i = 0; i < count; i++) {
     const resp = await request(server)
       .post(fullPathTo.blogs)
-      //.auth(ADMIN_LOGIN, ADMIN_PASS)
+      .auth(appConfig.SA_LOGIN, appConfig.SA_PASS)
       .send(blogDtos[i])
       .expect(201);
     blogs.push(resp.body as BlogViewDto);

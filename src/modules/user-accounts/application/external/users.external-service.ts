@@ -1,8 +1,8 @@
-import { User, UserModelType } from '../domain/user.entity';
+import { User, UserModelType } from '../../domain/user.entity';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { UsersRepository } from '../infrastructure/users.repository';
-import { appConfig } from '../../../core/settings/config';
+import { UsersRepository } from '../../infrastructure/users.repository';
+import { appConfig } from '../../../../core/settings/config';
 
 @Injectable()
 export class UsersExternalService {

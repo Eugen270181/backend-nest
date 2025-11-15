@@ -46,14 +46,18 @@ export class User {
 
   static createUserByReg(dto: CreateUserByRegDomainDto) {
     const userDocument = this.createUserBySa(dto as CreateUserBySaDomainDto);
-    //TODO remove to BLL auth - registration
-    //const date = dateServices.genAddDate(new Date(), appConfig.EMAIL_TIME);
-    //const code = codeServices.genRandomCode();
 
     userDocument.setRegConfirmationCode(dto.code, dto.date);
     userDocument.isConfirmed = false;
 
     return userDocument;
+  }
+
+  setConfirmationCode(code: string, date: Date) {
+    return {
+      confirmationCode: code,
+      expirationDate: date,
+    };
   }
 
   activateConfirmation() {
@@ -65,17 +69,11 @@ export class User {
   }
 
   setRegConfirmationCode(code: string, date: Date) {
-    this.emailConfirmation = {
-      confirmationCode: code,
-      expirationDate: date,
-    };
+    this.emailConfirmation = this.setConfirmationCode(code, date);
   }
 
   setPassConfirmationCode(code: string, date: Date) {
-    this.passConfirmation = {
-      confirmationCode: code,
-      expirationDate: date,
-    };
+    this.passConfirmation = this.setConfirmationCode(code, date);
   }
 }
 

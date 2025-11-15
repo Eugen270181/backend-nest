@@ -30,9 +30,11 @@ import request from 'supertest';
 import { fullPathTo } from '../getFullPath';
 import { validateErrorsObject } from '../validateErrorsObject';
 import { ErrorResponseBody } from '../../src/core/exceptions/filters/error-responce-body.type';
+import { NestExpressApplication } from '@nestjs/platform-express';
+import { appConfig } from '../../src/core/settings/config';
 
 describe('<<POSTS>> ENDPOINTS TESTING!!!(e2e)', () => {
-  let app: INestApplication<App>;
+  let app: NestExpressApplication;
   let connection: Connection;
   let server: App;
 
@@ -68,11 +70,23 @@ describe('<<POSTS>> ENDPOINTS TESTING!!!(e2e)', () => {
   let posts: PostViewDto[];
 
   describe(`POST -> "/posts":`, () => {
+    it(`POST -> "/posts": Can't create post with no cred data: STATUS 401;`, async () => {
+      //запрос на создание нового поста c невалидными данными
+      await request(server)
+        .post(fullPathTo.posts)
+        .send(noValidPostDto)
+        .expect(401);
+
+      //запрос на получение постов, проверка на ошибочное создание поста в БД
+      const postCounter = await getPostsQty(server);
+      expect(postCounter).toEqual(0);
+    });
+
     it(`POST -> "/posts": Can't create post with not valid data: STATUS 400; Should return errors if passed body is incorrect;`, async () => {
       //запрос на создание нового поста c невалидными данными
       const resPost = await request(server)
         .post(fullPathTo.posts)
-        //  .auth(ADMIN_LOGIN, ADMIN_PASS)
+        .auth(appConfig.SA_LOGIN, appConfig.SA_PASS)
         .send(noValidPostDto)
         .expect(400);
       const resPostBody: ErrorResponseBody = resPost.body;
@@ -115,11 +129,23 @@ describe('<<POSTS>> ENDPOINTS TESTING!!!(e2e)', () => {
   });
 
   describe(`POST -> "/blogs/:id/posts":`, () => {
+    it(`POST -> "/blogs/:id/posts": Can't create post with no cred data: STATUS 401;`, async () => {
+      //запрос на создание нового поста c невалидными данными
+      await request(server)
+        .post(`${fullPathTo.blogs}/${blogs[1].id}/posts`)
+        .send(noValidPostDto)
+        .expect(401);
+
+      //запрос на получение постов, проверка на ошибочное создание поста в БД
+      const postCounter = await getPostsQty(server);
+      expect(postCounter).toEqual(2);
+    });
+
     it(`POST -> "/blogs/:id/posts": Can't create post with not valid data: STATUS 400; Should return errors if passed body is incorrect;`, async () => {
       //запрос на создание нового поста c невалидными данными
       const resPost = await request(server)
         .post(`${fullPathTo.blogs}/${blogs[1].id}/posts`)
-        //.auth(ADMIN_LOGIN, ADMIN_PASS)
+        .auth(appConfig.SA_LOGIN, appConfig.SA_PASS)
         .send(noValidBlogPostDto)
         .expect(400);
       const resPostBody: ErrorResponseBody = resPost.body;
@@ -160,7 +186,7 @@ describe('<<POSTS>> ENDPOINTS TESTING!!!(e2e)', () => {
     it(`STATUS 404: Can't found with id`, async () => {
       await request(server)
         .post(`${fullPathTo.blogs}/${validObjectIdString}/posts`)
-        //.auth(ADMIN_LOGIN, ADMIN_PASS)
+        .auth(appConfig.SA_LOGIN, appConfig.SA_PASS)
         .send(blogPostDto)
         .expect(404);
       //запрос на получение постов, проверка на ошибочное создание поста в БД
@@ -219,11 +245,22 @@ describe('<<POSTS>> ENDPOINTS TESTING!!!(e2e)', () => {
   });
 
   describe(`PUT -> "/posts/:id":`, () => {
+    it(`STATUS 401: Can't update with no cred data`, async () => {
+      //запрос на обонвление без кредов
+      await request(server)
+        .put(`${fullPathTo.posts}/${posts[2].id}`)
+        .send(noValidPostDto)
+        .expect(401);
+
+      const foundPost = await getPostById(server, posts[2].id);
+      expect(foundPost).toEqual(posts[2]);
+    });
+
     it(`STATUS 400: Can't update with no valid data`, async () => {
       //запрос на обонвление по неверному/несуществующему id
       const resPut = await request(server)
         .put(`${fullPathTo.posts}/${posts[2].id}`)
-        //.auth(ADMIN_LOGIN, ADMIN_PASS)
+        .auth(appConfig.SA_LOGIN, appConfig.SA_PASS)
         .send(noValidPostDto)
         .expect(400);
       const resPutBody: ErrorResponseBody = resPut.body;
@@ -245,7 +282,7 @@ describe('<<POSTS>> ENDPOINTS TESTING!!!(e2e)', () => {
       //запрос на обонвление по неверному/несуществующему id
       await request(server)
         .put(`${fullPathTo.posts}/${validObjectIdString}`)
-        //.auth(ADMIN_LOGIN, ADMIN_PASS)
+        .auth(appConfig.SA_LOGIN, appConfig.SA_PASS)
         .send(postDtos[1])
         .expect(404);
     });
@@ -254,7 +291,7 @@ describe('<<POSTS>> ENDPOINTS TESTING!!!(e2e)', () => {
       //запрос на обонвление существующего по id
       await request(server)
         .put(`${fullPathTo.posts}/${posts[2].id}`)
-        //.auth(ADMIN_LOGIN, ADMIN_PASS)
+        .auth(appConfig.SA_LOGIN, appConfig.SA_PASS)
         .send(postDtos[1])
         .expect(204);
       //запрос на получение обновленного поста по Id - проверка операции обновления нового блога в БД
@@ -275,22 +312,32 @@ describe('<<POSTS>> ENDPOINTS TESTING!!!(e2e)', () => {
   });
 
   describe(`DELETE -> "/posts/:id"`, () => {
+    it(`STATUS 401: No cred data`, async () => {
+      //запрос на удаление поста по неверному/несуществующему id
+      await request(server)
+        .delete(`${fullPathTo.posts}/${validObjectIdString}`)
+        .expect(401);
+      //запрос на получение постов, проверка на ошибочное удаление поста в БД
+      const postCounter = await getPostsQty(server);
+      expect(postCounter).toEqual(3);
+    });
+
     it(`STATUS 404: Can't found with id`, async () => {
       //запрос на удаление поста по неверному/несуществующему id
       await request(server)
         .delete(`${fullPathTo.posts}/${validObjectIdString}`)
-        //.auth(ADMIN_LOGIN, ADMIN_PASS)
+        .auth(appConfig.SA_LOGIN, appConfig.SA_PASS)
         .expect(404);
       //запрос на получение постов, проверка на ошибочное удаление поста в БД
       const postCounter = await getPostsQty(server);
       expect(postCounter).toEqual(3);
     });
 
-    it(`STATUS 204: Delete updated blog; no content; used additional methods: GET -> /blogs`, async () => {
+    it(`STATUS 204: Delete updated post; no content;`, async () => {
       //запрос на удаление существующего поста по id
       await request(server)
         .delete(`${fullPathTo.posts}/${posts[2].id}`)
-        //.auth(ADMIN_LOGIN, ADMIN_PASS)
+        .auth(appConfig.SA_LOGIN, appConfig.SA_PASS)
         .expect(204);
       //запрос на получение постов, проверка на ошибочное удаление поста в БД
       const postCounter = await getPostsQty(server);

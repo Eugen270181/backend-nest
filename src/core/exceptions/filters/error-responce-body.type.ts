@@ -1,4 +1,4 @@
-import { ErrorMessages } from '../domain-exceptions';
+import { ErrorsMessages } from '../domain-exceptions';
 import { DomainExceptionCode } from '../domain-exception-codes';
 
 export interface ErrorResponseBody {
@@ -6,5 +6,9 @@ export interface ErrorResponseBody {
   path: string | null;
   message: string;
   code: DomainExceptionCode;
-  errorMessages?: ErrorMessages[];
+  errorsMessages?: ErrorsMessages[];
+}
+
+export interface DomainErrorResponseBody {
+  errorsMessages?: ErrorsMessages[];
 }

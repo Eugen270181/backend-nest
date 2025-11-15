@@ -58,6 +58,9 @@ export type TokensDto = {
   accessToken: string;
   refreshToken: string;
 };
+export type TokenDto = {
+  accessToken: string;
+};
 /////////////adition function////////////////
 export const createString = (length: number) => {
   let s = '';
@@ -67,6 +70,8 @@ export const createString = (length: number) => {
   return s;
 };
 export const passTestsDefault = '123456789';
+export const loginTestsDefault = 'test_login';
+export const emailTestsDefault = 'test_@gmail.com';
 export const validObjectIdString = new Types.ObjectId().toString();
 /////////////////////////////////////////////
 /////////////////////////////////////////////
@@ -81,8 +86,8 @@ export const testingDtosCreator = {
     password?: string;
   }): UserDto {
     return {
-      login: login ?? 'test_login',
-      email: email ?? 'test_@gmail.com',
+      login: login ?? loginTestsDefault,
+      email: email ?? emailTestsDefault,
       password: password ?? passTestsDefault,
     };
   },

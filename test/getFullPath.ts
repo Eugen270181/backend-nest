@@ -6,6 +6,7 @@ export const getFullPath = (path: string) => {
 };
 
 export const fullPathTo = {
+  auth: getFullPath(routerPaths.auth),
   users: getFullPath(routerPaths.users),
   blogs: getFullPath(routerPaths.blogs),
   posts: getFullPath(routerPaths.posts),

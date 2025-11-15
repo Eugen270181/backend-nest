@@ -27,9 +27,11 @@ import {
   validateErrorsObject,
 } from '../validateErrorsObject';
 import { getUsersQty } from '../users/util/createGetUsers';
+import { NestExpressApplication } from '@nestjs/platform-express';
+import { appConfig } from '../../src/core/settings/config';
 
 describe('<<BLOGS>> ENDPOINTS TESTING!!!(e2e)', () => {
-  let app: INestApplication<App>;
+  let app: NestExpressApplication;
   let connection: Connection;
   let server: App;
 
@@ -61,9 +63,20 @@ describe('<<BLOGS>> ENDPOINTS TESTING!!!(e2e)', () => {
   const blogs: BlogViewDto[] = [];
 
   describe(`POST -> "/blogs":`, () => {
+    it('STATUS 401: shouldn`t create blog with no cred data', async () => {
+      await request(server)
+        .post(fullPathTo.blogs)
+        .send(noValidBlogDto)
+        .expect(401);
+
+      const blogCounter = await getBlogsQty(server);
+      expect(blogCounter).toEqual(0);
+    });
+
     it('STATUS 400: shouldn`t create blog with no valid data', async () => {
       const resPost = await request(server)
         .post(fullPathTo.blogs)
+        .auth(appConfig.SA_LOGIN, appConfig.SA_PASS)
         .send(noValidBlogDto)
         .expect(400);
 
@@ -114,11 +127,22 @@ describe('<<BLOGS>> ENDPOINTS TESTING!!!(e2e)', () => {
   });
 
   describe(`PUT -> "/blogs/:id"`, () => {
+    it('STATUS 401: shouldn`t update blog with no cred data', async () => {
+      await request(server)
+        .put(`${fullPathTo.blogs}/${validObjectIdString}`)
+        .send(blogDtos[1])
+        .expect(401);
+
+      //запрос на получение блога по id, проверка на ошибочное обновление блога в БД
+      const foundBlog = await getBlogById(server, blogs[0].id);
+      expect(foundBlog).toEqual(blogs[0]);
+    });
+
     it(`STATUS 404: Can't found with id. Used additional methods: GET -> /blogs/:id`, async () => {
       //запрос на обонвление блога по неверному/несуществующему id
       await request(server)
         .put(`${fullPathTo.blogs}/${validObjectIdString}`)
-        //.auth(ADMIN_LOGIN, ADMIN_PASS)
+        .auth(appConfig.SA_LOGIN, appConfig.SA_PASS)
         .send(blogDtos[1])
         .expect(404);
       //запрос на получение блога по id, проверка на ошибочное обновление блога в БД
@@ -130,7 +154,7 @@ describe('<<BLOGS>> ENDPOINTS TESTING!!!(e2e)', () => {
       //запрос на обонвление существующего блога по id с невалидными данными
       const resPut = await request(server)
         .put(`${fullPathTo.blogs}/${blogs[0].id}`)
-        //.auth(ADMIN_LOGIN, ADMIN_PASS)
+        .auth(appConfig.SA_LOGIN, appConfig.SA_PASS)
         .send(noValidBlogDto)
         .expect(400);
       const resPostBody: ErrorResponseBody = resPut.body;
@@ -146,7 +170,7 @@ describe('<<BLOGS>> ENDPOINTS TESTING!!!(e2e)', () => {
       //запрос на обонвление существующего блога по id
       await request(server)
         .put(`${fullPathTo.blogs}/${blogs[0].id}`)
-        //.auth(ADMIN_LOGIN, ADMIN_PASS)
+        .auth(appConfig.SA_LOGIN, appConfig.SA_PASS)
         .send(blogDtos[1])
         .expect(204);
       //запрос на получение обновленного блога по Id - проверка операции обновления нового блога в БД
@@ -157,11 +181,20 @@ describe('<<BLOGS>> ENDPOINTS TESTING!!!(e2e)', () => {
   });
 
   describe(`DELETE -> "/blogs/:id"`, () => {
+    it('STATUS 401: shouldn`t delete blog with no cred data', async () => {
+      await request(server)
+        .delete(`${fullPathTo.blogs}/${validObjectIdString}`)
+        .expect(401);
+      //запрос на получение блогов, проверка на ошибочное удаление блога в БД
+      const blogCounter = await getBlogsQty(server);
+      expect(blogCounter).toEqual(1);
+    });
+
     it(`STATUS 404: Can't found with id. Used additional methods: GET -> /blogs`, async () => {
       //запрос на удаление блога по неверному/несуществующему id
       await request(server)
         .delete(`${fullPathTo.blogs}/${validObjectIdString}`)
-        //.auth(ADMIN_LOGIN, ADMIN_PASS)
+        .auth(appConfig.SA_LOGIN, appConfig.SA_PASS)
         .expect(404);
       //запрос на получение блогов, проверка на ошибочное удаление блога в БД
       const blogCounter = await getBlogsQty(server);
@@ -172,7 +205,7 @@ describe('<<BLOGS>> ENDPOINTS TESTING!!!(e2e)', () => {
       //запрос на удаление существующего блога по id
       await request(server)
         .delete(`${fullPathTo.blogs}/${blogs[0].id}`)
-        //.auth(ADMIN_LOGIN, ADMIN_PASS)
+        .auth(appConfig.SA_LOGIN, appConfig.SA_PASS)
         .expect(204);
       //запрос на получение блогов, проверка на удаление блога в БД
       const blogCounter = await getBlogsQty(server);

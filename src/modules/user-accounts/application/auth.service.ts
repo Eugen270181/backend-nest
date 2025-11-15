@@ -3,14 +3,38 @@ import { UsersRepository } from '../infrastructure/users.repository';
 import { JwtService } from '@nestjs/jwt';
 import { UserContextDto } from '../guards/dto/user-context.dto';
 import { CryptoService } from './crypto.service';
+import { appConfig } from '../../../core/settings/config';
+import { CreateUserDto } from './dto/user.dto';
+import { UsersService } from './users.service';
+import { EmailService } from '../../notifications/email.service';
+import { UserFinderService } from './user-finder.service';
+import { AuthViewDto } from '../api/view-dto/auth.view-dto';
+import { UserSearchType } from './dto/enum/user-search-type';
+import { InjectModel } from '@nestjs/mongoose';
+import { User, UserDocument, UserModelType } from '../domain/user.entity';
+import { CodeService } from '../../../core/adapters/code.service';
+import { DateService } from '../../../core/adapters/date.service';
+import { EmailDto } from './dto/email.dto';
+import { ConfirmRegDto } from './dto/confirm-reg.dto';
+import { ConfirmPassDto } from './dto/confirm-pass.dto';
 
 @Injectable()
-export class AuthService {
+export class AuthService extends UserFinderService {
   constructor(
-    private usersRepository: UsersRepository,
+    @InjectModel(User.name)
+    private readonly UserModel: UserModelType,
+    usersRepository: UsersRepository,
+    private usersService: UsersService,
     private jwtService: JwtService,
     private cryptoService: CryptoService,
-  ) {}
+    private emailService: EmailService,
+    private codeService: CodeService,
+    private dateService: DateService,
+  ) {
+    super(usersRepository);
+    if (appConfig.IOC_LOG) console.log('AuthService created');
+  }
+
   async validateUser(
     login: string,
     password: string,
@@ -32,11 +56,106 @@ export class AuthService {
     return { id: user.id.toString() };
   }
 
-  async login(userId: string) {
-    const accessToken = this.jwtService.sign({ id: userId } as UserContextDto);
+  async login(id: string): Promise<AuthViewDto> {
+    const accessToken = await this.jwtService.signAsync({
+      id,
+    } as UserContextDto);
 
-    return {
-      accessToken,
-    };
+    return { accessToken };
+  }
+
+  async registerUser(dto: CreateUserDto) {
+    await this.ensureUserUnique(UserSearchType.Login, dto.login);
+    await this.ensureUserUnique(UserSearchType.Email, dto.email);
+
+    const passwordHash = await this.cryptoService.getHash(dto.password);
+
+    const code = this.codeService.genRandomCode();
+    const expirationDate = this.dateService.addDuration(
+      new Date(),
+      appConfig.EMAIL_TIME,
+    );
+
+    // Используем статический метод модели напрямую
+    const userDocument = this.UserModel.createUserByReg({
+      login: dto.login,
+      email: dto.email,
+      passwordHash,
+      code,
+      date: expirationDate,
+    });
+
+    await this.usersRepository.save(userDocument);
+
+    this.emailService
+      .sendConfirmationEmail(userDocument.email, code)
+      .catch(console.error);
+  }
+
+  async regEmailResending(dto: EmailDto) {
+    const foundUser: UserDocument = await this.ensureUserExistsNotConfirmed(
+      UserSearchType.Email,
+      dto.email,
+    );
+
+    const code = this.codeService.genRandomCode();
+    const expirationDate = this.dateService.addDuration(
+      new Date(),
+      appConfig.EMAIL_TIME,
+    );
+
+    foundUser.setRegConfirmationCode(code, expirationDate);
+
+    await this.usersRepository.save(foundUser);
+
+    await this.emailService
+      .sendConfirmationEmail(foundUser.email, code)
+      .catch(console.error);
+  }
+
+  async regConfirm(dto: ConfirmRegDto) {
+    const foundUser: UserDocument =
+      await this.ensureUserExistsNotExpiredNotConfirmed(
+        UserSearchType.RegConfirmCode,
+        dto.code,
+      );
+
+    foundUser.activateConfirmation();
+
+    await this.usersRepository.save(foundUser);
+  }
+
+  async passRecovery(dto: EmailDto) {
+    const foundUser: UserDocument | null = await this.findUser(
+      UserSearchType.Email,
+      dto.email,
+    );
+    if (!foundUser) return;
+
+    const code = this.codeService.genRandomCode();
+    const expirationDate = this.dateService.addDuration(
+      new Date(),
+      appConfig.PASS_TIME,
+    );
+
+    foundUser.setPassConfirmationCode(code, expirationDate);
+
+    await this.usersRepository.save(foundUser);
+
+    this.emailService
+      .sendConfirmationEmail(foundUser.email, code)
+      .catch(console.error);
+  }
+
+  async passConfirm(dto: ConfirmPassDto) {
+    const foundUser: UserDocument = await this.ensureUserExistsNotExpired(
+      UserSearchType.PassConfirmCode,
+      dto.recoveryCode,
+    );
+
+    const newPasswordHash = await this.cryptoService.getHash(dto.newPassword);
+    foundUser.updatePassHash(newPasswordHash);
+
+    await this.usersRepository.save(foundUser);
   }
 }

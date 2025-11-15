@@ -58,5 +58,5 @@ export class ErrorResponseBodyDto {
     ],
     required: false,
   })
-  errorMessages?: ErrorMessageDto[];
+  errorsMessages?: ErrorMessageDto[];
 }

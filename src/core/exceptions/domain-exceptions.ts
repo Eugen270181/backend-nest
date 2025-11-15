@@ -1,6 +1,6 @@
 import { DomainExceptionCode } from './domain-exception-codes';
 
-export class ErrorMessages {
+export class ErrorsMessages {
   message: string;
   field: string;
 }
@@ -8,18 +8,18 @@ export class ErrorMessages {
 export interface IDomainException {
   message: string;
   code: DomainExceptionCode;
-  errorMessages?: ErrorMessages[];
+  errorsMessages?: ErrorsMessages[];
 }
 
 export class DomainException extends Error implements IDomainException {
   message: string;
   code: DomainExceptionCode;
-  errorMessages?: ErrorMessages[];
+  errorsMessages?: ErrorsMessages[];
 
   constructor(errorInfo: IDomainException) {
     super(errorInfo.message);
     this.message = errorInfo.message;
     this.code = errorInfo.code;
-    this.errorMessages = errorInfo.errorMessages;
+    this.errorsMessages = errorInfo.errorsMessages;
   }
 }
