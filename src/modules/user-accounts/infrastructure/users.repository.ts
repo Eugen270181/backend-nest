@@ -16,8 +16,8 @@ export class UsersRepository {
     await userDocument.save();
   }
 
-  async findById(id: string): Promise<UserDocument | null> {
-    return this.UserModel.findOne({ _id: id }).catch(() => null);
+  async findById(_id: string): Promise<UserDocument | null> {
+    return this.UserModel.findOne({ _id }).catch(() => null);
   }
 
   async findByLogin(login: string): Promise<UserDocument | null> {
@@ -38,13 +38,14 @@ export class UsersRepository {
       'emailConfirmation.confirmationCode': code,
     });
   }
+
   async findUserByPassConfirmCode(code: string): Promise<UserDocument | null> {
     return this.UserModel.findOne({
       'passConfirmation.confirmationCode': code,
     });
   }
 
-  async deleteUserById(id: string) {
-    await this.UserModel.deleteOne({ _id: id });
+  async deleteUserById(_id: string) {
+    await this.UserModel.deleteOne({ _id });
   }
 }

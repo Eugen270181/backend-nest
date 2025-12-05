@@ -35,31 +35,43 @@ export class AuthService extends UserFinderService {
     if (appConfig.IOC_LOG) console.log('AuthService created');
   }
 
-  async validateUser(
-    login: string,
+  async validateUserById(userId: string): Promise<UserContextDto | null> {
+    const userDocument: UserDocument | null = await this.findUser(
+      UserSearchType.Id,
+      userId,
+    );
+    if (!userDocument) {
+      return null;
+    }
+
+    return { id: userDocument._id.toString() };
+  }
+
+  async validateUserByCred(
+    loginOrEmail: string,
     password: string,
   ): Promise<UserContextDto | null> {
-    const user = await this.usersRepository.findByLogin(login);
-    if (!user) {
+    const userDocument: UserDocument | null = await this.findUser(
+      UserSearchType.LoginOrEmail,
+      loginOrEmail,
+    );
+    if (!userDocument) {
       return null;
     }
 
     const isPasswordValid = await this.cryptoService.checkHash(
       password,
-      user.passwordHash,
+      userDocument.passwordHash,
     );
-
     if (!isPasswordValid) {
       return null;
     }
 
-    return { id: user.id.toString() };
+    return { id: userDocument._id.toString() };
   }
 
   async login(id: string): Promise<AuthViewDto> {
-    const accessToken = await this.jwtService.signAsync({
-      id,
-    } as UserContextDto);
+    const accessToken = await this.jwtService.signAsync({ id });
 
     return { accessToken };
   }

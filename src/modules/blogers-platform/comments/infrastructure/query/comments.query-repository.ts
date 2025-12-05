@@ -20,37 +20,16 @@ export class CommentsQueryRepository {
     if (appConfig.IOC_LOG) console.log('CommentsQueryRepository created');
   }
 
-  async findById(id: string): Promise<CommentDocument | null> {
+  private async findById(_id: string): Promise<CommentDocument | null> {
     return this.CommentModel.findOne({
-      _id: id,
+      _id,
       deletedAt: null,
     }).catch(() => null);
   }
 
-  async getById(id: string): Promise<CommentViewDto | null> {
-    const commentDocument = await this.findById(id);
-
-    if (!commentDocument) return null;
-
-    return CommentViewDto.mapToView(commentDocument);
-  }
-
-  async getAll(
+  private async getComments(
     query: GetCommentsQueryParams,
-  ): Promise<PaginatedViewDto<CommentViewDto[]>> {
-    return this._getComments({ deletedAt: null }, query);
-  }
-
-  async getPostComments(
-    postId: string,
-    query: GetCommentsQueryParams,
-  ): Promise<PaginatedViewDto<CommentViewDto[]>> {
-    return this._getComments({ deletedAt: null, postId }, query);
-  }
-
-  private async _getComments(
     filter: FilterQuery<Comment>,
-    query: GetCommentsQueryParams,
   ): Promise<PaginatedViewDto<CommentViewDto[]>> {
     const comments: CommentDocument[] = await this.CommentModel.find(filter)
       .sort({ [query.sortBy]: query.sortDirection })
@@ -70,6 +49,21 @@ export class CommentsQueryRepository {
       page: query.pageNumber,
       size: query.pageSize,
     });
+  }
+
+  async getById(id: string): Promise<CommentViewDto | null> {
+    const commentDocument = await this.findById(id);
+
+    if (!commentDocument) return null;
+
+    return CommentViewDto.mapToView(commentDocument);
+  }
+
+  async getPostComments(
+    query: GetCommentsQueryParams,
+    postId: string,
+  ): Promise<PaginatedViewDto<CommentViewDto[]>> {
+    return this.getComments(query, { deletedAt: null, postId });
   }
 
   // //todo with userId - from auth layer

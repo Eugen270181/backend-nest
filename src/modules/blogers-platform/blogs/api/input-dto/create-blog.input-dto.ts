@@ -1,4 +1,4 @@
-import { CreateBlogDto } from '../../dto/blog.dto';
+import { CreateBlogDto } from '../../application/dto/blog.dto';
 import { Matches } from 'class-validator';
 import { IsStringWithTrim } from '../../../../../core/decorators/validation/is-string-with-trim';
 

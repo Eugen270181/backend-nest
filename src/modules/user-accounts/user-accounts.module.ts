@@ -31,7 +31,7 @@ import { JwtAuthGuard } from './guards/bearer/jwt-auth.guard';
 import { LocalAuthGuard } from './guards/local/local-auth.guard';
 import { BasicAuthGuard } from './guards/basic/basic-auth.guard';
 import { APP_GUARD } from '@nestjs/core';
-import { ThrottlerGuard } from '@nestjs/throttler';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 
 @Module({
   imports: [
@@ -44,6 +44,12 @@ import { ThrottlerGuard } from '@nestjs/throttler';
       secret: appConfig.AT_SECRET, //TODO: move to env. will be in the following lessons
       signOptions: { expiresIn: appConfig.AT_TIME }, // Время жизни токена
     }),
+    ThrottlerModule.forRoot([
+      {
+        ttl: 10000,
+        limit: 5,
+      },
+    ]),
     MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
     NotificationsModule,
     AdaptersModule,
@@ -64,6 +70,7 @@ import { ThrottlerGuard } from '@nestjs/throttler';
     BasicAuthGuard,
     JwtStrategy,
     JwtAuthGuard,
+    ThrottlerGuard,
     UsersExternalQueryRepository,
     UsersExternalService,
     // {
@@ -76,6 +83,9 @@ import { ThrottlerGuard } from '@nestjs/throttler';
     BasicStrategy,
     JwtAuthGuard,
     JwtStrategy,
+    JwtModule,
+    AuthService,
+    UsersRepository,
     UsersExternalQueryRepository,
     UsersExternalService,
   ],

@@ -1,4 +1,4 @@
-import { CreatePostDto } from '../../dto/post.dto';
+import { CreatePostDto } from '../../application/dto/post.dto';
 import { IsStringWithTrim } from '../../../../../core/decorators/validation/is-string-with-trim';
 import { IsMongoId } from 'class-validator';
 

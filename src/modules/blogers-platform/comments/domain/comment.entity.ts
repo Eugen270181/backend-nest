@@ -19,10 +19,10 @@ export class Comment {
   commentatorInfo: CommentatorInfo;
 
   @Prop({ type: Number, required: true, default: 0 })
-  likeCount: number;
+  likesCount: number;
 
   @Prop({ type: Number, required: true, default: 0 })
-  dislikeCount: number;
+  dislikesCount: number;
 
   @Prop({ type: Date, nullable: true, default: null })
   deletedAt: Date | null;

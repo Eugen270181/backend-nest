@@ -7,13 +7,11 @@ import { DomainExceptionCode } from '../exceptions/domain-exception-codes';
 const DEFAULT_CONFIG = {
   objectIdParams: ['id', 'userId', 'blogId', 'postId', 'commentId'],
   numericParams: ['version', 'page', 'limit'],
-  requiredParams: [],
 };
 
 interface ParamValidationConfig {
   objectIdParams?: string[];
   numericParams?: string[];
-  requiredParams?: string[];
 }
 
 @Injectable()
@@ -24,7 +22,6 @@ export class ObjectIdInParamsValidationPipe implements PipeTransform {
     this.config = {
       objectIdParams: config?.objectIdParams || DEFAULT_CONFIG.objectIdParams,
       numericParams: config?.numericParams || DEFAULT_CONFIG.numericParams,
-      requiredParams: config?.requiredParams || DEFAULT_CONFIG.requiredParams,
     };
   }
 
@@ -35,23 +32,16 @@ export class ObjectIdInParamsValidationPipe implements PipeTransform {
 
     const paramName = metadata.data;
 
-    // Проверка обязательных параметров
-    if (this.isRequiredParam(paramName) && this.isEmpty(value)) {
-      throw new DomainException({
-        code: DomainExceptionCode.BadRequest,
-        message: `Parameter '${paramName}' is required`,
-      });
-    }
-
-    // Если значение пустое и параметр не обязательный, пропускаем проверки
-    if (this.isEmpty(value)) return value;
+    //console.log(paramName);
 
     // Проверка ObjectId параметров
     if (this.isObjectIdParam(paramName)) {
       if (!isValidObjectId(value)) {
+        const message = `Invalid ObjectId for parameter '${paramName}': ${value}`;
         throw new DomainException({
           code: DomainExceptionCode.BadRequest,
-          message: `Invalid ObjectId for parameter '${paramName}': ${value}`,
+          message,
+          errorsMessages: [{ message, field: `${paramName}` }],
         });
       }
     }
@@ -59,9 +49,11 @@ export class ObjectIdInParamsValidationPipe implements PipeTransform {
     // Проверка числовых параметров
     if (this.isNumericParam(paramName)) {
       if (isNaN(Number(value)) || !Number.isInteger(Number(value))) {
+        const message = `Parameter '${paramName}' must be an integer: ${value}`;
         throw new DomainException({
           code: DomainExceptionCode.BadRequest,
-          message: `Parameter '${paramName}' must be an integer: ${value}`,
+          message,
+          errorsMessages: [{ message, field: `${paramName}` }],
         });
       }
     }
@@ -75,13 +67,5 @@ export class ObjectIdInParamsValidationPipe implements PipeTransform {
 
   private isNumericParam(paramName: string): boolean {
     return this.config.numericParams?.includes(paramName) ?? false;
-  }
-
-  private isRequiredParam(paramName: string): boolean {
-    return this.config.requiredParams?.includes(paramName) ?? false;
-  }
-
-  private isEmpty(value: any): boolean {
-    return value === undefined || value === null || value === '';
   }
 }

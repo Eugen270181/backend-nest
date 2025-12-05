@@ -8,13 +8,14 @@ import { PaginatedViewDto } from '../../../../../core/dto/base.paginated.view-dt
 import { BlogsQueryService } from '../../../blogs/application/query/blogs.query-service';
 import { BlogsRepository } from '../../../blogs/infrastructure/blogs.repository';
 import { appConfig } from '../../../../../core/settings/config';
+import { PostsRepository } from '../../infrastructure/posts.repository';
 
 @Injectable()
 export class PostsQueryService {
   constructor(
     private readonly postsQueryRepository: PostsQueryRepository,
-    private readonly blogsQueryService: BlogsQueryService,
     private readonly blogsRepository: BlogsRepository,
+    private readonly postsRepository: PostsRepository,
   ) {
     if (appConfig.IOC_LOG) console.log('PostsQueryService created');
   }
@@ -26,6 +27,17 @@ export class PostsQueryService {
       throw new DomainException({
         code: DomainExceptionCode.NotFound,
         message: `blog not found: ${id}`,
+      });
+    }
+  }
+
+  private async checkPostOrFail(id: string) {
+    const postDocument = await this.postsRepository.findById(id);
+
+    if (!postDocument) {
+      throw new DomainException({
+        code: DomainExceptionCode.NotFound,
+        message: `post not found: ${id}`,
       });
     }
   }

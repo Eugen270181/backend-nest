@@ -1,29 +1,52 @@
-import { Controller, Get, NotFoundException, Param } from '@nestjs/common';
+import {
+  Controller,
+  Delete,
+  Get,
+  NotFoundException,
+  Param,
+  Put,
+} from '@nestjs/common';
 import { CommentViewDto } from './view-dto/comment.view-dto';
 import { CommentsQueryRepository } from '../infrastructure/query/comments.query-repository';
 import { CommentsService } from '../application/comments.service';
-import { ParamsObjectIdDto } from '../../../../core/dto/params-object-id.dto';
 import { appConfig } from '../../../../core/settings/config';
+import { CommentsQueryService } from '../application/query/comments.query-service';
+import { ExtractUserFromRequest } from '../../../user-accounts/guards/decorators/param/extract-user-from-request.decorator';
+import { UserContextDto } from '../../../user-accounts/guards/dto/user-context.dto';
 
 @Controller('comments')
 export class CommentsController {
   constructor(
     private readonly commentsService: CommentsService,
     private readonly commentsQueryRepository: CommentsQueryRepository,
+    private readonly commentsQueryService: CommentsQueryService,
   ) {
     if (appConfig.IOC_LOG) console.log('CommentsController created');
   }
 
-  @Get(':id')
-  async getById(@Param() params: ParamsObjectIdDto): Promise<CommentViewDto> {
-    const commentViewDto = await this.commentsQueryRepository.getById(
-      params.id,
+  @Get(':commentId')
+  async getById(
+    @Param('commentId') commentId: string,
+    @ExtractUserFromRequest() user: UserContextDto,
+  ): Promise<CommentViewDto> {
+    return this.commentsQueryService.getCommentViewDtoOrFail(
+      commentId,
+      user?.id,
     );
+  }
 
-    if (!commentViewDto) {
-      throw new NotFoundException(`comments not found: ${params.id}`);
-    }
+  @Delete(':commentId')
+  async delById(@Param('commentId') commentId: string) {
+    return 'comment.del';
+  }
 
-    return commentViewDto;
+  @Put(':commentId')
+  async putById(@Param('commentId') commentId: string) {
+    return 'comment.put';
+  }
+
+  @Put(':commentId/like-status')
+  async putLikeStatusById(@Param('commentId') commentId: string) {
+    return 'comment.like-status.put';
   }
 }

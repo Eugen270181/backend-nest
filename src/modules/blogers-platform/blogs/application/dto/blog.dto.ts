@@ -1,4 +1,4 @@
-import { UpdateBlogInputDto } from '../api/input-dto/update-blog.input-dto';
+import { UpdateBlogInputDto } from '../../api/input-dto/update-blog.input-dto';
 
 export class CreateBlogDto {
   name: string;

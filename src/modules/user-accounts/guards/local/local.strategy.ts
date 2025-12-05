@@ -3,8 +3,8 @@ import { PassportStrategy } from '@nestjs/passport';
 import { Injectable } from '@nestjs/common';
 import { AuthService } from '../../application/auth.service';
 import { DomainException } from '../../../../core/exceptions/domain-exceptions';
-import { UserContextDto } from '../dto/user-context.dto';
 import { DomainExceptionCode } from '../../../../core/exceptions/domain-exception-codes';
+import { UserContextDto } from '../dto/user-context.dto';
 
 @Injectable()
 export class LocalStrategy extends PassportStrategy(Strategy, 'local') {
@@ -22,15 +22,21 @@ export class LocalStrategy extends PassportStrategy(Strategy, 'local') {
       });
     }
 
-    const user = await this.authService.validateUser(username, password);
+    console.log('🚀 STRATEGY VALIDATE ВЫЗВАН:', { username, password });
 
-    if (!user) {
+    const userContextDto = await this.authService.validateUserByCred(
+      username,
+      password,
+    );
+    console.log('✅ STRATEGY USER НАЙДЕН:', !!userContextDto);
+
+    if (!userContextDto) {
       throw new DomainException({
         code: DomainExceptionCode.Unauthorized, //401
         message: 'Invalid username or password',
       });
     }
 
-    return user;
+    return userContextDto;
   }
 }
