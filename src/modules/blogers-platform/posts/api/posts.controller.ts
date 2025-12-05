@@ -11,7 +11,6 @@ import {
   Get,
   HttpCode,
   HttpStatus,
-  NotFoundException,
   Param,
   Post,
   Put,
@@ -22,32 +21,52 @@ import { UpdatePostInputDto } from './input-dto/update-post.input-dto';
 import { GetCommentsQueryParams } from './input-dto/get-comments-query-params.input-dto';
 import { CommentViewDto } from '../../comments/api/view-dto/comment.view-dto';
 import { CommentsQueryRepository } from '../../comments/infrastructure/query/comments.query-repository';
-import { UpdatePostDto } from '../dto/post.dto';
+import { CreatePostDto, UpdatePostDto } from '../application/dto/post.dto';
 import { PostsQueryService } from '../application/query/posts.query-service';
 import { appConfig } from '../../../../core/settings/config';
 import { BasicAuthGuard } from '../../../user-accounts/guards/basic/basic-auth.guard';
+import { CreateBlogPostInputDto } from '../../blogs/api/input-dto/create-blog-post.input-dto';
+import { CommentsQueryService } from '../../comments/application/query/comments.query-service';
+import { CreateCommentInputDto } from '../../comments/api/input-dto/create-comment.input-dto';
+import { CreateCommentDto } from '../../comments/application/dto/comment.dto';
+import { CommentsService } from '../../comments/application/comments.service';
+import { SkipThrottle } from '@nestjs/throttler';
+import { ApiBearerAuth } from '@nestjs/swagger';
+import { JwtAuthGuard } from '../../../user-accounts/guards/bearer/jwt-auth.guard';
+import {
+  OptionalUserId,
+  UserId,
+} from '../../../user-accounts/guards/decorators/param/extract-user-from-request.decorator';
+import { LikePostInputDto } from './input-dto/like-post.input-dto';
+import { LikePostDto } from '../../likes/application/dto/like-post.dto';
 
 @Controller('posts')
 export class PostsController {
   constructor(
     private readonly postsQueryRepository: PostsQueryRepository,
-    private readonly postsService: PostsService,
     private readonly postsQueryService: PostsQueryService,
+    private readonly postsService: PostsService,
     private readonly commentsQueryRepository: CommentsQueryRepository,
+    private readonly commentsQueryService: CommentsQueryService,
+    private readonly commentsService: CommentsService,
   ) {
     if (appConfig.IOC_LOG) console.log('Posts Controller created');
   }
 
-  @Get(':id')
-  async getById(@Param('id') id: string): Promise<PostViewDto> {
-    return this.postsQueryService.getPostViewDtoOrFail(id);
+  @Get(':postId')
+  async getById(
+    @Param('postId') postId: string,
+    @OptionalUserId() userId?: string,
+  ): Promise<PostViewDto> {
+    return this.postsQueryService.getPostViewDtoOrFail(postId, userId);
   }
 
   @Get()
   async getAll(
     @Query() query: GetPostsQueryParams,
+    @OptionalUserId() userId?: string,
   ): Promise<PaginatedViewDto<PostViewDto[]>> {
-    return this.postsQueryRepository.getAll(query);
+    return this.postsQueryService.getAll(query, userId);
   }
 
   @UseGuards(BasicAuthGuard)
@@ -61,61 +80,73 @@ export class PostsController {
   }
 
   @UseGuards(BasicAuthGuard)
-  @Put(':id')
+  @Put(':postId')
   @HttpCode(HttpStatus.NO_CONTENT)
   async updatePost(
-    @Param('id') id: string,
+    @Param('postId') postId: string,
     @Body() updatePostInputDto: UpdatePostInputDto,
   ) {
-    const updatePostDto: UpdatePostDto = { ...updatePostInputDto, id };
+    const updatePostDto: UpdatePostDto = { ...updatePostInputDto, postId };
     await this.postsService.updatePost(updatePostDto);
   }
 
   @UseGuards(BasicAuthGuard)
-  @Delete(':id')
+  @Delete(':postId')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async deletePost(@Param('id') id: string) {
-    await this.postsService.deletePostById(id);
+  async deletePost(@Param('postId') postId: string) {
+    await this.postsService.deletePostById(postId);
   }
   ///////////////////////////////////////////////////////////////////
-  //todo release post and get req for comments entity accros postId && put 4likestatus
-  @Get(':id/comments')
+  // ✅ GET комментарии поста — OptionalUserId из middleware
+  @Get(':postId/comments')
   async getPostComments(
+    @Param('postId') postId: string,
     @Query() query: GetCommentsQueryParams,
-    @Param('id') postId: string,
+    @OptionalUserId() userId?: string, // ✅ Из OptionalJwtMiddleware
   ): Promise<PaginatedViewDto<CommentViewDto[]>> {
-    const foundPostDocument = await this.postsQueryRepository.findById(postId);
-
-    if (!foundPostDocument) {
-      throw new NotFoundException('Post not found');
-    }
-
-    return this.commentsQueryRepository.getPostComments(postId, query);
+    await this.postsQueryService.getPostViewDtoOrFail(postId);
+    return this.commentsQueryService.getPostComments(query, postId, userId);
   }
-  //todo uncomment and release in service
-  // @Post(':id/comments')
-  // async createPostComment(
-  //   @Body() createCommentInputDto: CreateCommentInputDto,
-  //   @Param('id') postId: string,
-  // ): Promise<CommentViewDto> {
-  //   //todo with userId
-  //   const createCommentDto: CreateCommentDto = {
-  //     ...createCommentInputDto,
-  //     postId,
-  //     userId,
-  //   };
-  //   const commentId =
-  //     await this.commentsService.createComment(createCommentDto);
-  //
-  //   const commentViewDto =
-  //     await this.commentsQueryRepository.getById(commentId);
-  //   //todo not domain exceprion - something wrong with DB saving
-  //   if (!commentViewDto) {
-  //     throw new NotFoundException(
-  //       `created comment not found with id ${commentId}`,
-  //     );
-  //   }
-  //
-  //   return commentViewDto;
-  // }
+
+  // ✅ POST комментарий — UserId из JwtAuthGuard
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @Post(':postId/comments')
+  async createPostComment(
+    @UserId() userId: string, // ✅ Обязательный из JwtStrategy
+    @Param('postId') postId: string,
+    @Body() createCommentInputDto: CreateCommentInputDto,
+  ): Promise<CommentViewDto> {
+    const createCommentDto: CreateCommentDto = {
+      ...createCommentInputDto,
+      postId,
+      userId,
+    };
+    const commentId =
+      await this.commentsService.createComment(createCommentDto);
+
+    return this.commentsQueryService.getCommentViewDtoOrFail(
+      commentId,
+      userId,
+      true,
+    );
+  }
+  //////////////////////////////////////////////////////////////////////////////
+  // ✅ PUT лайк поста UserId из JwtAuthGuard
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @Put(':postId/like-status')
+  async putLikeStatusById(
+    @Param('postId') postId: string,
+    @Body() likePostInputDto: LikePostInputDto,
+    @UserId() authorId: string,
+  ) {
+    const likePostDto: LikePostDto = {
+      ...likePostInputDto,
+      authorId,
+      postId,
+    };
+    return this.postsService.updateLike(likePostDto);
+  }
+
 }

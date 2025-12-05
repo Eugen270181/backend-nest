@@ -16,34 +16,12 @@ export class PostsQueryRepository {
     if (appConfig.IOC_LOG) console.log('PostsQueryRepository created');
   }
 
-  async findById(id: string): Promise<PostDocument | null> {
+  private async findById(_id: string): Promise<PostDocument | null> {
     return this.PostModel.findOne({
-      _id: id,
+      _id,
       deletedAt: null,
     }).catch(() => null);
   }
-
-  async getById(id: string): Promise<PostViewDto | null> {
-    const postDocument: PostDocument | null = await this.findById(id);
-
-    if (!postDocument) return null;
-
-    return PostViewDto.mapToView(postDocument);
-  }
-
-  async getAll(
-    query: GetPostsQueryParams,
-  ): Promise<PaginatedViewDto<PostViewDto[]>> {
-    return this.getPosts({ deletedAt: null }, query);
-  }
-
-  async getBlogPosts(
-    blogId: string,
-    query: GetPostsQueryParams,
-  ): Promise<PaginatedViewDto<PostViewDto[]>> {
-    return this.getPosts({ deletedAt: null, blogId }, query);
-  }
-  //todo with userId
   private async getPosts(
     filter: FilterQuery<Post>,
     query: GetPostsQueryParams,
@@ -64,5 +42,26 @@ export class PostsQueryRepository {
       page: query.pageNumber,
       size: query.pageSize,
     });
+  }
+
+  async getById(id: string): Promise<PostViewDto | null> {
+    const postDocument: PostDocument | null = await this.findById(id);
+
+    if (!postDocument) return null;
+
+    return PostViewDto.mapToView(postDocument);
+  }
+
+  async getAll(
+    query: GetPostsQueryParams,
+  ): Promise<PaginatedViewDto<PostViewDto[]>> {
+    return this.getPosts({ deletedAt: null }, query);
+  }
+
+  async getBlogPosts(
+    query: GetPostsQueryParams,
+    blogId: string,
+  ): Promise<PaginatedViewDto<PostViewDto[]>> {
+    return this.getPosts({ deletedAt: null, blogId }, query);
   }
 }

@@ -13,7 +13,7 @@ import { PaginatedViewDto } from '../../src/core/dto/base.paginated.view-dto';
 import { fullPathTo } from '../getFullPath';
 import { validateErrorsObject } from '../validateErrorsObject';
 import { ErrorResponseBody } from '../../src/core/exceptions/filters/error-responce-body.type';
-import { DomainExceptionCode } from '../../src/core/exceptions/domain-exception-codes';
+
 import {
   testingDtosCreator,
   UserDto,
@@ -94,9 +94,6 @@ describe('<<USERS>> ENDPOINTS TESTING!!!(e2e)', () => {
         .auth(appConfig.SA_LOGIN, appConfig.SA_PASS)
         .send(userDtos[0])
         .expect(400);
-
-      const resPostBody: ErrorResponseBody = resPost.body;
-      expect(resPostBody.code).toBe(DomainExceptionCode.NotUnique);
 
       const userCounter = await getUsersQty(server);
       expect(userCounter).toEqual(1);

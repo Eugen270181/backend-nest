@@ -19,10 +19,10 @@ export class Comment {
   commentatorInfo: CommentatorInfo;
 
   @Prop({ type: Number, required: true, default: 0 })
-  likeCount: number;
+  likesCount: number;
 
   @Prop({ type: Number, required: true, default: 0 })
-  dislikeCount: number;
+  dislikesCount: number;
 
   @Prop({ type: Date, nullable: true, default: null })
   deletedAt: Date | null;
@@ -43,6 +43,10 @@ export class Comment {
     return commentDocument as CommentDocument;
   }
 
+  update(dto: UpdateCommentDomainDto) {
+    this.content = dto.content;
+  }
+
   makeDeleted() {
     if (this.deletedAt !== null) {
       throw new Error('Blog Entity already deleted');
@@ -50,8 +54,20 @@ export class Comment {
     this.deletedAt = new Date();
   }
 
-  update(dto: UpdateCommentDomainDto) {
-    this.content = dto.content;
+  incrementLikes() {
+    this.likesCount++;
+  }
+
+  decrementLikes() {
+    if (this.likesCount > 0) this.likesCount--;
+  }
+
+  incrementDislikes() {
+    this.dislikesCount++;
+  }
+
+  decrementDislikes() {
+    if (this.dislikesCount > 0) this.dislikesCount--;
   }
 }
 

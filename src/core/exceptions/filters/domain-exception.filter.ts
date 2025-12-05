@@ -7,10 +7,7 @@ import {
 import { DomainException } from '../domain-exceptions';
 import { Request, Response } from 'express';
 import { DomainExceptionCode } from '../domain-exception-codes';
-import {
-  DomainErrorResponseBody,
-  ErrorResponseBody,
-} from './error-responce-body.type';
+import { DomainErrorResponseBody } from './error-responce-body.type';
 
 //https://docs.nestjs.com/exception-filters#exception-filters-1
 //Ошибки класса DomainException (instanceof DomainException)

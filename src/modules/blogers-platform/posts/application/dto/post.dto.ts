@@ -6,7 +6,7 @@ export class CreatePostDto {
 }
 
 export class UpdatePostDto {
-  id: string;
+  postId: string;
   title: string;
   shortDescription: string;
   content: string;

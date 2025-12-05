@@ -7,19 +7,16 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
-import { SkipThrottle, Throttle, ThrottlerGuard } from '@nestjs/throttler';
+import { SkipThrottle, ThrottlerGuard } from '@nestjs/throttler';
 import { appConfig } from '../../../core/settings/config';
 import { UsersService } from '../application/users.service';
 import { AuthService } from '../application/auth.service';
 import { AuthQueryRepository } from '../infrastructure/query/auth.query-repository';
 import { LocalAuthGuard } from '../guards/local/local-auth.guard';
 import { ApiBearerAuth, ApiBody } from '@nestjs/swagger';
-import { ExtractUserFromRequest } from '../guards/decorators/param/extract-user-from-request.decorator';
-import { Nullable, UserContextDto } from '../guards/dto/user-context.dto';
+import { UserId } from '../guards/decorators/param/extract-user-from-request.decorator';
 import { JwtAuthGuard } from '../guards/bearer/jwt-auth.guard';
 import { MeViewDto } from './view-dto/user.view-dto';
-import { ExtractUserIfExistsFromRequest } from '../guards/decorators/param/extract-user-if-exists-from-request.decorator';
-import { JwtOptionalAuthGuard } from '../guards/bearer/jwt-optional-auth.guard';
 import { AuthQueryService } from '../application/query/auth.query-service';
 import { CreateUserInputDto } from './input-dto/create-users.input-dto';
 import { AuthViewDto } from './view-dto/auth.view-dto';
@@ -27,7 +24,8 @@ import { EmailInputDto } from './input-dto/email.input-dto';
 import { ConfirmRegInputDto } from './input-dto/confirm-reg.input-dto';
 import { ConfirmPassInputDto } from './input-dto/confirm-pass.input-dto';
 
-//@UseGuards(ThrottlerGuard)
+@UseGuards(ThrottlerGuard)
+// @Throttle({ default: { limit: 5, ttl: 10000 } })
 @Controller('auth')
 export class AuthController {
   constructor(
@@ -73,17 +71,19 @@ export class AuthController {
   })
   async login(
     /*@Request() req: any*/
-    @ExtractUserFromRequest() user: UserContextDto,
+    @UserId() userId: string,
   ): Promise<AuthViewDto> {
-    return this.authService.login(user.id);
+    console.log('auth.login controller');
+    return this.authService.login(userId);
   }
 
   @SkipThrottle()
   @ApiBearerAuth()
   @Get('me')
   @UseGuards(JwtAuthGuard)
-  me(@ExtractUserFromRequest() user: UserContextDto): Promise<MeViewDto> {
-    return this.authQueryService.getMeViewDtoOrFail(user.id);
+  me(@UserId() userId: string): Promise<MeViewDto> {
+    console.log('auth.me controller');
+    return this.authQueryService.getMeViewDtoOrFail(userId);
   }
 
   @HttpCode(HttpStatus.NO_CONTENT)

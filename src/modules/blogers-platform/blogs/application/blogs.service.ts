@@ -1,6 +1,6 @@
 import { InjectModel } from '@nestjs/mongoose';
 import { Blog, BlogDocument, BlogModelType } from '../domain/blog.entity';
-import { CreateBlogDto, UpdateBlogDto } from '../dto/blog.dto';
+import { CreateBlogDto, UpdateBlogDto } from './dto/blog.dto';
 import { BlogsRepository } from '../infrastructure/blogs.repository';
 import { Injectable } from '@nestjs/common';
 import { CreateBlogDomainDto } from '../domain/dto/create-blog.domain.dto';

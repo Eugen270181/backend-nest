@@ -18,8 +18,9 @@ export class AuthQueryRepository {
   }
 
   async getMeById(id: string): Promise<MeViewDto | null> {
+    console.log(id);
     const userDocument = await this.findById(id);
-
+    console.log(userDocument);
     if (!userDocument) return null;
 
     return MeViewDto.mapToView(userDocument);

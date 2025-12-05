@@ -16,9 +16,13 @@ export class LikesInfo {
   dislikesCount: number = 0;
   myStatus: LikeStatus = LikeStatus.None;
 
-  static CreateInstance() {
-    //todo  release find atr val in posts query repo //helpers functions with take data from likePostRepository
-    return new this();
+  static createFromComment(comment: CommentDocument): LikesInfo {
+    const likesInfo = new LikesInfo();
+
+    likesInfo.likesCount = comment.likesCount || 0;
+    likesInfo.dislikesCount = comment.dislikesCount || 0;
+
+    return likesInfo;
   }
 }
 //TODO!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -36,8 +40,12 @@ export class CommentViewDto {
     dto.content = comment.content;
     dto.commentatorInfo = comment.commentatorInfo;
     dto.createdAt = comment.createdAt.toISOString();
-    dto.likesInfo = LikesInfo.CreateInstance();
+    dto.likesInfo = LikesInfo.createFromComment(comment);
 
     return dto;
+  }
+
+  setMyLikeStatus(status: LikeStatus): void {
+    this.likesInfo.myStatus = status;
   }
 }

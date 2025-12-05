@@ -21,10 +21,10 @@ export class Post {
   blogName: string;
 
   @Prop({ type: Number, required: true, default: 0 })
-  likeCount: number;
+  likesCount: number;
 
   @Prop({ type: Number, required: true, default: 0 })
-  dislikeCount: number;
+  dislikesCount: number;
 
   @Prop({ type: Date, nullable: true, default: null })
   deletedAt: Date | null;
@@ -44,6 +44,14 @@ export class Post {
     return postDocument as PostDocument;
   }
 
+  update(dto: UpdatePostDomainDto) {
+    this.title = dto.title;
+    this.shortDescription = dto.shortDescription;
+    this.content = dto.content;
+    this.blogId = dto.blogId;
+    this.blogName = dto.blogName;
+  }
+
   makeDeleted() {
     if (this.deletedAt !== null) {
       throw new Error('Blog Entity already deleted');
@@ -51,12 +59,20 @@ export class Post {
     this.deletedAt = new Date();
   }
 
-  update(dto: UpdatePostDomainDto) {
-    this.title = dto.title;
-    this.shortDescription = dto.shortDescription;
-    this.content = dto.content;
-    this.blogId = dto.blogId;
-    this.blogName = dto.blogName;
+  incrementLikes() {
+    this.likesCount++;
+  }
+
+  decrementLikes() {
+    if (this.likesCount > 0) this.likesCount--;
+  }
+
+  incrementDislikes() {
+    this.dislikesCount++;
+  }
+
+  decrementDislikes() {
+    if (this.dislikesCount > 0) this.dislikesCount--;
   }
 }
 
