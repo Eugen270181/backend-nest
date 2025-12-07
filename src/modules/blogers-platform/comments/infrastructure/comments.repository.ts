@@ -26,4 +26,29 @@ export class CommentsRepository {
   async save(commentDocument: CommentDocument) {
     await commentDocument.save();
   }
+
+  async increaseLikeCounter(_id: string) {
+    await this.CommentModel.updateOne(
+      { _id, deletedAt: null },
+      { $inc: { likesCount: 1 } },
+    );
+  }
+  async decreaseLikeCounter(_id: string) {
+    await this.CommentModel.updateOne(
+      { _id, deletedAt: null },
+      { $inc: { likesCount: -1 } },
+    );
+  }
+  async increaseDislikeCounter(_id: string) {
+    await this.CommentModel.updateOne(
+      { _id, deletedAt: null },
+      { $inc: { dislikesCount: 1 } },
+    );
+  }
+  async decreaseDislikeCounter(_id: string) {
+    await this.CommentModel.updateOne(
+      { _id, deletedAt: null },
+      { $inc: { dislikesCount: -1 } },
+    );
+  }
 }
