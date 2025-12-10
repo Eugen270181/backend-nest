@@ -54,6 +54,26 @@ export class CommentsQueryService {
 
     return this.enrichCommentWithLikes(comment, userId);
   }
+  /////////////////////////////////////////////////////////////////////////////////
+  async getCommentViewDtoOrFail(
+    id: string,
+    userId?: string,
+    justCreated: boolean = false,
+  ): Promise<CommentViewDto> {
+    const commentViewDto = await this.getById(id, userId); // ✅ Уже обогащено
+
+    if (!commentViewDto) {
+      if (!justCreated) {
+        throw new DomainException({
+          code: DomainExceptionCode.NotFound,
+          message: `Comment with id:${id} - Not found`,
+        });
+      }
+      throw new Error(`Just Created Comment with id:${id} - Not found`);
+    }
+
+    return commentViewDto;
+  }
 
   async getPostComments(
     query: GetCommentsQueryParams,
@@ -77,26 +97,5 @@ export class CommentsQueryService {
     );
 
     return paginated;
-  }
-
-  // Для getCommentViewDtoOrFail тоже
-  async getCommentViewDtoOrFail(
-    id: string,
-    userId?: string,
-    justCreated = false,
-  ): Promise<CommentViewDto> {
-    const commentViewDto = await this.getById(id, userId); // ✅ Уже обогащено
-
-    if (!commentViewDto) {
-      if (!justCreated) {
-        throw new DomainException({
-          code: DomainExceptionCode.NotFound,
-          message: `Comment with id:${id} - Not found`,
-        });
-      }
-      throw new Error(`Just Created Comment with id:${id} - Not found`);
-    }
-
-    return commentViewDto;
   }
 }

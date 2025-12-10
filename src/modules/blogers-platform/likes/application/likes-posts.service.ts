@@ -1,20 +1,7 @@
 import { InjectModel } from '@nestjs/mongoose';
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
-import {
-  LikeComment,
-  LikeCommentDocument,
-  LikeCommentModelType,
-} from '../domain/like-comment.entity';
+import { Injectable } from '@nestjs/common';
 import { UsersRepository } from '../../../user-accounts/infrastructure/users.repository';
-import { CommentsRepository } from '../../comments/infrastructure/comments.repository';
-import { LikeCommentInputDto } from '../../comments/api/input-dto/like-comment.input-dto';
 import { LikeStatus } from '../../../../core/dto/enum/like-status.enum';
-import { LikesCommentsRepository } from '../infrastructure/likes-comments.repository';
-import { LikeCommentDto } from './dto/like-comment.dto';
 import { LikePost, LikePostModelType } from '../domain/like-post.entity';
 import { LikePostDto } from './dto/like-post.dto';
 import { LikesPostsRepository } from '../infrastructure/likes-posts.repository';
@@ -30,7 +17,7 @@ export class LikesPostsService {
     private likesPostsRepository: LikesPostsRepository,
   ) {}
 
-  async updatePost(dto: LikePostDto): Promise<LikeStatus | null> {
+  async updateLike(dto: LikePostDto): Promise<LikeStatus | null> {
     const likePostDocument =
       await this.likesPostsRepository.findLikePostByAuthorIdAndPostId(
         dto.authorId,
@@ -42,9 +29,17 @@ export class LikesPostsService {
 
     if (likePostDocument) {
       likePostDocument.update(dto.likeStatus);
+
       await likePostDocument.save();
     } else {
-      const newLikePostDocument = await this.LikePostModel.create(dto);
+      //2. Обогощаем входную дто логином, все для того, чтобы при выборке лайков не надо было для каждого лайка искать логин
+      const userDocument = await this.usersRepository.findById(dto.authorId);
+      const authorLogin = userDocument!.login;
+      const createLikePostDomainDto = { ...dto, authorLogin };
+      const newLikePostDocument = this.LikePostModel.createLikePost(
+        createLikePostDomainDto,
+      );
+
       await this.likesPostsRepository.save(newLikePostDocument);
     }
 

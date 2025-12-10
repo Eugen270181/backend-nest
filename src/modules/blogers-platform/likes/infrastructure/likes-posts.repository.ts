@@ -21,6 +21,11 @@ export class LikesPostsRepository {
   async save(likePostDocument: LikePostDocument): Promise<void> {
     await likePostDocument.save();
   }
+
+  async create(likePost: LikePostDocument): Promise<LikePostDocument> {
+    return this.LikePostModel.create(likePost);
+  }
+
   async findLikePostByAuthorIdAndPostId(
     authorId: string,
     postId: string,
@@ -28,16 +33,17 @@ export class LikesPostsRepository {
     return this.LikePostModel.findOne({ authorId, postId });
   }
 
-  async findThreeNewestLikesByPostId(
+  async getNewestLikes(
     postId: string,
-  ): Promise<LikePostDocument[] | null> {
+    limit: number = 3,
+  ): Promise<LikePostDocument[]> {
     return this.LikePostModel.find({
       postId,
-      status: LikeStatus.Like,
+      likeStatus: LikeStatus.Like, // ✅ Только лайки
       deletedAt: null,
     })
-      .sort({ createdAt: -1 })
-      .limit(3)
+      .sort({ createdAt: -1 }) // ✅ Новые первыми
+      .limit(limit)
       .lean();
   }
 }

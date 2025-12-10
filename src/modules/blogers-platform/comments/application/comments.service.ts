@@ -128,8 +128,10 @@ export class CommentsService {
 
   async updateLike(dto: LikeCommentDto): Promise<void> {
     // 1. Проверка комментария
-    const comment = await this.commentsRepository.findById(dto.commentId);
-    if (!comment) {
+    const commentDocument = await this.commentsRepository.findById(
+      dto.commentId,
+    );
+    if (!commentDocument) {
       throw new DomainException({
         code: DomainExceptionCode.NotFound,
         message: 'Comment not found',

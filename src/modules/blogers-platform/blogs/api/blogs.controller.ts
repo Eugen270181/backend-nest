@@ -108,6 +108,6 @@ export class BlogsController {
 
     const postId = await this.postsService.createPost(createPostDto);
 
-    return this.postsQueryService.getPostViewDtoOrFail(postId, true);
+    return this.postsQueryService.getPostViewDtoOrFail(postId, undefined, true);
   }
 }

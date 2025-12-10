@@ -43,7 +43,7 @@ export class PostsQueryRepository {
       size: query.pageSize,
     });
   }
-
+  ///////////////////////////////////////////////////////////////////////////////
   async getById(id: string): Promise<PostViewDto | null> {
     const postDocument: PostDocument | null = await this.findById(id);
 
@@ -52,16 +52,16 @@ export class PostsQueryRepository {
     return PostViewDto.mapToView(postDocument);
   }
 
-  async getAll(
-    query: GetPostsQueryParams,
-  ): Promise<PaginatedViewDto<PostViewDto[]>> {
-    return this.getPosts({ deletedAt: null }, query);
-  }
-
   async getBlogPosts(
     query: GetPostsQueryParams,
     blogId: string,
   ): Promise<PaginatedViewDto<PostViewDto[]>> {
     return this.getPosts({ deletedAt: null, blogId }, query);
+  }
+
+  async getAll(
+    query: GetPostsQueryParams,
+  ): Promise<PaginatedViewDto<PostViewDto[]>> {
+    return this.getPosts({ deletedAt: null }, query);
   }
 }

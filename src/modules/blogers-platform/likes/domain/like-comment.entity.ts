@@ -20,7 +20,7 @@ export class LikeComment {
   createdAt: Date;
   updatedAt: Date;
 
-  static create(dto: LikeCommentDomainDto): LikeCommentDocument {
+  static createLikeComment(dto: LikeCommentDomainDto): LikeCommentDocument {
     const likeCommentDocument = new this();
 
     likeCommentDocument.authorId = dto.authorId;

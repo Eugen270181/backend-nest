@@ -40,7 +40,8 @@ export class LikesCommentsService {
       likeCommentDocument.update(dto.likeStatus);
       await likeCommentDocument.save();
     } else {
-      const newLikeCommentDocument = await this.LikeCommentModel.create(dto);
+      const newLikeCommentDocument =
+        this.LikeCommentModel.createLikeComment(dto);
       await this.likesCommentsRepository.save(newLikeCommentDocument);
     }
 

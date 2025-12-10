@@ -76,7 +76,7 @@ export class PostsController {
   ): Promise<PostViewDto> {
     const postId = await this.postsService.createPost(createPostInputDto);
 
-    return this.postsQueryService.getPostViewDtoOrFail(postId, true);
+    return this.postsQueryService.getPostViewDtoOrFail(postId, undefined, true);
   }
 
   @UseGuards(BasicAuthGuard)
@@ -108,7 +108,7 @@ export class PostsController {
     return this.commentsQueryService.getPostComments(query, postId, userId);
   }
 
-  // ✅ POST комментарий — UserId из JwtAuthGuard
+  // ✅ POST комментарий поста — UserId из JwtAuthGuard
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @Post(':postId/comments')
@@ -148,5 +148,4 @@ export class PostsController {
     };
     return this.postsService.updateLike(likePostDto);
   }
-
 }

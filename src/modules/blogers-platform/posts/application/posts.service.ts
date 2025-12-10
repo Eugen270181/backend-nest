@@ -10,14 +10,21 @@ import { DomainException } from '../../../../core/exceptions/domain-exceptions';
 import { DomainExceptionCode } from '../../../../core/exceptions/domain-exception-codes';
 import { BlogDocument } from '../../blogs/domain/blog.entity';
 import { appConfig } from '../../../../core/settings/config';
+import { LikeCommentDto } from '../../likes/application/dto/like-comment.dto';
+import { LikePostDto } from '../../likes/application/dto/like-post.dto';
+import { LikesPostsService } from '../../likes/application/likes-posts.service';
+import { LikeStatus } from '../../../../core/dto/enum/like-status.enum';
+import { UsersRepository } from '../../../user-accounts/infrastructure/users.repository';
 
 @Injectable()
 export class PostsService {
   constructor(
     @InjectModel(Post.name)
     private readonly PostModel: PostModelType,
+    private readonly usersRepository: UsersRepository,
     private readonly blogsRepository: BlogsRepository,
     private readonly postsRepository: PostsRepository,
+    private readonly likesPostsService: LikesPostsService,
   ) {
     if (appConfig.IOC_LOG) console.log('PostsService created');
   }
@@ -46,6 +53,40 @@ export class PostsService {
     }
 
     return postDocument;
+  }
+
+  private async updateLikeCounters(
+    oldLikeStatus: LikeStatus,
+    newLikeStatus: LikeStatus,
+    postId: string,
+  ) {
+    const postDocument = await this.postsRepository.findById(postId);
+    if (!postDocument) return;
+    if (oldLikeStatus === newLikeStatus) return;
+
+    if (oldLikeStatus === LikeStatus.None) {
+      if (newLikeStatus === LikeStatus.Like) {
+        postDocument.incrementLikes();
+      } else if (newLikeStatus === LikeStatus.Dislike) {
+        postDocument.incrementDislikes();
+      }
+    }
+
+    if (oldLikeStatus === LikeStatus.Like) {
+      postDocument.decrementLikes();
+      if (newLikeStatus === LikeStatus.Dislike) {
+        postDocument.incrementDislikes();
+      }
+    }
+
+    if (oldLikeStatus === LikeStatus.Dislike) {
+      postDocument.decrementDislikes();
+      if (newLikeStatus === LikeStatus.Like) {
+        postDocument.incrementLikes();
+      }
+    }
+
+    await postDocument.save();
   }
 
   async createPost(dto: CreatePostDto): Promise<string> {
@@ -80,6 +121,24 @@ export class PostsService {
     postDocument.update(updatePostDomainDto);
 
     await this.postsRepository.save(postDocument);
+  }
+
+  async updateLike(dto: LikePostDto): Promise<void> {
+    // 1. Проверка поста
+    const postDocument = await this.postsRepository.findById(dto.postId);
+    if (!postDocument) {
+      throw new DomainException({
+        code: DomainExceptionCode.NotFound,
+        message: 'Comment not found',
+      });
+    }
+
+    // 2. ✅ Делегируем создание/обновление лайка
+    const oldStatus = await this.likesPostsService.updateLike(dto);
+    if (!oldStatus) return; //если обновление не произошло
+
+    // 3. ✅ Сами обновляем счетчики
+    await this.updateLikeCounters(oldStatus, dto.likeStatus, dto.postId);
   }
 
   async deletePostById(id: string) {

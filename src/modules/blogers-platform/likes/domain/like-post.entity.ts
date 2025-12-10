@@ -9,6 +9,9 @@ export class LikePost {
   authorId: string;
 
   @Prop({ type: String, required: true })
+  authorLogin: string;
+
+  @Prop({ type: String, required: true })
   postId: string;
 
   @Prop({ type: String, enum: LikeStatus, required: true }) // Добавьте type и enum
@@ -20,10 +23,11 @@ export class LikePost {
   createdAt: Date;
   updatedAt: Date;
 
-  static create(dto: LikePostDomainDto): LikePostDocument {
+  static createLikePost(dto: LikePostDomainDto): LikePostDocument {
     const likePostDocument = new this();
 
     likePostDocument.authorId = dto.authorId;
+    likePostDocument.authorLogin = dto.authorLogin;
     likePostDocument.postId = dto.postId;
     likePostDocument.likeStatus = dto.likeStatus;
 
@@ -39,6 +43,9 @@ export const LikePostSchema = SchemaFactory.createForClass(LikePost);
 
 //регистрирует методы сущности в схеме
 LikePostSchema.loadClass(LikePost);
+// ✅ Индексы для быстрой выборки
+LikePostSchema.index({ postId: 1, likeStatus: 1, createdAt: -1 }); // Для newestLikes
+LikePostSchema.index({ authorId: 1, postId: 1 }); // Для поиска лайка юзера
 
 //Типизация документа
 export type LikePostDocument = HydratedDocument<LikePost>;

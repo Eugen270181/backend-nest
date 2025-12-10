@@ -5,11 +5,8 @@ import { DomainExceptionCode } from '../../../../../core/exceptions/domain-excep
 import { PostViewDto } from '../../api/view-dto/post.view-dto';
 import { GetPostsQueryParams } from '../../../blogs/api/input-dto/get-posts-query-params.input-dto';
 import { PaginatedViewDto } from '../../../../../core/dto/base.paginated.view-dto';
-import { BlogsQueryService } from '../../../blogs/application/query/blogs.query-service';
 import { BlogsRepository } from '../../../blogs/infrastructure/blogs.repository';
 import { appConfig } from '../../../../../core/settings/config';
-import { PostsRepository } from '../../infrastructure/posts.repository';
-import { LikesCommentsRepository } from '../../../likes/infrastructure/likes-comments.repository';
 import { LikesPostsRepository } from '../../../likes/infrastructure/likes-posts.repository';
 import { LikeStatus } from '../../../../../core/dto/enum/like-status.enum';
 
@@ -18,7 +15,6 @@ export class PostsQueryService {
   constructor(
     private readonly postsQueryRepository: PostsQueryRepository,
     private readonly blogsRepository: BlogsRepository,
-    private readonly postsRepository: PostsRepository,
     private readonly likesPostsRepository: LikesPostsRepository,
   ) {
     if (appConfig.IOC_LOG) console.log('PostsQueryService created');
@@ -35,39 +31,45 @@ export class PostsQueryService {
     }
   }
 
-  private async checkPostOrFail(id: string) {
-    const postDocument = await this.postsRepository.findById(id);
-
-    if (!postDocument) {
-      throw new DomainException({
-        code: DomainExceptionCode.NotFound,
-        message: `post not found: ${id}`,
-      });
-    }
-  }
-
   // ✅ Переиспользуемый метод
-  private async enrichPostWithLikes(
-    postViewDto: PostViewDto,
-    userId?: string,
-  ): Promise<PostViewDto> {
-    if (!userId) return postViewDto;
+  private async enrichPostWithLikes(postViewDto: PostViewDto, userId?: string) {
+    // 1. Получаем 3 последних лайка (только Like, не Dislike)
+    const newestLikesDocuments = await this.likesPostsRepository.getNewestLikes(
+      postViewDto.id,
+      3,
+    );
 
-    const myLike =
-      await this.likesPostsRepository.findLikePostByAuthorIdAndPostId(
-        userId,
-        postViewDto.id,
-      );
+    // 2. Получаем статус текущего пользователя
+    let myStatus = LikeStatus.None;
+    if (userId) {
+      const myLike =
+        await this.likesPostsRepository.findLikePostByAuthorIdAndPostId(
+          userId,
+          postViewDto.id,
+        );
+      myStatus = myLike?.likeStatus ?? LikeStatus.None;
+    }
 
-    postViewDto.setMyLikeStatus(myLike?.likeStatus ?? LikeStatus.None);
+    // 3. ✅ Обогащаем DTO через методы
+    postViewDto.setMyLikeStatus(myStatus);
+    postViewDto.enrichWithNewestLikes(newestLikesDocuments);
+
     return postViewDto;
   }
-//todo with userId
+
+  async getById(id: string, userId?: string): Promise<PostViewDto | null> {
+    const postViewDto = await this.postsQueryRepository.getById(id);
+    if (!postViewDto) return null;
+
+    return this.enrichPostWithLikes(postViewDto, userId);
+  }
+  //////////////////////////////////////////////////////////////////////////////
   async getPostViewDtoOrFail(
     id: string,
+    userId?: string,
     justCreated: boolean = false,
   ): Promise<PostViewDto> {
-    const postViewDto = await this.postsQueryRepository.getById(id);
+    const postViewDto = await this.getById(id, userId);
 
     if (!postViewDto) {
       if (!justCreated) {
@@ -86,9 +88,37 @@ export class PostsQueryService {
   async getBlogPosts(
     blogId: string,
     query: GetPostsQueryParams,
+    userId?: string,
   ): Promise<PaginatedViewDto<PostViewDto[]>> {
     await this.checkBlogOrFail(blogId);
 
-    return this.postsQueryRepository.getBlogPosts(query, blogId);
+    const paginated = await this.postsQueryRepository.getBlogPosts(
+      query,
+      blogId,
+    );
+
+    if (!userId) return paginated;
+
+    // ✅ Переиспользуем метод параллельно
+    paginated.items = await Promise.all(
+      paginated.items.map((post) => this.enrichPostWithLikes(post, userId)),
+    );
+
+    return paginated;
+  }
+
+  async getAll(
+    query: GetPostsQueryParams,
+    userId?: string,
+  ): Promise<PaginatedViewDto<PostViewDto[]>> {
+    // 1. Получаем базовый список из репозитория
+    const paginated = await this.postsQueryRepository.getAll(query);
+
+    // 2. ✅ Параллельно обогащаем все посты
+    paginated.items = await Promise.all(
+      paginated.items.map((post) => this.enrichPostWithLikes(post, userId)),
+    );
+
+    return paginated;
   }
 }

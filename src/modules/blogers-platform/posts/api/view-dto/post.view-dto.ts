@@ -1,18 +1,18 @@
 import { PostDocument } from '../../domain/post.entity';
 import { LikeStatus } from '../../../../../core/dto/enum/like-status.enum';
-import { CommentDocument } from '../../../comments/domain/comment.entity';
 import { LikePostDocument } from '../../../likes/domain/like-post.entity';
 
 export class LikeDetailView {
-  addedAt: string;
+  addedAt: Date;
   userId: string | null;
   login: string | null;
-  static mapToView(likePost:LikePostDocument){
+  static mapToView(likePost: LikePostDocument) {
     const likeDetailView = new LikeDetailView();
 
     likeDetailView.addedAt = likePost.createdAt;
-    //likeDetailView.userId = likePost.
-    //todo with userId and login
+    likeDetailView.userId = likePost.authorId;
+    likeDetailView.login = likePost.authorLogin;
+
     return likeDetailView;
   }
 }
@@ -24,7 +24,6 @@ export class ExtendedLikesInfo {
   newestLikes: LikeDetailView[] = [];
 
   static CreateFromPost(post: PostDocument) {
-    //todo  release find atr val in posts query repo //helpers functions with take data from likePostRepository
     const extendedLikesInfo = new ExtendedLikesInfo();
 
     extendedLikesInfo.likesCount = post.likesCount || 0;
@@ -63,7 +62,9 @@ export class PostViewDto {
   setMyLikeStatus(status: LikeStatus): void {
     this.extendedLikesInfo.myStatus = status;
   }
-  setNewestLikes(newestLikes: LikeDetailView[]) {
-    this.extendedLikesInfo.newestLikes = newestLikes;
+  enrichWithNewestLikes(likesPostDocuments: LikePostDocument[]): void {
+    this.extendedLikesInfo.newestLikes = likesPostDocuments.map((like) =>
+      LikeDetailView.mapToView(like),
+    );
   }
 }

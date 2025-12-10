@@ -31,6 +31,9 @@ import {
 } from './likes/domain/like-comment.entity';
 import { LikesCommentsService } from './likes/application/likes-comments.service';
 import { LikesCommentsRepository } from './likes/infrastructure/likes-comments.repository';
+import { LikesPostsService } from './likes/application/likes-posts.service';
+import { LikesPostsRepository } from './likes/infrastructure/likes-posts.repository';
+import { LikePost, LikePostSchema } from './likes/domain/like-post.entity';
 
 //тут регистрируем провайдеры всех сущностей блоггерской платформы (blogs, posts, comments, etc...)
 @Module({
@@ -40,6 +43,7 @@ import { LikesCommentsRepository } from './likes/infrastructure/likes-comments.r
       { name: Post.name, schema: PostSchema },
       { name: Comment.name, schema: CommentSchema },
       { name: LikeComment.name, schema: LikeCommentSchema },
+      { name: LikePost.name, schema: LikePostSchema },
     ]),
     UserAccountsModule,
   ],
@@ -53,6 +57,8 @@ import { LikesCommentsRepository } from './likes/infrastructure/likes-comments.r
     PostsQueryService,
     PostsRepository,
     PostsQueryRepository,
+    LikesPostsService,
+    LikesPostsRepository,
     CommentsService,
     CommentsQueryService,
     CommentsRepository,
