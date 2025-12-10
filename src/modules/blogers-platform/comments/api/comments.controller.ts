@@ -3,6 +3,8 @@ import {
   Controller,
   Delete,
   Get,
+  HttpCode,
+  HttpStatus,
   Param,
   Put,
   UseGuards,
@@ -41,6 +43,7 @@ export class CommentsController {
     return this.commentsQueryService.getCommentViewDtoOrFail(commentId, userId);
   }
 
+  @HttpCode(HttpStatus.NO_CONTENT)
   @Delete(':commentId')
   async delById(
     @Param('commentId') commentId: string,
@@ -49,6 +52,7 @@ export class CommentsController {
     return this.commentsService.deleteComment(commentId, userId);
   }
 
+  @HttpCode(HttpStatus.NO_CONTENT)
   @Put(':commentId')
   async putById(
     @Param('commentId') commentId: string,
@@ -63,6 +67,7 @@ export class CommentsController {
     return this.commentsService.updateComment(updateCommentDto);
   }
 
+  @HttpCode(HttpStatus.NO_CONTENT)
   @Put(':commentId/like-status')
   async putLikeStatusById(
     @Param('commentId') commentId: string,

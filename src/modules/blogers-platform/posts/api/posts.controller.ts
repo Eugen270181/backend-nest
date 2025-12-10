@@ -135,6 +135,7 @@ export class PostsController {
   // ✅ PUT лайк поста UserId из JwtAuthGuard
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
+  @HttpCode(HttpStatus.NO_CONTENT)
   @Put(':postId/like-status')
   async putLikeStatusById(
     @Param('postId') postId: string,

@@ -1,4 +1,6 @@
 # Автоматическая обработка всех .ts, .js файлов
+# .gitattributes
+* text=auto eol=lf
 *.ts text eol=lf
 *.js text eol=lf
 *.json text eol=lf

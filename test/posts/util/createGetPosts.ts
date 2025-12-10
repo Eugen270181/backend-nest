@@ -55,8 +55,15 @@ export const createBlogPost = async (
 
 export const getPosts = async (
   server: App,
+  accessToken?: string,
 ): Promise<PaginatedViewDto<PostViewDto>> => {
-  const resp = await request(server).get(fullPathTo.posts).expect(200);
+  const req = request(server).get(fullPathTo.posts);
+
+  if (accessToken) {
+    req.set('Authorization', `Bearer ${accessToken}`);
+  }
+
+  const resp = await req.expect(200);
 
   return resp.body as PaginatedViewDto<PostViewDto>;
 };
@@ -67,11 +74,15 @@ export const getPostsQty = async (server: App): Promise<number> =>
 export const getPostById = async (
   server: App,
   postId: string,
-  //acessToken?: string,
+  accessToken?: string, // ✅ Добавь опциональный параметр
 ): Promise<PostViewDto> => {
-  const resp = await request(server).get(`${fullPathTo.posts}/${postId}`);
-  //.set('Authorization', acessToken ? `bearer ${acessToken}` : ``);
-  expect(200);
+  const req = request(server).get(`${fullPathTo.posts}/${postId}`);
+
+  if (accessToken) {
+    req.set('Authorization', `Bearer ${accessToken}`);
+  }
+
+  const resp = await req.expect(200);
 
   return resp.body as PostViewDto;
 };
@@ -79,10 +90,15 @@ export const getPostById = async (
 export const getBlogPosts = async (
   server: App,
   blogId: string,
+  accessToken?: string,
 ): Promise<PaginatedViewDto<PostViewDto>> => {
-  const resp = await request(server)
-    .get(`${fullPathTo.blogs}/${blogId}/posts`)
-    .expect(200);
+  const req = request(server).get(`${fullPathTo.blogs}/${blogId}/posts`);
+
+  if (accessToken) {
+    req.set('Authorization', `Bearer ${accessToken}`);
+  }
+
+  const resp = await req.expect(200);
 
   return resp.body as PaginatedViewDto<PostViewDto>;
 };

@@ -21,6 +21,20 @@ export const createUserBySa = async (
   return resp.body as UserViewDto;
 };
 
+export const createUsersBySa = async (
+  server: App,
+  count: number,
+): Promise<UserViewDto[]> => {
+  const users: UserViewDto[] = [];
+  const userDtos: UserDto[] = testingDtosCreator.createUserDtos(count);
+
+  for (let i = 0; i < count; i++) {
+    users.push(await createUserBySa(server, userDtos[i]));
+  }
+
+  return users;
+};
+
 export const getUsersQty = async (server: App): Promise<number> => {
   const resp = await request(server)
     .get(fullPathTo.users)

@@ -1,5 +1,4 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { Connection, Types } from 'mongoose';
@@ -23,10 +22,8 @@ import {
 import { fullPathTo } from '../getFullPath';
 import { ErrorResponseBody } from '../../src/core/exceptions/filters/error-responce-body.type';
 import {
-  OutputErrorsType,
   validateErrorsObject,
 } from '../validateErrorsObject';
-import { getUsersQty } from '../users/util/createGetUsers';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { appConfig } from '../../src/core/settings/config';
 
