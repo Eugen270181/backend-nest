@@ -1,13 +1,18 @@
+import { UsersRepository } from '../infrastructure/users.repository';
+import { UserSearchType } from './dto/enum/user-search-type';
+import { UserDocument } from '../domain/user.entity';
 import { DomainException } from '../../../core/exceptions/domain-exceptions';
 import { DomainExceptionCode } from '../../../core/exceptions/domain-exception-codes';
-import { UserSearchType } from './dto/enum/user-search-type';
-import { UsersRepository } from '../infrastructure/users.repository';
-import { UserDocument } from '../domain/user.entity';
+import { Injectable } from '@nestjs/common';
+import { appConfig } from '../../../core/settings/config';
 
-export abstract class UserFinderService {
-  protected constructor(protected readonly usersRepository: UsersRepository) {}
+@Injectable()
+export class UserValidationService {
+  constructor(private readonly usersRepository: UsersRepository) {
+    if (appConfig.IOC_LOG) console.log('UserValidationService created');
+  }
 
-  protected async findUser(
+  async findUser(
     searchType: UserSearchType,
     value: string,
   ): Promise<UserDocument | null> {
@@ -27,7 +32,7 @@ export abstract class UserFinderService {
     }
   }
 
-  protected async ensureUserExists(
+  async ensureUserExists(
     searchType: UserSearchType,
     value: string,
   ): Promise<UserDocument> {
@@ -46,7 +51,7 @@ export abstract class UserFinderService {
     return userDocument;
   }
 
-  protected async ensureUserExistsNotConfirmed(
+  async ensureUserExistsNotConfirmed(
     searchType: UserSearchType,
     value: string,
   ): Promise<UserDocument> {
@@ -64,7 +69,7 @@ export abstract class UserFinderService {
     return userDocument;
   }
 
-  protected async ensureUserExistsNotExpired(
+  async ensureUserExistsNotExpired(
     searchType: UserSearchType,
     value: string,
   ): Promise<UserDocument> {
@@ -86,7 +91,7 @@ export abstract class UserFinderService {
     return userDocument;
   }
 
-  protected async ensureUserExistsNotExpiredNotConfirmed(
+  async ensureUserExistsNotExpiredNotConfirmed(
     searchType: UserSearchType,
     value: string,
   ) {
@@ -107,7 +112,7 @@ export abstract class UserFinderService {
     return userDocument;
   }
 
-  protected async ensureUserUnique(
+  async ensureUserUnique(
     searchType: UserSearchType,
     value: string,
   ): Promise<void> {

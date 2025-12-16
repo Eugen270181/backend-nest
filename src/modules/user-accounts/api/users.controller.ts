@@ -24,6 +24,9 @@ import { ApiPaginatedResponse } from '../../../core/decorators/swagger/api-pagin
 import { BasicAuthGuard } from '../guards/basic/basic-auth.guard';
 import { Public } from '../guards/decorators/public.decorator';
 import { SkipThrottle } from '@nestjs/throttler';
+import { CommandBus } from '@nestjs/cqrs';
+import { CreateUserCommand } from '../application/usecases/create-user.usecase';
+import { DeleteUserCommand } from '../application/usecases/delete-user.usecase';
 
 @UseGuards(BasicAuthGuard)
 @ApiBasicAuth('basicAuth')
@@ -31,6 +34,7 @@ import { SkipThrottle } from '@nestjs/throttler';
 @SkipThrottle()
 export class UsersController {
   constructor(
+    private readonly commandBus: CommandBus,
     private readonly usersQueryRepository: UsersQueryRepository,
     private readonly usersService: UsersService,
     private readonly usersQueryService: UsersQueryService,
@@ -54,7 +58,10 @@ export class UsersController {
   async createUser(
     @Body() createUserInputDto: CreateUserInputDto,
   ): Promise<UserViewDto> {
-    const userId = await this.usersService.createUser(createUserInputDto);
+    //const userId = await this.usersService.createUser(createUserInputDto);
+    const userId = await this.commandBus.execute<CreateUserCommand, string>(
+      new CreateUserCommand(createUserInputDto),
+    );
 
     return this.usersQueryService.getUserViewDtoOrFail(userId, true);
   }
@@ -62,6 +69,8 @@ export class UsersController {
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteUser(@Param('id') id: string): Promise<void> {
-    return this.usersService.deleteUserById(id);
+    return this.commandBus.execute<DeleteUserCommand, void>(
+      new DeleteUserCommand(id),
+    );
   }
 }

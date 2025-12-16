@@ -5,8 +5,10 @@ import {
   HttpCode,
   HttpStatus,
   Post,
+  Res,
   UseGuards,
 } from '@nestjs/common';
+import { Response } from 'express';
 import { SkipThrottle, ThrottlerGuard } from '@nestjs/throttler';
 import { appConfig } from '../../../core/settings/config';
 import { UsersService } from '../application/users.service';
@@ -72,8 +74,12 @@ export class AuthController {
   async login(
     /*@Request() req: any*/
     @UserId() userId: string,
+    @Res({ passthrough: true }) res: Response,
   ): Promise<AuthViewDto> {
-    console.log('auth.login controller');
+    res.cookie('refreshToken', 'DummyRefreshToken', {
+      httpOnly: true,
+    });
+
     return this.authService.login(userId);
   }
 

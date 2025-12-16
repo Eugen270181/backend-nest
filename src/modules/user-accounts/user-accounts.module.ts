@@ -1,12 +1,7 @@
-import {
-  MiddlewareConsumer,
-  Module,
-  NestModule,
-  RequestMethod,
-} from '@nestjs/common';
+import { Module } from '@nestjs/common';
+import { CqrsModule } from '@nestjs/cqrs';
 import { MongooseModule } from '@nestjs/mongoose';
 import { UsersController } from './api/users.controller';
-import { SecurityDevicesController } from './api/security-devices.controller';
 import { AuthController } from './api/auth.controller';
 import { UsersService } from './application/users.service';
 import { User, UserSchema } from './domain/user.entity';
@@ -28,13 +23,17 @@ import { BasicStrategy } from './guards/basic/basic.strategy';
 import { AdaptersModule } from '../../core/adapters/adapters.module';
 import { appConfig } from '../../core/settings/config';
 import { JwtAuthGuard } from './guards/bearer/jwt-auth.guard';
-import { LocalAuthGuard } from './guards/local/local-auth.guard';
 import { BasicAuthGuard } from './guards/basic/basic-auth.guard';
-import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { CreateUserUseCase } from './application/usecases/create-user.usecase';
+import { UserValidationService } from './application/user-validation.service';
+import { DeleteUserUseCase } from './application/usecases/delete-user.usecase';
+
+const commandHandlers = [CreateUserUseCase, DeleteUserUseCase];
 
 @Module({
   imports: [
+    CqrsModule,
     //если в системе несколько токенов (например, access и refresh) с разными опциями (время жизни, секрет)
     //можно переопределить опции при вызове метода jwt.service.sign
     //или написать свой tokens сервис (адаптер), где эти опции будут уже учтены
@@ -54,8 +53,9 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
     NotificationsModule,
     AdaptersModule,
   ],
-  controllers: [UsersController, AuthController, SecurityDevicesController],
+  controllers: [UsersController, AuthController],
   providers: [
+    ...commandHandlers,
     UsersService,
     UsersQueryService,
     UsersRepository,
@@ -63,6 +63,7 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
     AuthService,
     AuthQueryService,
     AuthQueryRepository,
+    UserValidationService,
     CryptoService,
     SecurityDevicesQueryRepository,
     LocalStrategy,
@@ -91,10 +92,3 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
   ],
 })
 export class UserAccountsModule {}
-//   implements NestModule {
-//   configure(consumer: MiddlewareConsumer) {
-//     consumer
-//       .apply(LoginValidationMiddleware)
-//       .forRoutes({ path: 'auth/login', method: RequestMethod.POST });
-//   }
-// }
