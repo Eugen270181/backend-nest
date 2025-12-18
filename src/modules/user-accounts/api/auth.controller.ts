@@ -11,9 +11,6 @@ import {
 import { Response } from 'express';
 import { SkipThrottle, ThrottlerGuard } from '@nestjs/throttler';
 import { appConfig } from '../../../core/settings/config';
-import { UsersService } from '../application/users.service';
-import { AuthService } from '../application/auth.service';
-import { AuthQueryRepository } from '../infrastructure/query/auth.query-repository';
 import { LocalAuthGuard } from '../guards/local/local-auth.guard';
 import { ApiBearerAuth, ApiBody } from '@nestjs/swagger';
 import { UserId } from '../guards/decorators/param/extract-user-from-request.decorator';
@@ -25,15 +22,20 @@ import { AuthViewDto } from './view-dto/auth.view-dto';
 import { EmailInputDto } from './input-dto/email.input-dto';
 import { ConfirmRegInputDto } from './input-dto/confirm-reg.input-dto';
 import { ConfirmPassInputDto } from './input-dto/confirm-pass.input-dto';
+import { CommandBus } from '@nestjs/cqrs';
+import { LoginUserCommand } from '../application/usecases/login-user.usecase';
+import { RegisterUserCommand } from '../application/usecases/register-user.usecase';
+import { ResendRegistrationCodeUserCommand } from '../application/usecases/resend-registration-code-user.usecase';
+import { ConfirmRegistrationCodeUserCommand } from '../application/usecases/confirm-registration-code-user.usecase';
+import { RecoveryPasswordUserCommand } from '../application/usecases/recovery-password-user.usecase';
+import { ConfirmPasswordUserCommand } from '../application/usecases/confirm-password-user.usecase';
 
 @UseGuards(ThrottlerGuard)
 // @Throttle({ default: { limit: 5, ttl: 10000 } })
 @Controller('auth')
 export class AuthController {
   constructor(
-    private usersService: UsersService,
-    private authService: AuthService,
-    private authQueryRepository: AuthQueryRepository,
+    private readonly commandBus: CommandBus,
     private authQueryService: AuthQueryService,
   ) {
     if (appConfig.IOC_LOG) console.log('AuthController created');
@@ -42,19 +44,25 @@ export class AuthController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @Post('registration')
   registration(@Body() body: CreateUserInputDto): Promise<void> {
-    return this.authService.registerUser(body);
+    return this.commandBus.execute<RegisterUserCommand, void>(
+      new RegisterUserCommand(body),
+    );
   }
 
   @HttpCode(HttpStatus.NO_CONTENT)
   @Post('registration-email-resending')
   regEmailResending(@Body() body: EmailInputDto): Promise<void> {
-    return this.authService.regEmailResending(body);
+    return this.commandBus.execute<ResendRegistrationCodeUserCommand, void>(
+      new ResendRegistrationCodeUserCommand(body),
+    );
   }
 
   @HttpCode(HttpStatus.NO_CONTENT)
   @Post('registration-confirmation')
   regConfirm(@Body() body: ConfirmRegInputDto): Promise<void> {
-    return this.authService.regConfirm(body);
+    return this.commandBus.execute<ConfirmRegistrationCodeUserCommand, void>(
+      new ConfirmRegistrationCodeUserCommand(body),
+    );
   }
 
   @SkipThrottle()
@@ -79,8 +87,9 @@ export class AuthController {
     res.cookie('refreshToken', 'DummyRefreshToken', {
       httpOnly: true,
     });
-
-    return this.authService.login(userId);
+    return this.commandBus.execute<LoginUserCommand, AuthViewDto>(
+      new LoginUserCommand(userId),
+    );
   }
 
   @SkipThrottle()
@@ -95,13 +104,17 @@ export class AuthController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @Post('password-recovery')
   passRecovery(@Body() body: EmailInputDto): Promise<void> {
-    return this.authService.passRecovery(body);
+    return this.commandBus.execute<RecoveryPasswordUserCommand, void>(
+      new RecoveryPasswordUserCommand(body),
+    );
   }
 
   @HttpCode(HttpStatus.NO_CONTENT)
   @Post('new-password')
   passConfirm(@Body() body: ConfirmPassInputDto): Promise<void> {
-    return this.authService.passConfirm(body);
+    return this.commandBus.execute<ConfirmPasswordUserCommand, void>(
+      new ConfirmPasswordUserCommand(body),
+    );
   }
 
   //добавлено для примера, когда кастомный гард пропускает, даже если пользователь не авторизован и не найден

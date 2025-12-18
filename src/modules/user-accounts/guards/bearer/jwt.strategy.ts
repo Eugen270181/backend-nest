@@ -3,13 +3,13 @@ import { PassportStrategy } from '@nestjs/passport';
 import { Injectable } from '@nestjs/common';
 import { UserContextDto } from '../dto/user-context.dto';
 import { appConfig } from '../../../../core/settings/config';
-import { AuthService } from '../../application/auth.service';
 import { DomainException } from '../../../../core/exceptions/domain-exceptions';
 import { DomainExceptionCode } from '../../../../core/exceptions/domain-exception-codes';
+import { AuthValidationService } from '../../application/auth-validation.service';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
-  constructor(private authService: AuthService) {
+  constructor(private authValidationService: AuthValidationService) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
@@ -23,7 +23,9 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
    */
   async validate(payload: UserContextDto): Promise<UserContextDto> {
     //todo with validate user by Id across AuthSevice. DI - dependency in constructor
-    const userContextDto = await this.authService.validateUserById(payload.id);
+    const userContextDto = await this.authValidationService.validateUserById(
+      payload.id,
+    );
 
     if (!userContextDto) {
       throw new DomainException({

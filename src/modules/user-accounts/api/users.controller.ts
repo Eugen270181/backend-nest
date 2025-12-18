@@ -10,7 +10,6 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { UsersService } from '../application/users.service';
 import { UserViewDto } from './view-dto/user.view-dto';
 import { UsersQueryRepository } from '../infrastructure/query/users.query-repository';
 import { CreateUserInputDto } from './input-dto/create-users.input-dto';
@@ -36,7 +35,6 @@ export class UsersController {
   constructor(
     private readonly commandBus: CommandBus,
     private readonly usersQueryRepository: UsersQueryRepository,
-    private readonly usersService: UsersService,
     private readonly usersQueryService: UsersQueryService,
   ) {
     if (appConfig.IOC_LOG) console.log('UsersController created');
@@ -58,7 +56,6 @@ export class UsersController {
   async createUser(
     @Body() createUserInputDto: CreateUserInputDto,
   ): Promise<UserViewDto> {
-    //const userId = await this.usersService.createUser(createUserInputDto);
     const userId = await this.commandBus.execute<CreateUserCommand, string>(
       new CreateUserCommand(createUserInputDto),
     );

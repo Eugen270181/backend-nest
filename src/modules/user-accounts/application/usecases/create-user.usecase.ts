@@ -6,6 +6,7 @@ import { UsersRepository } from '../../infrastructure/users.repository';
 import { CryptoService } from '../crypto.service';
 import { UserValidationService } from '../user-validation.service';
 import { UserSearchType } from '../dto/enum/user-search-type';
+import { appConfig } from '../../../../core/settings/config';
 
 export class CreateUserCommand {
   constructor(public readonly dto: CreateUserInputDto) {}
@@ -21,7 +22,9 @@ export class CreateUserUseCase
     private readonly usersRepository: UsersRepository,
     private readonly cryptoService: CryptoService,
     private readonly userValidationService: UserValidationService,
-  ) {}
+  ) {
+    if (appConfig.IOC_LOG) console.log('CreateUserUseCase created');
+  }
 
   async execute({ dto }: CreateUserCommand): Promise<string> {
     // Проверяем уникальность логина и email

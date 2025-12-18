@@ -1,14 +1,14 @@
 import { Strategy } from 'passport-local';
 import { PassportStrategy } from '@nestjs/passport';
 import { Injectable } from '@nestjs/common';
-import { AuthService } from '../../application/auth.service';
 import { DomainException } from '../../../../core/exceptions/domain-exceptions';
 import { DomainExceptionCode } from '../../../../core/exceptions/domain-exception-codes';
 import { UserContextDto } from '../dto/user-context.dto';
+import { AuthValidationService } from '../../application/auth-validation.service';
 
 @Injectable()
 export class LocalStrategy extends PassportStrategy(Strategy, 'local') {
-  constructor(private authService: AuthService) {
+  constructor(private authValidationService: AuthValidationService) {
     super({ usernameField: 'loginOrEmail' });
   }
 
@@ -24,7 +24,7 @@ export class LocalStrategy extends PassportStrategy(Strategy, 'local') {
 
     console.log('🚀 STRATEGY VALIDATE ВЫЗВАН:', { username, password });
 
-    const userContextDto = await this.authService.validateUserByCred(
+    const userContextDto = await this.authValidationService.validateUserByCred(
       username,
       password,
     );

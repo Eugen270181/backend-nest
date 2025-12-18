@@ -1,15 +1,15 @@
 import { Injectable, NestMiddleware } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { AuthService } from '../application/auth.service';
 import { UserContextDto } from '../guards/dto/user-context.dto';
 import { NextFunction } from 'express';
 import { ExtractJwt } from 'passport-jwt';
+import { AuthValidationService } from '../application/auth-validation.service';
 
 @Injectable()
 export class OptionalJwtMiddleware implements NestMiddleware {
   constructor(
     private readonly jwtService: JwtService,
-    private readonly authService: AuthService,
+    private readonly authValidationService: AuthValidationService,
   ) {}
 
   async use(
@@ -25,7 +25,9 @@ export class OptionalJwtMiddleware implements NestMiddleware {
 
     try {
       const payload: UserContextDto = await this.jwtService.verifyAsync(token);
-      const user = await this.authService.validateUserById(payload.id);
+      const user = await this.authValidationService.validateUserById(
+        payload.id,
+      );
       req.user = user || null; // null если пользователь не найден
     } catch {
       req.user = null; // битый/протухший токен

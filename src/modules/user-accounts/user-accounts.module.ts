@@ -3,21 +3,16 @@ import { CqrsModule } from '@nestjs/cqrs';
 import { MongooseModule } from '@nestjs/mongoose';
 import { UsersController } from './api/users.controller';
 import { AuthController } from './api/auth.controller';
-import { UsersService } from './application/users.service';
 import { User, UserSchema } from './domain/user.entity';
 import { UsersRepository } from './infrastructure/users.repository';
 import { UsersQueryRepository } from './infrastructure/query/users.query-repository';
-import { UsersExternalQueryRepository } from './infrastructure/external-query/users.external-query-repository';
-import { UsersExternalService } from './application/external/users.external-service';
 import { UsersQueryService } from './application/query/users.query-service';
 import { JwtModule } from '@nestjs/jwt';
 import { CryptoService } from './application/crypto.service';
 import { NotificationsModule } from '../notifications/notifications.module';
-import { SecurityDevicesQueryRepository } from './infrastructure/query/security-devices.query-repository';
 import { AuthQueryRepository } from './infrastructure/query/auth.query-repository';
 import { LocalStrategy } from './guards/local/local.strategy';
 import { JwtStrategy } from './guards/bearer/jwt.strategy';
-import { AuthService } from './application/auth.service';
 import { AuthQueryService } from './application/query/auth.query-service';
 import { BasicStrategy } from './guards/basic/basic.strategy';
 import { AdaptersModule } from '../../core/adapters/adapters.module';
@@ -28,8 +23,37 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { CreateUserUseCase } from './application/usecases/create-user.usecase';
 import { UserValidationService } from './application/user-validation.service';
 import { DeleteUserUseCase } from './application/usecases/delete-user.usecase';
+import { LoginUserUseCase } from './application/usecases/login-user.usecase';
+import { AuthValidationService } from './application/auth-validation.service';
+import { RegisterUserUseCase } from './application/usecases/register-user.usecase';
+import { LocalAuthGuard } from './guards/local/local-auth.guard';
+import { ResendRegistrationCodeUseCase } from './application/usecases/resend-registration-code-user.usecase';
+import { ConfirmRegistrationCodeUseCase } from './application/usecases/confirm-registration-code-user.usecase';
+import { RecoveryPasswordUseCase } from './application/usecases/recovery-password-user.usecase';
+import { ConfirmPasswordUseCase } from './application/usecases/confirm-password-user.usecase';
 
-const commandHandlers = [CreateUserUseCase, DeleteUserUseCase];
+const services = [
+  UsersQueryService,
+  AuthQueryService,
+  AuthValidationService,
+  UserValidationService,
+  CryptoService,
+];
+
+const strategies = [JwtStrategy, BasicStrategy, LocalStrategy];
+
+const guards = [BasicAuthGuard, JwtAuthGuard, LocalAuthGuard, ThrottlerGuard];
+
+const commandHandlers = [
+  CreateUserUseCase,
+  DeleteUserUseCase,
+  LoginUserUseCase,
+  RegisterUserUseCase,
+  ResendRegistrationCodeUseCase,
+  ConfirmRegistrationCodeUseCase,
+  RecoveryPasswordUseCase,
+  ConfirmPasswordUseCase,
+];
 
 @Module({
   imports: [
@@ -55,40 +79,22 @@ const commandHandlers = [CreateUserUseCase, DeleteUserUseCase];
   ],
   controllers: [UsersController, AuthController],
   providers: [
-    ...commandHandlers,
-    UsersService,
-    UsersQueryService,
     UsersRepository,
     UsersQueryRepository,
-    AuthService,
-    AuthQueryService,
     AuthQueryRepository,
-    UserValidationService,
-    CryptoService,
-    SecurityDevicesQueryRepository,
-    LocalStrategy,
-    BasicStrategy,
-    BasicAuthGuard,
-    JwtStrategy,
-    JwtAuthGuard,
-    ThrottlerGuard,
-    UsersExternalQueryRepository,
-    UsersExternalService,
-    // {
-    //   provide: APP_GUARD,
-    //   useClass: ThrottlerGuard, // глобально активируем ThrottlerGuard
-    // },
+    ...commandHandlers,
+    ...services,
+    ...guards,
+    ...strategies,
   ],
   exports: [
+    UsersRepository,
+    AuthValidationService,
     BasicAuthGuard,
-    BasicStrategy,
     JwtAuthGuard,
+    BasicStrategy,
     JwtStrategy,
     JwtModule,
-    AuthService,
-    UsersRepository,
-    UsersExternalQueryRepository,
-    UsersExternalService,
   ],
 })
 export class UserAccountsModule {}
