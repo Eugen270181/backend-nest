@@ -1,10 +1,11 @@
-import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
+import { CommandHandler, EventBus, ICommandHandler } from '@nestjs/cqrs';
 import { appConfig } from '../../../../../core/settings/config';
 import { CreateUserDto } from '../../dto/user.dto';
-import { InjectModel } from '@nestjs/mongoose';
-import { User, UserDocument, UserModelType } from '../../../domain/user.entity';
+import { UserDocument } from '../../../domain/user.entity';
 import { UsersRepository } from '../../../infrastructure/users.repository';
 import { UsersFactory } from '../../factories/users.factory';
+
+import { UserRegisteredEvent } from '../../../../user-registered.event';
 
 export class RegisterUserCommand {
   constructor(public readonly dto: CreateUserDto) {}
@@ -15,10 +16,9 @@ export class RegisterUserUseCase
   implements ICommandHandler<RegisterUserCommand, void>
 {
   constructor(
-    @InjectModel(User.name)
-    private readonly UserModel: UserModelType,
     private readonly usersRepository: UsersRepository,
     private readonly usersFactory: UsersFactory,
+    private readonly eventBus: EventBus,
   ) {
     if (appConfig.IOC_LOG) console.log('RegisterUserUseCase created');
   }
@@ -27,6 +27,15 @@ export class RegisterUserUseCase
     //создаем пользователя через фабричный метод с установкой объета с кодом активации пользователя по мылу
     const userDocument: UserDocument =
       await this.usersFactory.createUserByReg(dto);
+
+    await this.usersRepository.save(userDocument);
+
+    this.eventBus.publish(
+      new UserRegisteredEvent(
+        dto.email,
+        userDocument.emailConfirmation!.confirmationCode,
+      ),
+    );
     //отправляем уведомление о создании пользователя с кодом активации на мыло
     //todo with publish sendmail notification
     // await this.emailService

@@ -5,7 +5,7 @@ import { UserContextDto } from '../dto/user-context.dto';
 import { appConfig } from '../../../../core/settings/config';
 import { DomainException } from '../../../../core/exceptions/domain-exceptions';
 import { DomainExceptionCode } from '../../../../core/exceptions/domain-exception-codes';
-import { AuthValidationService } from '../../application/auth-validation.service';
+import { AuthValidationService } from '../../application/services/auth-validation.service';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {

@@ -1,11 +1,11 @@
-import { UsersRepository } from '../infrastructure/users.repository';
-import { UserSearchType } from './dto/enum/user-search-type';
-import { UserDocument } from '../domain/user.entity';
-import { DomainException } from '../../../core/exceptions/domain-exceptions';
-import { DomainExceptionCode } from '../../../core/exceptions/domain-exception-codes';
+import { UsersRepository } from '../../infrastructure/users.repository';
+import { UserSearchType } from '../dto/enum/user-search-type';
+import { UserDocument } from '../../domain/user.entity';
+import { DomainException } from '../../../../core/exceptions/domain-exceptions';
+import { DomainExceptionCode } from '../../../../core/exceptions/domain-exception-codes';
 import { Injectable } from '@nestjs/common';
-import { appConfig } from '../../../core/settings/config';
-import { CreateUserDto } from './dto/user.dto';
+import { appConfig } from '../../../../core/settings/config';
+import { CreateUserDto } from '../dto/user.dto';
 
 @Injectable()
 export class UserValidationService {

@@ -13,6 +13,6 @@ export class GetUserByIdQueryHandler
   constructor(private usersQueryRepository: UsersQueryRepository) {}
 
   async execute({ id }: GetUserByIdQuery) {
-    return this.usersQueryRepository.getByIdOrNotFoundFail(query.userId);
+    // return this.usersQueryRepository.getByIdOrNotFoundFail(query.userId);
   }
 }

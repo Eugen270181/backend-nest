@@ -1,6 +1,6 @@
 import bcrypt from 'bcrypt';
 import { Injectable } from '@nestjs/common';
-import { appConfig } from '../../../core/settings/config';
+import { appConfig } from '../../../../core/settings/config';
 
 @Injectable()
 export class CryptoService {

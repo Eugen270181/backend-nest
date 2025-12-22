@@ -8,7 +8,7 @@ import { UsersRepository } from './infrastructure/users.repository';
 import { UsersQueryRepository } from './infrastructure/query/users.query-repository';
 import { UsersQueryService } from './application/query/users.query-service';
 import { JwtModule } from '@nestjs/jwt';
-import { CryptoService } from './application/crypto.service';
+import { CryptoService } from './application/services/crypto.service';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { AuthQueryRepository } from './infrastructure/query/auth.query-repository';
 import { LocalStrategy } from './guards/local/local.strategy';
@@ -21,16 +21,17 @@ import { JwtAuthGuard } from './guards/bearer/jwt-auth.guard';
 import { BasicAuthGuard } from './guards/basic/basic-auth.guard';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { CreateUserUseCase } from './application/usecases/admins/create-user.usecase';
-import { UserValidationService } from './application/user-validation.service';
+import { UserValidationService } from './application/services/user-validation.service';
 import { DeleteUserUseCase } from './application/usecases/admins/delete-user.usecase';
 import { LoginUserUseCase } from './application/usecases/login-user.usecase';
-import { AuthValidationService } from './application/auth-validation.service';
+import { AuthValidationService } from './application/services/auth-validation.service';
 import { RegisterUserUseCase } from './application/usecases/users/register-user.usecase';
 import { LocalAuthGuard } from './guards/local/local-auth.guard';
 import { ResendRegistrationCodeUseCase } from './application/usecases/users/resend-registration-code-user.usecase';
 import { ConfirmRegistrationCodeUseCase } from './application/usecases/users/confirm-registration-code-user.usecase';
 import { RecoveryPasswordUseCase } from './application/usecases/users/recovery-password-user.usecase';
 import { ConfirmPasswordUseCase } from './application/usecases/users/confirm-password-user.usecase';
+import { UsersFactory } from './application/factories/users.factory';
 
 const services = [
   UsersQueryService,
@@ -82,6 +83,7 @@ const commandHandlers = [
     UsersRepository,
     UsersQueryRepository,
     AuthQueryRepository,
+    UsersFactory,
     ...commandHandlers,
     ...services,
     ...guards,

@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { appConfig } from '../../../core/settings/config';
+import { appConfig } from '../../../../core/settings/config';
 import { UserValidationService } from './user-validation.service';
-import { UserContextDto } from '../guards/dto/user-context.dto';
-import { UserDocument } from '../domain/user.entity';
-import { UserSearchType } from './dto/enum/user-search-type';
+import { UserContextDto } from '../../guards/dto/user-context.dto';
+import { UserDocument } from '../../domain/user.entity';
+import { UserSearchType } from '../dto/enum/user-search-type';
 import { CryptoService } from './crypto.service';
 
 @Injectable()

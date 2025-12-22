@@ -1,8 +1,8 @@
 import { InjectModel } from '@nestjs/mongoose';
 import { User, UserDocument, UserModelType } from '../../domain/user.entity';
 import { Injectable } from '@nestjs/common';
-import { CryptoService } from '../crypto.service';
-import { UserValidationService } from '../user-validation.service';
+import { CryptoService } from '../services/crypto.service';
+import { UserValidationService } from '../services/user-validation.service';
 import { appConfig } from '../../../../core/settings/config';
 import { CreateUserDto } from '../dto/user.dto';
 import { CreateUserDomainDto } from '../../domain/dto/create-user.domain.dto';
@@ -44,8 +44,6 @@ export class UsersFactory {
     const userDocument: UserDocument = await this.createUserEntity(dto);
     //устанавливаем признак подтвержденного пользователя - активация
     userDocument.setUserConfirmation();
-    //сохраняем модифицированую сущность юзера в бд через репу
-    await this.usersRepository.save(userDocument);
     //возвращаем расширеную сущность - документ юзера
     return userDocument;
   }
@@ -59,8 +57,6 @@ export class UsersFactory {
       this.userHelperService.createUserConfirmCodeDto(appConfig.EMAIL_TIME);
     //устанавливаем ее в сущность юзера через метод
     userDocument.setRegConfirmationCode(userConfirmCodeDto);
-    //сохраняем модифицированую сущность юзера в бд через репу
-    await this.usersRepository.save(userDocument);
     //возвращаем расширеную сущность - документ юзера
     return userDocument;
   }

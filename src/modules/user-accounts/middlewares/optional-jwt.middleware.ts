@@ -3,7 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import { UserContextDto } from '../guards/dto/user-context.dto';
 import { NextFunction } from 'express';
 import { ExtractJwt } from 'passport-jwt';
-import { AuthValidationService } from '../application/auth-validation.service';
+import { AuthValidationService } from '../application/services/auth-validation.service';
 
 @Injectable()
 export class OptionalJwtMiddleware implements NestMiddleware {

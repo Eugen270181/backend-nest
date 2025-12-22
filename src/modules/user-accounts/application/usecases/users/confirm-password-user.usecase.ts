@@ -1,11 +1,11 @@
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { appConfig } from '../../../../../core/settings/config';
 import { UserSearchType } from '../../dto/enum/user-search-type';
-import { UserValidationService } from '../../user-validation.service';
+import { UserValidationService } from '../../services/user-validation.service';
 import { UserDocument } from '../../../domain/user.entity';
 import { UsersRepository } from '../../../infrastructure/users.repository';
 import { ConfirmPassDto } from '../../dto/confirm-pass.dto';
-import { CryptoService } from '../../crypto.service';
+import { CryptoService } from '../../services/crypto.service';
 
 export class ConfirmPasswordUserCommand {
   constructor(public readonly dto: ConfirmPassDto) {}

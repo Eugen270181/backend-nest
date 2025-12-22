@@ -1,7 +1,7 @@
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { UsersRepository } from '../../../infrastructure/users.repository';
 
-import { UserValidationService } from '../../user-validation.service';
+import { UserValidationService } from '../../services/user-validation.service';
 import { UserSearchType } from '../../dto/enum/user-search-type';
 import { appConfig } from '../../../../../core/settings/config';
 
