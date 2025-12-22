@@ -24,11 +24,11 @@ import { ConfirmRegInputDto } from './input-dto/confirm-reg.input-dto';
 import { ConfirmPassInputDto } from './input-dto/confirm-pass.input-dto';
 import { CommandBus } from '@nestjs/cqrs';
 import { LoginUserCommand } from '../application/usecases/login-user.usecase';
-import { RegisterUserCommand } from '../application/usecases/register-user.usecase';
-import { ResendRegistrationCodeUserCommand } from '../application/usecases/resend-registration-code-user.usecase';
-import { ConfirmRegistrationCodeUserCommand } from '../application/usecases/confirm-registration-code-user.usecase';
-import { RecoveryPasswordUserCommand } from '../application/usecases/recovery-password-user.usecase';
-import { ConfirmPasswordUserCommand } from '../application/usecases/confirm-password-user.usecase';
+import { RegisterUserCommand } from '../application/usecases/users/register-user.usecase';
+import { ResendRegistrationCodeUserCommand } from '../application/usecases/users/resend-registration-code-user.usecase';
+import { ConfirmRegistrationCodeUserCommand } from '../application/usecases/users/confirm-registration-code-user.usecase';
+import { RecoveryPasswordUserCommand } from '../application/usecases/users/recovery-password-user.usecase';
+import { ConfirmPasswordUserCommand } from '../application/usecases/users/confirm-password-user.usecase';
 
 @UseGuards(ThrottlerGuard)
 // @Throttle({ default: { limit: 5, ttl: 10000 } })

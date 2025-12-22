@@ -1,4 +1,4 @@
-export class CreateUserBySaDomainDto {
+export class CreateUserDomainDto {
   login: string;
   email: string;
   passwordHash: string;

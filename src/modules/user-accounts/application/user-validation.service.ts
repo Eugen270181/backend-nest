@@ -5,13 +5,14 @@ import { DomainException } from '../../../core/exceptions/domain-exceptions';
 import { DomainExceptionCode } from '../../../core/exceptions/domain-exception-codes';
 import { Injectable } from '@nestjs/common';
 import { appConfig } from '../../../core/settings/config';
+import { CreateUserDto } from './dto/user.dto';
 
 @Injectable()
 export class UserValidationService {
   constructor(private readonly usersRepository: UsersRepository) {
     if (appConfig.IOC_LOG) console.log('UserValidationService created');
   }
-
+  //1. Блок поиска юзера по ключу поиска
   async findUser(
     searchType: UserSearchType,
     value: string,
@@ -32,6 +33,35 @@ export class UserValidationService {
     }
   }
 
+  async findUserOrFail(
+    searchType: UserSearchType,
+    value: string,
+  ): Promise<UserDocument> {
+    const userDocument = await this.findUser(searchType, value);
+    if (!userDocument) {
+      const message = `User with ${searchType}:${value} - not found`;
+      throw new DomainException({
+        code: DomainExceptionCode.NotFound,
+        message,
+        errorsMessages: [{ message, field: `${searchType}` }],
+      });
+    }
+    return userDocument;
+  }
+
+  async checkUserUniqueByKey(searchType: UserSearchType, value: string) {
+    const userDocument = await this.findUser(searchType, value);
+    if (userDocument) {
+      const message = `User with ${searchType}:${value} - already exists`;
+      throw new DomainException({
+        code: DomainExceptionCode.NotUnique,
+        message,
+        errorsMessages: [{ message, field: `${searchType}` }],
+      });
+    }
+  }
+
+  //2. Блок различной валидации существующего пользователя
   async ensureUserExists(
     searchType: UserSearchType,
     value: string,
@@ -111,19 +141,11 @@ export class UserValidationService {
 
     return userDocument;
   }
-
-  async ensureUserUnique(
-    searchType: UserSearchType,
-    value: string,
+  //2. Валидация уникальности создаваемого пользователя
+  async ensureCreateUserUnique(
+    dto: Omit<CreateUserDto, 'password'>,
   ): Promise<void> {
-    const userDocument = await this.findUser(searchType, value);
-    if (userDocument) {
-      const message = `User with ${searchType}:${value} - already exists`;
-      throw new DomainException({
-        code: DomainExceptionCode.NotUnique,
-        message,
-        errorsMessages: [{ message, field: `${searchType}` }],
-      });
-    }
+    await this.checkUserUniqueByKey(UserSearchType.Login, dto.login);
+    await this.checkUserUniqueByKey(UserSearchType.Email, dto.email);
   }
 }

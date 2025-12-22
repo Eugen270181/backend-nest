@@ -39,12 +39,14 @@ import { ErrorResponseBody } from '../../src/core/exceptions/filters/error-respo
 import { validateErrorsObject } from '../validateErrorsObject';
 import { CryptoService } from '../../src/modules/user-accounts/application/crypto.service';
 import { ThrottlerGuard } from '@nestjs/throttler';
+import { UserHelperService } from '../../src/core/adapters/user-helper.service';
 
 describe('<<AUTH>> ENDPOINTS TESTING!!!(e2e)', () => {
   let app: NestExpressApplication;
   let connection: Connection;
   let server: App;
   let UserModel: UserModelType;
+  let userHelperService: UserHelperService;
   let mockCodeHelper: MockCodeHelper;
   let cryptoService: CryptoService;
 
@@ -107,7 +109,8 @@ describe('<<AUTH>> ENDPOINTS TESTING!!!(e2e)', () => {
 
     server = app.getHttpServer();
     connection = moduleFixture.get<Connection>(getConnectionToken());
-    UserModel = moduleFixture.get(getModelToken(User.name));
+    UserModel = moduleFixture.get<UserModelType>(getModelToken(User.name));
+    userHelperService = moduleFixture.get(UserHelperService);
     cryptoService = moduleFixture.get(CryptoService);
     mockCodeHelper = new MockCodeHelper();
     await dropDbCollections(connection);
@@ -203,8 +206,10 @@ describe('<<AUTH>> ENDPOINTS TESTING!!!(e2e)', () => {
     });
 
     it('STATUS 204: register ok with valid data', async () => {
-      // 🔑 Передаем UserModel в helper
-      mockCodeHelper.setMockConfirmationCode(UserModel, codes.confirmReg);
+      mockCodeHelper.setMockConfirmationCode(
+        userHelperService,
+        codes.confirmReg,
+      );
       console.log('Mock set with code:', codes.confirmReg);
       const resPost = await request(server)
         .post(`${fullPathTo.auth}${routerPaths.registration}`)
@@ -244,8 +249,10 @@ describe('<<AUTH>> ENDPOINTS TESTING!!!(e2e)', () => {
     });
 
     it('STATUS 204: resend ok.', async () => {
-      // 🔑 Передаем UserModel в helper
-      mockCodeHelper.setMockConfirmationCode(UserModel, codes.resendReg);
+      mockCodeHelper.setMockConfirmationCode(
+        userHelperService,
+        codes.resendReg,
+      );
       console.log('Mock set with resend code:', codes.resendReg);
       const resPost = await request(server)
         .post(`${fullPathTo.auth}${routerPaths.registrationEmailResending}`)
@@ -290,7 +297,7 @@ describe('<<AUTH>> ENDPOINTS TESTING!!!(e2e)', () => {
       //4. expired code
       //тест на протухший емайл код.../создаем пользователя и новый код подтверждения через регистрацию
       mockCodeHelper.setMockConfirmationCode(
-        UserModel,
+        userHelperService,
         codes.expiredReg,
         dates.expired,
       ); //мокаем метод установки кода и даты подкидываем протухшую дату кода
@@ -326,7 +333,10 @@ describe('<<AUTH>> ENDPOINTS TESTING!!!(e2e)', () => {
       expect(mockEmailService.sendConfirmationEmail).not.toHaveBeenCalled();
 
       //2.существующий емэйл - возвращаем стаатус все ок, письмо отправляем
-      mockCodeHelper.setMockConfirmationCode(UserModel, codes.recoveryPass1);
+      mockCodeHelper.setMockConfirmationCode(
+        userHelperService,
+        codes.recoveryPass1,
+      );
       await request(server)
         .post(`${fullPathTo.auth}${routerPaths.passwordRecovery}`)
         .send({ email: userDtos[0].email })
@@ -342,7 +352,10 @@ describe('<<AUTH>> ENDPOINTS TESTING!!!(e2e)', () => {
       expect(mockEmailService.sendConfirmationEmail).toHaveBeenCalledTimes(1);
 
       //3.существующий емэйл и незареген юзер - возвращаем статус все ок, письмо отправляем
-      mockCodeHelper.setMockConfirmationCode(UserModel, codes.recoveryPass2);
+      mockCodeHelper.setMockConfirmationCode(
+        userHelperService,
+        codes.recoveryPass2,
+      );
       await request(server)
         .post(`${fullPathTo.auth}${routerPaths.passwordRecovery}`)
         .send({ email: userDtos[2].email })
@@ -379,7 +392,7 @@ describe('<<AUTH>> ENDPOINTS TESTING!!!(e2e)', () => {
 
       //третий кейс - код восстановления протух //дополнительный запрос на создание кода и даты протухания - замоканые
       mockCodeHelper.setMockConfirmationCode(
-        UserModel,
+        userHelperService,
         codes.recoveryPass2,
         dates.expired,
       );

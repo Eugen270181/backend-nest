@@ -24,8 +24,8 @@ import { BasicAuthGuard } from '../guards/basic/basic-auth.guard';
 import { Public } from '../guards/decorators/public.decorator';
 import { SkipThrottle } from '@nestjs/throttler';
 import { CommandBus } from '@nestjs/cqrs';
-import { CreateUserCommand } from '../application/usecases/create-user.usecase';
-import { DeleteUserCommand } from '../application/usecases/delete-user.usecase';
+import { CreateUserCommand } from '../application/usecases/admins/create-user.usecase';
+import { DeleteUserCommand } from '../application/usecases/admins/delete-user.usecase';
 
 @UseGuards(BasicAuthGuard)
 @ApiBasicAuth('basicAuth')

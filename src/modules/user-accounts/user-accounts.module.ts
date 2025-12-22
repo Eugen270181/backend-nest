@@ -20,17 +20,17 @@ import { appConfig } from '../../core/settings/config';
 import { JwtAuthGuard } from './guards/bearer/jwt-auth.guard';
 import { BasicAuthGuard } from './guards/basic/basic-auth.guard';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
-import { CreateUserUseCase } from './application/usecases/create-user.usecase';
+import { CreateUserUseCase } from './application/usecases/admins/create-user.usecase';
 import { UserValidationService } from './application/user-validation.service';
-import { DeleteUserUseCase } from './application/usecases/delete-user.usecase';
+import { DeleteUserUseCase } from './application/usecases/admins/delete-user.usecase';
 import { LoginUserUseCase } from './application/usecases/login-user.usecase';
 import { AuthValidationService } from './application/auth-validation.service';
-import { RegisterUserUseCase } from './application/usecases/register-user.usecase';
+import { RegisterUserUseCase } from './application/usecases/users/register-user.usecase';
 import { LocalAuthGuard } from './guards/local/local-auth.guard';
-import { ResendRegistrationCodeUseCase } from './application/usecases/resend-registration-code-user.usecase';
-import { ConfirmRegistrationCodeUseCase } from './application/usecases/confirm-registration-code-user.usecase';
-import { RecoveryPasswordUseCase } from './application/usecases/recovery-password-user.usecase';
-import { ConfirmPasswordUseCase } from './application/usecases/confirm-password-user.usecase';
+import { ResendRegistrationCodeUseCase } from './application/usecases/users/resend-registration-code-user.usecase';
+import { ConfirmRegistrationCodeUseCase } from './application/usecases/users/confirm-registration-code-user.usecase';
+import { RecoveryPasswordUseCase } from './application/usecases/users/recovery-password-user.usecase';
+import { ConfirmPasswordUseCase } from './application/usecases/users/confirm-password-user.usecase';
 
 const services = [
   UsersQueryService,

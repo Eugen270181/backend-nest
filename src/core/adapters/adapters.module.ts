@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
-import { DateService } from './date.service';
-import { CodeService } from './code.service';
+
+import { UserHelperService } from './user-helper.service';
 
 @Module({
-  providers: [CodeService, DateService],
-  exports: [CodeService, DateService],
+  providers: [UserHelperService],
+  exports: [UserHelperService],
 })
 export class AdaptersModule {}

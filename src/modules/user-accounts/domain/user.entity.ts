@@ -1,5 +1,4 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { CreateUserBySaDomainDto } from './dto/create-user-by-sa.domain.dto';
 import { HydratedDocument, Model } from 'mongoose';
 import {
   EmailConfirmation,
@@ -9,7 +8,8 @@ import {
   PassConfirmation,
   PassConfirmationSchema,
 } from './pass-confirmation.schema';
-import { CreateUserByRegDomainDto } from './dto/create-user-by-reg.domain.dto';
+import { CreateUserDomainDto } from './dto/create-user.domain.dto';
+import { UserConfirmCodeDto } from '../../../core/dto/type/user-confirm-code.dto';
 
 @Schema({ timestamps: true })
 export class User {
@@ -22,7 +22,7 @@ export class User {
   @Prop({ type: String, required: true })
   passwordHash: string;
 
-  @Prop({ type: Boolean, required: true, default: true })
+  @Prop({ type: Boolean, required: true, default: false })
   isConfirmed: boolean;
 
   @Prop({ type: EmailConfirmationSchema, nullable: true, default: null })
@@ -34,7 +34,7 @@ export class User {
   createdAt: Date;
   updatedAt: Date;
 
-  static createUserBySa(dto: CreateUserBySaDomainDto): UserDocument {
+  static createInstance(dto: CreateUserDomainDto): UserDocument {
     const userDocument = new this();
 
     userDocument.login = dto.login;
@@ -44,36 +44,20 @@ export class User {
     return userDocument as UserDocument;
   }
 
-  static createUserByReg(dto: CreateUserByRegDomainDto) {
-    const userDocument = this.createUserBySa(dto as CreateUserBySaDomainDto);
-
-    userDocument.setRegConfirmationCode(dto.code, dto.date);
-    userDocument.isConfirmed = false;
-
-    return userDocument;
-  }
-
-  setConfirmationCode(code: string, date: Date) {
-    return {
-      confirmationCode: code,
-      expirationDate: date,
-    };
-  }
-
-  activateConfirmation() {
-    this.isConfirmed = true;
-  }
-
   updatePassHash(passwordHash: string) {
     this.passwordHash = passwordHash;
   }
 
-  setRegConfirmationCode(code: string, date: Date) {
-    this.emailConfirmation = this.setConfirmationCode(code, date);
+  setUserConfirmation() {
+    this.isConfirmed = true;
   }
 
-  setPassConfirmationCode(code: string, date: Date) {
-    this.passConfirmation = this.setConfirmationCode(code, date);
+  setRegConfirmationCode(dto: UserConfirmCodeDto) {
+    this.emailConfirmation = dto;
+  }
+
+  setPassConfirmationCode(dto: UserConfirmCodeDto) {
+    this.passConfirmation = dto;
   }
 }
 

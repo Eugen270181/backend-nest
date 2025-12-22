@@ -8,7 +8,8 @@ import { getConnectionToken, getModelToken } from '@nestjs/mongoose';
 import { dropDbCollections } from '../dropDbCollections';
 import {
   LikeStatus,
-  testingDtosCreator, TokenDto,
+  testingDtosCreator,
+  TokenDto,
   validObjectIdString,
 } from '../testingDtosCreator';
 import { PostViewDto } from '../../src/modules/blogers-platform/posts/api/view-dto/post.view-dto';
@@ -30,15 +31,21 @@ import {
   createPostComments,
   getCommentById,
 } from '../comments/util/createGetComments';
-import { LikePost } from '../../src/modules/blogers-platform/likes/domain/like-post.entity';
-import { LikeComment } from '../../src/modules/blogers-platform/likes/domain/like-comment.entity';
+import {
+  LikePost,
+  LikePostModelType,
+} from '../../src/modules/blogers-platform/likes/domain/like-post.entity';
+import {
+  LikeComment,
+  LikeCommentModelType,
+} from '../../src/modules/blogers-platform/likes/domain/like-comment.entity';
 
 describe('<<LIKES>> ENDPOINTS TESTING!!!(e2e)', () => {
   let app: NestExpressApplication;
   let connection: Connection;
   let server: App;
-  let likePostModel: Model<LikePost>;
-  let likeCommentModel: Model<LikeComment>;
+  let likePostModel: LikePostModelType;
+  let likeCommentModel: LikeCommentModelType;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -52,10 +59,10 @@ describe('<<LIKES>> ENDPOINTS TESTING!!!(e2e)', () => {
     server = app.getHttpServer();
 
     connection = moduleFixture.get<Connection>(getConnectionToken());
-    likePostModel = moduleFixture.get<Model<LikePost>>(
+    likePostModel = moduleFixture.get<LikePostModelType>(
       getModelToken(LikePost.name),
     );
-    likeCommentModel = moduleFixture.get<Model<LikeComment>>(
+    likeCommentModel = moduleFixture.get<LikeCommentModelType>(
       getModelToken(LikeComment.name),
     );
 
