@@ -32,6 +32,10 @@ import { ConfirmRegistrationCodeUseCase } from './application/usecases/users/con
 import { RecoveryPasswordUseCase } from './application/usecases/users/recovery-password-user.usecase';
 import { ConfirmPasswordUseCase } from './application/usecases/users/confirm-password-user.usecase';
 import { UsersFactory } from './application/factories/users.factory';
+import { SendConfirmationEmailWhenUserRegisteredEventHandler } from '../notifications/application/event-handlers/send-confirmation-email-when-user-registered.event-handler';
+import {
+  SendSmsWhenUserRegisteredEventHandler
+} from '../notifications/application/event-handlers/send-sms-when-user-registered.event-handler';
 
 const services = [
   UsersQueryService,
@@ -54,6 +58,11 @@ const commandHandlers = [
   ConfirmRegistrationCodeUseCase,
   RecoveryPasswordUseCase,
   ConfirmPasswordUseCase,
+];
+
+const eventHandlers = [
+  SendConfirmationEmailWhenUserRegisteredEventHandler,
+  SendSmsWhenUserRegisteredEventHandler,
 ];
 
 @Module({
@@ -85,6 +94,7 @@ const commandHandlers = [
     AuthQueryRepository,
     UsersFactory,
     ...commandHandlers,
+    ...eventHandlers,
     ...services,
     ...guards,
     ...strategies,

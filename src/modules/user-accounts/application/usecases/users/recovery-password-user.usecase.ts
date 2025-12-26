@@ -10,7 +10,7 @@ import { EmailService } from '../../../../notifications/email.service';
 import { EmailInputDto } from '../../../api/input-dto/email.input-dto';
 import { UserConfirmCodeDto } from '../../../../../core/dto/type/user-confirm-code.dto';
 import { UserHelperService } from '../../../../../core/adapters/user-helper.service';
-import { UserRegisteredEvent } from '../../../../user-registered.event';
+import { UserRegisteredEvent } from '../../../domain/events/user-registered.event';
 
 export class RecoveryPasswordUserCommand {
   constructor(public readonly dto: EmailInputDto) {}
@@ -25,7 +25,6 @@ export class RecoveryPasswordUseCase
     private readonly userValidationService: UserValidationService,
     private readonly userHelperService: UserHelperService,
     private readonly eventBus: EventBus,
-    private readonly emailService: EmailService,
   ) {
     if (appConfig.IOC_LOG) console.log('RecoveryPasswordUseCase created');
   }

@@ -1,14 +1,14 @@
 import { EventsHandler, IEventHandler } from '@nestjs/cqrs';
 import { EmailService } from '../../email.service';
-import { UserRegisteredEvent } from '../../../user-registered.event';
+import { UserRegisteredEvent } from '../../../user-accounts/domain/events/user-registered.event';
 
 @EventsHandler(UserRegisteredEvent)
-export class SendConfirmationEmailWhenUserRegisteredEventHandler
+export class SendSmsWhenUserRegisteredEventHandler
   implements IEventHandler<UserRegisteredEvent>
 {
   constructor(private emailService: EmailService) {}
 
-  async handle(event: UserRegisteredEvent) {
+  handle(event: UserRegisteredEvent) {
     // Ошибки в EventHandlers не могут быть пойманы фильтрами исключений:
     // необходимо обрабатывать вручную
     try {

@@ -5,7 +5,7 @@ import { UserDocument } from '../../../domain/user.entity';
 import { UsersRepository } from '../../../infrastructure/users.repository';
 import { UsersFactory } from '../../factories/users.factory';
 
-import { UserRegisteredEvent } from '../../../../user-registered.event';
+import { UserRegisteredEvent } from '../../../domain/events/user-registered.event';
 
 export class RegisterUserCommand {
   constructor(public readonly dto: CreateUserDto) {}

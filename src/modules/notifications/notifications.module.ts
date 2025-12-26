@@ -2,9 +2,13 @@ import { Module } from '@nestjs/common';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { EmailService } from './email.service';
 import { appConfig } from '../../core/settings/config';
+import { CqrsModule } from '@nestjs/cqrs';
+import { SendConfirmationEmailWhenUserRegisteredEventHandler } from './application/event-handlers/send-confirmation-email-when-user-registered.event-handler';
+import { SendSmsWhenUserRegisteredEventHandler } from './application/event-handlers/send-sms-when-user-registered.event-handler';
 
 @Module({
   imports: [
+    CqrsModule,
     MailerModule.forRoot({
       transport: {
         host: 'smtp.gmail.com',
@@ -20,7 +24,15 @@ import { appConfig } from '../../core/settings/config';
       },
     }),
   ],
-  providers: [EmailService],
-  exports: [EmailService],
+  providers: [
+    EmailService,
+    SendConfirmationEmailWhenUserRegisteredEventHandler,
+    SendSmsWhenUserRegisteredEventHandler,
+  ],
+  exports: [
+    EmailService,
+    SendConfirmationEmailWhenUserRegisteredEventHandler,
+    SendSmsWhenUserRegisteredEventHandler,
+  ],
 })
 export class NotificationsModule {}
