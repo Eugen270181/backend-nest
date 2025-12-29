@@ -2,9 +2,10 @@ import { Module } from '@nestjs/common';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { EmailService } from './email.service';
 import { appConfig } from '../../core/settings/config';
-import { CqrsModule } from '@nestjs/cqrs';
 import { SendConfirmationEmailWhenUserRegisteredEventHandler } from './application/event-handlers/send-confirmation-email-when-user-registered.event-handler';
 import { SendSmsWhenUserRegisteredEventHandler } from './application/event-handlers/send-sms-when-user-registered.event-handler';
+import { CqrsModule } from '@nestjs/cqrs';
+import { EmailFactoryService } from './application/email/email-factory.service';
 
 @Module({
   imports: [
@@ -26,13 +27,10 @@ import { SendSmsWhenUserRegisteredEventHandler } from './application/event-handl
   ],
   providers: [
     EmailService,
+    EmailFactoryService,
     SendConfirmationEmailWhenUserRegisteredEventHandler,
     SendSmsWhenUserRegisteredEventHandler,
   ],
-  exports: [
-    EmailService,
-    SendConfirmationEmailWhenUserRegisteredEventHandler,
-    SendSmsWhenUserRegisteredEventHandler,
-  ],
+  exports: [],
 })
 export class NotificationsModule {}

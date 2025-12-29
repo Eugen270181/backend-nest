@@ -10,7 +10,8 @@ import { EmailService } from '../../../../notifications/email.service';
 import { EmailInputDto } from '../../../api/input-dto/email.input-dto';
 import { UserConfirmCodeDto } from '../../../../../core/dto/type/user-confirm-code.dto';
 import { UserHelperService } from '../../../../../core/adapters/user-helper.service';
-import { UserRegisteredEvent } from '../../../domain/events/user-registered.event';
+import { SendUserEmailCodeEvent } from '../../../domain/events/send-user-email-code.event';
+import { EmailType } from '../../../../../core/dto/enum/email-type.enum';
 
 export class ResendRegistrationCodeUserCommand {
   constructor(public readonly dto: EmailInputDto) {}
@@ -44,9 +45,10 @@ export class ResendRegistrationCodeUseCase
     await this.usersRepository.save(userDocument);
 
     this.eventBus.publish(
-      new UserRegisteredEvent(
+      new SendUserEmailCodeEvent(
         dto.email,
         userDocument.emailConfirmation!.confirmationCode,
+        EmailType.resend,
       ),
     );
   }

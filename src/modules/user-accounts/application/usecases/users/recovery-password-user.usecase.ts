@@ -2,15 +2,13 @@ import { CommandHandler, EventBus, ICommandHandler } from '@nestjs/cqrs';
 import { appConfig } from '../../../../../core/settings/config';
 import { UserSearchType } from '../../dto/enum/user-search-type';
 import { UserValidationService } from '../../services/user-validation.service';
-import { CodeService } from '../../../../../core/adapters/code.service';
-import { DateService } from '../../../../../core/adapters/date.service';
 import { UserDocument } from '../../../domain/user.entity';
 import { UsersRepository } from '../../../infrastructure/users.repository';
-import { EmailService } from '../../../../notifications/email.service';
 import { EmailInputDto } from '../../../api/input-dto/email.input-dto';
 import { UserConfirmCodeDto } from '../../../../../core/dto/type/user-confirm-code.dto';
 import { UserHelperService } from '../../../../../core/adapters/user-helper.service';
-import { UserRegisteredEvent } from '../../../domain/events/user-registered.event';
+import { SendUserEmailCodeEvent } from '../../../domain/events/send-user-email-code.event';
+import { EmailType } from '../../../../../core/dto/enum/email-type.enum';
 
 export class RecoveryPasswordUserCommand {
   constructor(public readonly dto: EmailInputDto) {}
@@ -35,6 +33,7 @@ export class RecoveryPasswordUseCase
         UserSearchType.Email,
         dto.email,
       );
+
     if (!userDocument) return;
 
     const userConfirmCodeDto: UserConfirmCodeDto =
@@ -45,9 +44,10 @@ export class RecoveryPasswordUseCase
     await this.usersRepository.save(userDocument);
 
     this.eventBus.publish(
-      new UserRegisteredEvent(
+      new SendUserEmailCodeEvent(
         dto.email,
-        userDocument.emailConfirmation!.confirmationCode,
+        userDocument.passConfirmation!.confirmationCode,
+        EmailType.password_recovery,
       ),
     );
   }

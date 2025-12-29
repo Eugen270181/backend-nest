@@ -60,10 +60,10 @@ const commandHandlers = [
   ConfirmPasswordUseCase,
 ];
 
-const eventHandlers = [
-  SendConfirmationEmailWhenUserRegisteredEventHandler,
-  SendSmsWhenUserRegisteredEventHandler,
-];
+// const eventHandlers = [
+//   SendConfirmationEmailWhenUserRegisteredEventHandler,
+//   SendSmsWhenUserRegisteredEventHandler,
+// ];
 
 @Module({
   imports: [
@@ -94,7 +94,7 @@ const eventHandlers = [
     AuthQueryRepository,
     UsersFactory,
     ...commandHandlers,
-    ...eventHandlers,
+    ///...eventHandlers,
     ...services,
     ...guards,
     ...strategies,

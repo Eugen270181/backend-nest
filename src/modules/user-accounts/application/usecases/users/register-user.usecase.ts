@@ -5,7 +5,8 @@ import { UserDocument } from '../../../domain/user.entity';
 import { UsersRepository } from '../../../infrastructure/users.repository';
 import { UsersFactory } from '../../factories/users.factory';
 
-import { UserRegisteredEvent } from '../../../domain/events/user-registered.event';
+import { SendUserEmailCodeEvent } from '../../../domain/events/send-user-email-code.event';
+import { EmailType } from '../../../../../core/dto/enum/email-type.enum';
 
 export class RegisterUserCommand {
   constructor(public readonly dto: CreateUserDto) {}
@@ -31,9 +32,10 @@ export class RegisterUserUseCase
     await this.usersRepository.save(userDocument);
 
     this.eventBus.publish(
-      new UserRegisteredEvent(
+      new SendUserEmailCodeEvent(
         dto.email,
         userDocument.emailConfirmation!.confirmationCode,
+        EmailType.registration,
       ),
     );
     //отправляем уведомление о создании пользователя с кодом активации на мыло

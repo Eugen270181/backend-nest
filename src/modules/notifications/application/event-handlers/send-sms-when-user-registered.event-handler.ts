@@ -1,18 +1,18 @@
 import { EventsHandler, IEventHandler } from '@nestjs/cqrs';
 import { EmailService } from '../../email.service';
-import { UserRegisteredEvent } from '../../../user-accounts/domain/events/user-registered.event';
+import { SendUserEmailCodeEvent } from '../../../user-accounts/domain/events/send-user-email-code.event';
 
-@EventsHandler(UserRegisteredEvent)
+@EventsHandler(SendUserEmailCodeEvent)
 export class SendSmsWhenUserRegisteredEventHandler
-  implements IEventHandler<UserRegisteredEvent>
+  implements IEventHandler<SendUserEmailCodeEvent>
 {
   constructor(private emailService: EmailService) {}
 
-  handle(event: UserRegisteredEvent) {
+  handle(event: SendUserEmailCodeEvent) {
     // Ошибки в EventHandlers не могут быть пойманы фильтрами исключений:
     // необходимо обрабатывать вручную
     try {
-      console.log('send sms with email', event.email);
+      console.log('send sms with code', event.confirmationCode);
     } catch (e) {
       console.error('send sms', e);
     }
