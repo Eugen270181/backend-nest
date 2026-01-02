@@ -21,7 +21,6 @@ export class PostsService {
   constructor(
     @InjectModel(Post.name)
     private readonly PostModel: PostModelType,
-    private readonly usersRepository: UsersRepository,
     private readonly blogsRepository: BlogsRepository,
     private readonly postsRepository: PostsRepository,
     private readonly likesPostsService: LikesPostsService,
@@ -125,6 +124,7 @@ export class PostsService {
 
   async updateLike(dto: LikePostDto): Promise<void> {
     // 1. Проверка поста
+    console.log(`updatelike_post_service`, dto);
     const postDocument = await this.postsRepository.findById(dto.postId);
     if (!postDocument) {
       throw new DomainException({

@@ -30,8 +30,9 @@ import { UpdateBlogDto } from '../application/dto/blog.dto';
 import { appConfig } from '../../../../core/settings/config';
 import { BasicAuthGuard } from '../../../user-accounts/guards/basic/basic-auth.guard';
 import { Public } from '../../../user-accounts/guards/decorators/public.decorator';
+import { JwtOptionalAuthGuard } from '../../../user-accounts/guards/bearer/jwt-optional-auth.guard';
+import { OptionalUserId } from '../../../user-accounts/guards/decorators/param/extract-user-from-request.decorator';
 
-@UseGuards(BasicAuthGuard)
 @Controller('blogs')
 export class BlogsController {
   constructor(
@@ -44,13 +45,11 @@ export class BlogsController {
     if (appConfig.IOC_LOG) console.log('BlogsController created');
   }
 
-  @Public()
   @Get(':id')
   async getById(@Param('id') id: string): Promise<BlogViewDto> {
     return this.blogsQueryService.getBlogViewDtoOrFail(id);
   }
 
-  @Public()
   @Get()
   async getAll(
     @Query() query: GetBlogsQueryParams,
@@ -58,6 +57,7 @@ export class BlogsController {
     return this.blogsQueryRepository.getAll(query);
   }
 
+  @UseGuards(BasicAuthGuard)
   @Post()
   async createBlog(
     @Body() createBlogInputDto: CreateBlogInputDto,
@@ -67,6 +67,7 @@ export class BlogsController {
     return this.blogsQueryService.getBlogViewDtoOrFail(blogId, true);
   }
 
+  @UseGuards(BasicAuthGuard)
   @Put(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   async updateBlog(
@@ -80,6 +81,7 @@ export class BlogsController {
     await this.blogsService.updateBlog(updateBlogDto);
   }
 
+  @UseGuards(BasicAuthGuard)
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteBlog(@Param('id') id: string): Promise<void> {
@@ -87,15 +89,17 @@ export class BlogsController {
   }
 
   //////////////////////////////////////////////////////////
-  @Public()
+  @UseGuards(JwtOptionalAuthGuard)
   @Get(':blogId/posts')
   async getBlogPosts(
     @Param('blogId') blogId: string,
     @Query() query: GetPostsQueryParams,
+    @OptionalUserId() userId?: string,
   ): Promise<PaginatedViewDto<PostViewDto[]>> {
-    return this.postsQueryService.getBlogPosts(blogId, query);
+    return this.postsQueryService.getBlogPosts(blogId, query, userId);
   }
 
+  @UseGuards(BasicAuthGuard)
   @Post(':blogId/posts')
   async createBlogPost(
     @Param('blogId') blogId: string,

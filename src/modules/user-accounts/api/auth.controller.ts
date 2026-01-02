@@ -84,8 +84,9 @@ export class AuthController {
     @UserId() userId: string,
     @Res({ passthrough: true }) res: Response,
   ): Promise<AuthViewDto> {
-    res.cookie('refreshToken', 'DummyRefreshToken', {
+    res.cookie('refreshToken', 'Dummy.Refresh.Token', {
       httpOnly: true,
+      secure: true,
     });
     return this.commandBus.execute<LoginUserCommand, AuthViewDto>(
       new LoginUserCommand(userId),
@@ -97,7 +98,6 @@ export class AuthController {
   @Get('me')
   @UseGuards(JwtAuthGuard)
   me(@UserId() userId: string): Promise<MeViewDto> {
-    console.log('auth.me controller');
     return this.authQueryService.getMeViewDtoOrFail(userId);
   }
 

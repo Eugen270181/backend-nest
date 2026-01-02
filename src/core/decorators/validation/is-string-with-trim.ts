@@ -10,7 +10,7 @@ import { Trim } from '../transform/trim';
 // }
 
 export const IsStringWithTrim = ({
-  minLength = 0,
+  minLength = 1,
   maxLength,
 }: {
   minLength?: number;
@@ -18,8 +18,8 @@ export const IsStringWithTrim = ({
 }) => {
   //const { minLength = 0, maxLength } = options;
   const decorators = [
-    IsString(),
     Trim(),
+    IsString(),
     maxLength !== undefined ? Length(minLength, maxLength) : Length(minLength),
   ];
 

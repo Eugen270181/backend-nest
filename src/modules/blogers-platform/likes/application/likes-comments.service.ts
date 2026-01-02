@@ -21,8 +21,6 @@ export class LikesCommentsService {
   constructor(
     @InjectModel(LikeComment.name)
     private readonly LikeCommentModel: LikeCommentModelType,
-    private usersRepository: UsersRepository,
-    private commentsRepository: CommentsRepository,
     private likesCommentsRepository: LikesCommentsRepository,
   ) {}
 

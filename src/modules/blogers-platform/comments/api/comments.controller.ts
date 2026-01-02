@@ -24,17 +24,18 @@ import { UpdateCommentDto } from '../application/dto/comment.dto';
 import { UpdateCommentInputDto } from './input-dto/update-comment.input-dto';
 import { LikeCommentInputDto } from './input-dto/like-comment.input-dto';
 import { LikeCommentDto } from '../../likes/application/dto/like-comment.dto';
+import { JwtOptionalAuthGuard } from '../../../user-accounts/guards/bearer/jwt-optional-auth.guard';
 @UseGuards(JwtAuthGuard)
 @Controller('comments')
 export class CommentsController {
   constructor(
     private readonly commentsService: CommentsService,
-    private readonly commentsQueryRepository: CommentsQueryRepository,
     private readonly commentsQueryService: CommentsQueryService,
   ) {
     if (appConfig.IOC_LOG) console.log('CommentsController created');
   }
   @Public()
+  @UseGuards(JwtOptionalAuthGuard)
   @Get(':commentId')
   async getById(
     @Param('commentId') commentId: string,

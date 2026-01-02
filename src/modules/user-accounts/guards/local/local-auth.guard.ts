@@ -12,7 +12,7 @@ export class LocalAuthGuard extends AuthGuard('local') {
     info,
   ): UserContextDto {
     //если с validate() прилетает наша ошибка
-    console.log('🔒 GUARD 3 params:', { err: !!err, user: !!user, info });
+    //console.log('🔒 GUARD 3 params:', { err: !!err, user: !!user, info });
 
     if (err) {
       throw err; //400 || 401

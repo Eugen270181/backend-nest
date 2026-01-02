@@ -68,12 +68,20 @@ import { LikePost, LikePostSchema } from './likes/domain/like-post.entity';
     //OptionalJwtMiddleware,
   ],
 })
-export class BloggersPlatformModule implements NestModule {
-  configure(consumer: MiddlewareConsumer) {
-    consumer.apply(OptionalJwtMiddleware).forRoutes(
-      { path: 'posts/*', method: RequestMethod.GET },
-      { path: 'comments/*', method: RequestMethod.GET },
-      // ✅ Добавляй новые по мере необходимости
-    );
-  }
-}
+export class BloggersPlatformModule {}
+//implements NestModule {
+//   configure(consumer: MiddlewareConsumer) {
+//     consumer.apply(OptionalJwtMiddleware).forRoutes(
+//       // ✅ Фикс для GET /posts
+//       { path: 'posts', method: RequestMethod.GET },
+//       { path: 'posts/*', method: RequestMethod.GET },
+//
+//       // ✅ Фикс для блогов
+//       { path: 'blogs/:blogId/posts', method: RequestMethod.GET },
+//
+//       // ✅ Комменты уже есть
+//       { path: 'comments/*', method: RequestMethod.GET },
+//       // ✅ Добавляй новые по мере необходимости
+//     );
+//   }
+// }

@@ -22,13 +22,13 @@ export class LocalStrategy extends PassportStrategy(Strategy, 'local') {
       });
     }
 
-    console.log('🚀 STRATEGY VALIDATE ВЫЗВАН:', { username, password });
+    //console.log('🚀 STRATEGY VALIDATE ВЫЗВАН:', { username, password });
 
     const userContextDto = await this.authValidationService.validateUserByCred(
       username,
       password,
     );
-    console.log('✅ STRATEGY USER НАЙДЕН:', !!userContextDto);
+    //console.log('✅ STRATEGY USER НАЙДЕН:', !!userContextDto);
 
     if (!userContextDto) {
       throw new DomainException({

@@ -19,11 +19,9 @@ export class LikesPostsRepository {
   }
 
   async save(likePostDocument: LikePostDocument): Promise<void> {
+    console.log(likePostDocument.likeStatus);
     await likePostDocument.save();
-  }
-
-  async create(likePost: LikePostDocument): Promise<LikePostDocument> {
-    return this.LikePostModel.create(likePost);
+    console.log(likePostDocument.likeStatus);
   }
 
   async findLikePostByAuthorIdAndPostId(

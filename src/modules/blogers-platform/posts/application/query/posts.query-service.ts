@@ -48,6 +48,7 @@ export class PostsQueryService {
           postViewDto.id,
         );
       myStatus = myLike?.likeStatus ?? LikeStatus.None;
+      console.log(myStatus);
     }
 
     // 3. ✅ Обогащаем DTO через методы
@@ -70,7 +71,7 @@ export class PostsQueryService {
     justCreated: boolean = false,
   ): Promise<PostViewDto> {
     const postViewDto = await this.getById(id, userId);
-
+    console.log(userId);
     if (!postViewDto) {
       if (!justCreated) {
         throw new DomainException({
@@ -96,9 +97,7 @@ export class PostsQueryService {
       query,
       blogId,
     );
-
-    if (!userId) return paginated;
-
+    console.log(userId);
     // ✅ Переиспользуем метод параллельно
     paginated.items = await Promise.all(
       paginated.items.map((post) => this.enrichPostWithLikes(post, userId)),
@@ -116,7 +115,9 @@ export class PostsQueryService {
 
     // 2. ✅ Параллельно обогащаем все посты
     paginated.items = await Promise.all(
-      paginated.items.map((post) => this.enrichPostWithLikes(post, userId)),
+      paginated.items.map((post) => {
+        return this.enrichPostWithLikes(post, userId);
+      }),
     );
 
     return paginated;

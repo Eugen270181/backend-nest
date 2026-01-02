@@ -1,6 +1,8 @@
-import { SetMetadata } from '@nestjs/common';
+import { OptionalJwtMiddleware } from './optional-jwt.middleware';
+import { applyDecorators, UseGuards } from '@nestjs/common';
 
-export const WITH_OPTIONAL_USER_METADATA = 'withOptionalUser';
-
-export const WithOptionalUser = () =>
-  SetMetadata(WITH_OPTIONAL_USER_METADATA, true);
+export function UseOptionalAuth() {
+  return applyDecorators(
+    UseGuards(OptionalJwtMiddleware), // ✅ Правильно!
+  );
+}

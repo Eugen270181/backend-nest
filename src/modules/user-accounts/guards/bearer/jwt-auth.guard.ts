@@ -19,7 +19,7 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     ]);
 
     if (isPublic) {
-      return true; // ✅ Пропускаем без JWT — req.user от middleware сохраняется!
+      return true;
     }
 
     // ✅ Вызываем стратегию JWT (только если не public)
@@ -27,13 +27,11 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
   }
 
   // ✅ Обработка результата стратегии
-  handleRequest<UserContextExtDto>(
+  handleRequest<UserContextDto>(
     err: any,
-    user: UserContextExtDto,
+    user: UserContextDto,
     info: any,
-  ): UserContextExtDto {
-    console.log('🔒 JWT GUARD:', { err: !!err, user: !!user, info });
-
+  ): UserContextDto {
     if (err || !user) {
       throw new DomainException({
         code: DomainExceptionCode.Unauthorized,

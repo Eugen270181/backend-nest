@@ -6,10 +6,10 @@ import { AuthGuard } from '@nestjs/passport';
 //https://docs.nestjs.com/recipes/passport#extending-guards
 @Injectable()
 export class JwtOptionalAuthGuard extends AuthGuard('jwt') {
-  handleRequest<UserContextExtDto>(
+  handleRequest<UserContextDto>(
     err,
-    user: UserContextExtDto,
-  ): UserContextExtDto | null {
+    user: UserContextDto,
+  ): UserContextDto | null {
     if (err || !user) {
       return null;
     } else {

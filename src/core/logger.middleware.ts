@@ -13,7 +13,7 @@ import { tap } from 'rxjs/operators';
 @Injectable()
 export class LoggerMiddleware implements NestMiddleware {
   use(req: Request, res: Response, next: NextFunction) {
-    console.log('Request...', req.method, req.url);
+    //console.log('Request...', req.method, req.url);
     next();
   }
 }
@@ -64,9 +64,9 @@ export class LoggerInterceptor implements NestInterceptor {
     const url = request.url;
     const now = Date.now();
 
-    console.log(
-      `Запрос: ${method} ${url} - начат в ${new Date(now).toISOString()}`,
-    );
+    // console.log(
+    //   `Запрос: ${method} ${url} - начат в ${new Date(now).toISOString()}`,
+    // );
 
     // "next.handle()" возвращает Observable, который представляет поток ответа.
     // Мы используем tap() из RxJS, чтобы выполнить побочное действие (логирование) без изменения ответа.

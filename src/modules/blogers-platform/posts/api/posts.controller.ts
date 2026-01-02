@@ -39,6 +39,9 @@ import {
 } from '../../../user-accounts/guards/decorators/param/extract-user-from-request.decorator';
 import { LikePostInputDto } from './input-dto/like-post.input-dto';
 import { LikePostDto } from '../../likes/application/dto/like-post.dto';
+import { UseOptionalAuth } from '../../../user-accounts/middlewares/export const with-optional-user.decorator';
+import { Public } from '../../../user-accounts/guards/decorators/public.decorator';
+import { JwtOptionalAuthGuard } from '../../../user-accounts/guards/bearer/jwt-optional-auth.guard';
 
 @Controller('posts')
 export class PostsController {
@@ -53,6 +56,7 @@ export class PostsController {
     if (appConfig.IOC_LOG) console.log('Posts Controller created');
   }
 
+  @UseGuards(JwtOptionalAuthGuard)
   @Get(':postId')
   async getById(
     @Param('postId') postId: string,
@@ -61,11 +65,13 @@ export class PostsController {
     return this.postsQueryService.getPostViewDtoOrFail(postId, userId);
   }
 
+  @UseGuards(JwtOptionalAuthGuard)
   @Get()
   async getAll(
     @Query() query: GetPostsQueryParams,
     @OptionalUserId() userId?: string,
   ): Promise<PaginatedViewDto<PostViewDto[]>> {
+    console.log(userId);
     return this.postsQueryService.getAll(query, userId);
   }
 
@@ -98,6 +104,7 @@ export class PostsController {
   }
   ///////////////////////////////////////////////////////////////////
   // ✅ GET комментарии поста — OptionalUserId из middleware
+  @UseGuards(JwtOptionalAuthGuard)
   @Get(':postId/comments')
   async getPostComments(
     @Param('postId') postId: string,
@@ -134,7 +141,6 @@ export class PostsController {
   //////////////////////////////////////////////////////////////////////////////
   // ✅ PUT лайк поста UserId из JwtAuthGuard
   @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
   @HttpCode(HttpStatus.NO_CONTENT)
   @Put(':postId/like-status')
   async putLikeStatusById(
