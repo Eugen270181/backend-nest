@@ -11,12 +11,10 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { UserViewDto } from './view-dto/user.view-dto';
-import { UsersQueryRepository } from '../infrastructure/query/users.query-repository';
 import { CreateUserInputDto } from './input-dto/create-users.input-dto';
 import { GetUsersQueryParams } from './input-dto/get-users-query-params.input-dto';
 import { PaginatedViewDto } from '../../../core/dto/base.paginated.view-dto';
 import { ApiBadRequestResponse, ApiBasicAuth } from '@nestjs/swagger';
-import { UsersQueryService } from '../application/query/users.query-service';
 import { appConfig } from '../../../core/settings/config';
 import { ErrorResponseBodyDto } from '../../../core/dto/base.error-responce-body.view-dto';
 import { ApiPaginatedResponse } from '../../../core/decorators/swagger/api-paginated-response';

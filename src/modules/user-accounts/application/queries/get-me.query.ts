@@ -1,17 +1,21 @@
-import { Injectable } from '@nestjs/common';
-import { appConfig } from '../../../../core/settings/config';
+import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { MeViewDto } from '../../api/view-dto/user.view-dto';
 import { DomainException } from '../../../../core/exceptions/domain-exceptions';
 import { DomainExceptionCode } from '../../../../core/exceptions/domain-exception-codes';
+import { appConfig } from '../../../../core/settings/config';
 import { AuthQueryRepository } from '../../infrastructure/query/auth.query-repository';
 
-@Injectable()
-export class AuthQueryService {
-  constructor(private readonly authQueryRepository: AuthQueryRepository) {
-    if (appConfig.IOC_LOG) console.log('AuthQueryService created');
+export class GetMeQuery {
+  constructor(public readonly id: string) {}
+}
+
+@QueryHandler(GetMeQuery)
+export class GetMeQueryHandler implements IQueryHandler<GetMeQuery, MeViewDto> {
+  constructor(private authQueryRepository: AuthQueryRepository) {
+    if (appConfig.IOC_LOG) console.log('GetMeQueryHandler created');
   }
 
-  async getMeViewDtoOrFail(id: string): Promise<MeViewDto> {
+  async execute({ id }: GetMeQuery): Promise<MeViewDto> {
     const meViewDto = await this.authQueryRepository.getMeById(id);
 
     if (!meViewDto) {

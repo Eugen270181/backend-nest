@@ -11,7 +11,6 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { BlogsService } from '../application/blogs.service';
 import { ApiParam } from '@nestjs/swagger';
 import { BlogsQueryRepository } from '../infrastructure/query/blogs.query-repository';
 import { BlogViewDto } from './view-dto/blog.view-dto';
@@ -24,7 +23,6 @@ import { GetPostsQueryParams } from './input-dto/get-posts-query-params.input-dt
 import { PostsService } from '../../posts/application/posts.service';
 import { CreateBlogPostInputDto } from './input-dto/create-blog-post.input-dto';
 import { CreatePostDto } from '../../posts/application/dto/post.dto';
-import { BlogsQueryService } from '../application/query/blogs.query-service';
 import { PostsQueryService } from '../../posts/application/query/posts.query-service';
 import { UpdateBlogDto } from '../application/dto/blog.dto';
 import { appConfig } from '../../../../core/settings/config';
@@ -32,22 +30,29 @@ import { BasicAuthGuard } from '../../../user-accounts/guards/basic/basic-auth.g
 import { Public } from '../../../user-accounts/guards/decorators/public.decorator';
 import { JwtOptionalAuthGuard } from '../../../user-accounts/guards/bearer/jwt-optional-auth.guard';
 import { OptionalUserId } from '../../../user-accounts/guards/decorators/param/extract-user-from-request.decorator';
+import { CommandBus, QueryBus } from '@nestjs/cqrs';
+import { CreateBlogCommand } from '../application/usecases/create-blog.usecase';
+import { GetBlogQuery } from '../application/queries/get-blog.query';
+import { UpdateBlogCommand } from '../application/usecases/update-blog.usecase';
+import { DeleteBlogCommand } from '../application/usecases/delete-blog.usecase';
 
 @Controller('blogs')
 export class BlogsController {
   constructor(
     private readonly blogsQueryRepository: BlogsQueryRepository,
-    private readonly blogsQueryService: BlogsQueryService,
-    private readonly blogsService: BlogsService,
     private readonly postsQueryService: PostsQueryService,
     private readonly postsService: PostsService,
+    private readonly commandBus: CommandBus,
+    private readonly queryBus: QueryBus,
   ) {
     if (appConfig.IOC_LOG) console.log('BlogsController created');
   }
 
   @Get(':id')
   async getById(@Param('id') id: string): Promise<BlogViewDto> {
-    return this.blogsQueryService.getBlogViewDtoOrFail(id);
+    return this.queryBus.execute<GetBlogQuery, BlogViewDto>(
+      new GetBlogQuery(id),
+    );
   }
 
   @Get()
@@ -62,9 +67,13 @@ export class BlogsController {
   async createBlog(
     @Body() createBlogInputDto: CreateBlogInputDto,
   ): Promise<BlogViewDto> {
-    const blogId = await this.blogsService.createBlog(createBlogInputDto);
+    const blogId = await this.commandBus.execute<CreateBlogCommand, string>(
+      new CreateBlogCommand(createBlogInputDto),
+    );
 
-    return this.blogsQueryService.getBlogViewDtoOrFail(blogId, true);
+    return this.queryBus.execute<GetBlogQuery, BlogViewDto>(
+      new GetBlogQuery(blogId, true),
+    );
   }
 
   @UseGuards(BasicAuthGuard)
@@ -78,14 +87,17 @@ export class BlogsController {
       ...updateBlogInputDto,
       id,
     };
-    await this.blogsService.updateBlog(updateBlogDto);
+
+    await this.commandBus.execute<UpdateBlogCommand>(
+      new UpdateBlogCommand(updateBlogDto),
+    );
   }
 
   @UseGuards(BasicAuthGuard)
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async deleteBlog(@Param('id') id: string): Promise<void> {
-    return this.blogsService.deleteBlogById(id);
+  async deleteBlog(@Param('id') id: string) {
+    await this.commandBus.execute<DeleteBlogCommand>(new DeleteBlogCommand(id));
   }
 
   //////////////////////////////////////////////////////////

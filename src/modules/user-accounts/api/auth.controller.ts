@@ -16,19 +16,19 @@ import { ApiBearerAuth, ApiBody } from '@nestjs/swagger';
 import { UserId } from '../guards/decorators/param/extract-user-from-request.decorator';
 import { JwtAuthGuard } from '../guards/bearer/jwt-auth.guard';
 import { MeViewDto } from './view-dto/user.view-dto';
-import { AuthQueryService } from '../application/query/auth.query-service';
 import { CreateUserInputDto } from './input-dto/create-users.input-dto';
 import { AuthViewDto } from './view-dto/auth.view-dto';
 import { EmailInputDto } from './input-dto/email.input-dto';
 import { ConfirmRegInputDto } from './input-dto/confirm-reg.input-dto';
 import { ConfirmPassInputDto } from './input-dto/confirm-pass.input-dto';
-import { CommandBus } from '@nestjs/cqrs';
+import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { LoginUserCommand } from '../application/usecases/login-user.usecase';
 import { RegisterUserCommand } from '../application/usecases/users/register-user.usecase';
 import { ResendRegistrationCodeUserCommand } from '../application/usecases/users/resend-registration-code-user.usecase';
 import { ConfirmRegistrationCodeUserCommand } from '../application/usecases/users/confirm-registration-code-user.usecase';
 import { RecoveryPasswordUserCommand } from '../application/usecases/users/recovery-password-user.usecase';
 import { ConfirmPasswordUserCommand } from '../application/usecases/users/confirm-password-user.usecase';
+import { GetMeQuery } from '../application/queries/get-me.query';
 
 @UseGuards(ThrottlerGuard)
 // @Throttle({ default: { limit: 5, ttl: 10000 } })
@@ -36,7 +36,7 @@ import { ConfirmPasswordUserCommand } from '../application/usecases/users/confir
 export class AuthController {
   constructor(
     private readonly commandBus: CommandBus,
-    private authQueryService: AuthQueryService,
+    private readonly queryBus: QueryBus,
   ) {
     if (appConfig.IOC_LOG) console.log('AuthController created');
   }
@@ -98,7 +98,7 @@ export class AuthController {
   @Get('me')
   @UseGuards(JwtAuthGuard)
   me(@UserId() userId: string): Promise<MeViewDto> {
-    return this.authQueryService.getMeViewDtoOrFail(userId);
+    return this.queryBus.execute<GetMeQuery, MeViewDto>(new GetMeQuery(userId));
   }
 
   @HttpCode(HttpStatus.NO_CONTENT)

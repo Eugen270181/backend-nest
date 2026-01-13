@@ -6,14 +6,12 @@ import { AuthController } from './api/auth.controller';
 import { User, UserSchema } from './domain/user.entity';
 import { UsersRepository } from './infrastructure/users.repository';
 import { UsersQueryRepository } from './infrastructure/query/users.query-repository';
-import { UsersQueryService } from './application/query/users.query-service';
 import { JwtModule } from '@nestjs/jwt';
 import { CryptoService } from './application/services/crypto.service';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { AuthQueryRepository } from './infrastructure/query/auth.query-repository';
 import { LocalStrategy } from './guards/local/local.strategy';
 import { JwtStrategy } from './guards/bearer/jwt.strategy';
-import { AuthQueryService } from './application/query/auth.query-service';
 import { BasicStrategy } from './guards/basic/basic.strategy';
 import { AdaptersModule } from '../../core/adapters/adapters.module';
 import { appConfig } from '../../core/settings/config';
@@ -34,22 +32,28 @@ import { ConfirmPasswordUseCase } from './application/usecases/users/confirm-pas
 import { UsersFactory } from './application/factories/users.factory';
 import { GetAllUsersQueryHandler } from './application/queries/get-all-users.query';
 import { GetUserQueryHandler } from './application/queries/get-user.query';
+<<<<<<< HEAD
 import { SendConfirmationEmailWhenUserRegisteredEventHandler } from '../notifications/application/event-handlers/send-confirmation-email-when-user-registered.event-handler';
 import { SendSmsWhenUserRegisteredEventHandler } from '../notifications/application/event-handlers/send-sms-when-user-registered.event-handler';
+=======
+import { GetMeQueryHandler } from './application/queries/get-me.query';
+>>>>>>> f676c70 (nestjs 3 task - without blog module in cqrs)
 
-const services = [
-  UsersQueryService,
-  AuthQueryService,
-  AuthValidationService,
-  UserValidationService,
-  CryptoService,
-];
+const services = [AuthValidationService, UserValidationService, CryptoService];
 
 const strategies = [JwtStrategy, BasicStrategy, LocalStrategy];
 
 const guards = [BasicAuthGuard, JwtAuthGuard, LocalAuthGuard, ThrottlerGuard];
 
+<<<<<<< HEAD
 const queryHandlers = [GetAllUsersQueryHandler, GetUserQueryHandler];
+=======
+const queryHandlers = [
+  GetAllUsersQueryHandler,
+  GetUserQueryHandler,
+  GetMeQueryHandler,
+];
+>>>>>>> f676c70 (nestjs 3 task - without blog module in cqrs)
 
 const commandHandlers = [
   CreateUserUseCase,
@@ -61,11 +65,6 @@ const commandHandlers = [
   RecoveryPasswordUseCase,
   ConfirmPasswordUseCase,
 ];
-
-// const eventHandlers = [
-//   SendConfirmationEmailWhenUserRegisteredEventHandler,
-//   SendSmsWhenUserRegisteredEventHandler,
-// ];
 
 @Module({
   imports: [
@@ -91,9 +90,16 @@ const commandHandlers = [
   ],
   controllers: [UsersController, AuthController],
   providers: [
+    ...guards,
+    ...strategies,
+    ...commandHandlers,
+    ...queryHandlers,
+    UsersFactory,
+    ...services,
     UsersRepository,
     UsersQueryRepository,
     AuthQueryRepository,
+<<<<<<< HEAD
     UsersFactory,
     ...commandHandlers,
     ...queryHandlers,
@@ -101,6 +107,8 @@ const commandHandlers = [
     ...services,
     ...guards,
     ...strategies,
+=======
+>>>>>>> f676c70 (nestjs 3 task - without blog module in cqrs)
   ],
   exports: [
     UsersRepository,

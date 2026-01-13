@@ -1,13 +1,7 @@
-import {
-  MiddlewareConsumer,
-  Module,
-  NestModule,
-  RequestMethod,
-} from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { BlogsRepository } from './blogs/infrastructure/blogs.repository';
 import { BlogsController } from './blogs/api/blogs.controller';
 import { BlogsQueryRepository } from './blogs/infrastructure/query/blogs.query-repository';
-import { BlogsService } from './blogs/application/blogs.service';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Blog, BlogSchema } from './blogs/domain/blog.entity';
 import { UserAccountsModule } from '../user-accounts/user-accounts.module';
@@ -21,10 +15,9 @@ import { CommentsService } from './comments/application/comments.service';
 import { CommentsRepository } from './comments/infrastructure/comments.repository';
 import { CommentsQueryRepository } from './comments/infrastructure/query/comments.query-repository';
 import { CommentsController } from './comments/api/comments.controller';
-import { BlogsQueryService } from './blogs/application/query/blogs.query-service';
 import { PostsQueryService } from './posts/application/query/posts.query-service';
 import { CommentsQueryService } from './comments/application/query/comments.query-service';
-import { OptionalJwtMiddleware } from '../user-accounts/middlewares/optional-jwt.middleware';
+
 import {
   LikeComment,
   LikeCommentSchema,
@@ -34,10 +27,33 @@ import { LikesCommentsRepository } from './likes/infrastructure/likes-comments.r
 import { LikesPostsService } from './likes/application/likes-posts.service';
 import { LikesPostsRepository } from './likes/infrastructure/likes-posts.repository';
 import { LikePost, LikePostSchema } from './likes/domain/like-post.entity';
+import { CqrsModule } from '@nestjs/cqrs';
+import { CreateBlogUseCase } from './blogs/application/usecases/create-blog.usecase';
+import { GetBlogQueryHandler } from './blogs/application/queries/get-blog.query';
+import { UpdateBlogUseCase } from './blogs/application/usecases/update-blog.usecase';
+import { GetBlogDocumentQueryHandler } from './blogs/application/queries/get-blog-document.query';
+import { DeleteBlogUseCase } from './blogs/application/usecases/delete-blog.usecase';
+
+const services = [
+  PostsService,
+  PostsQueryService,
+  LikesPostsService,
+  CommentsService,
+  CommentsQueryService,
+  LikesCommentsService,
+];
+
+const commandHandlers = [
+  CreateBlogUseCase,
+  UpdateBlogUseCase,
+  DeleteBlogUseCase,
+];
+const queryHandlers = [GetBlogQueryHandler, GetBlogDocumentQueryHandler];
 
 //тут регистрируем провайдеры всех сущностей блоггерской платформы (blogs, posts, comments, etc...)
 @Module({
   imports: [
+    CqrsModule,
     MongooseModule.forFeature([
       { name: Blog.name, schema: BlogSchema },
       { name: Post.name, schema: PostSchema },
@@ -49,21 +65,16 @@ import { LikePost, LikePostSchema } from './likes/domain/like-post.entity';
   ],
   controllers: [BlogsController, PostsController, CommentsController],
   providers: [
-    BlogsService,
-    BlogsQueryService,
+    ...commandHandlers,
+    ...queryHandlers,
+    ...services,
     BlogsRepository,
     BlogsQueryRepository,
-    PostsService,
-    PostsQueryService,
     PostsRepository,
     PostsQueryRepository,
-    LikesPostsService,
-    LikesPostsRepository,
-    CommentsService,
-    CommentsQueryService,
     CommentsRepository,
     CommentsQueryRepository,
-    LikesCommentsService,
+    LikesPostsRepository,
     LikesCommentsRepository,
     //OptionalJwtMiddleware,
   ],
