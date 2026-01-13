@@ -16,7 +16,7 @@ export class UsersQueryRepository {
     if (appConfig.IOC_LOG) console.log('UsersQueryRepository created');
   }
 
-  async findById(_id: string): Promise<UserDocument | null> {
+  private async findById(_id: string): Promise<UserDocument | null> {
     return this.UserModel.findOne({ _id }).catch(() => null);
   }
 

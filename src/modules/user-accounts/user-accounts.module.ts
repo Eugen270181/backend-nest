@@ -32,10 +32,10 @@ import { ConfirmRegistrationCodeUseCase } from './application/usecases/users/con
 import { RecoveryPasswordUseCase } from './application/usecases/users/recovery-password-user.usecase';
 import { ConfirmPasswordUseCase } from './application/usecases/users/confirm-password-user.usecase';
 import { UsersFactory } from './application/factories/users.factory';
+import { GetAllUsersQueryHandler } from './application/queries/get-all-users.query';
+import { GetUserQueryHandler } from './application/queries/get-user.query';
 import { SendConfirmationEmailWhenUserRegisteredEventHandler } from '../notifications/application/event-handlers/send-confirmation-email-when-user-registered.event-handler';
-import {
-  SendSmsWhenUserRegisteredEventHandler
-} from '../notifications/application/event-handlers/send-sms-when-user-registered.event-handler';
+import { SendSmsWhenUserRegisteredEventHandler } from '../notifications/application/event-handlers/send-sms-when-user-registered.event-handler';
 
 const services = [
   UsersQueryService,
@@ -48,6 +48,8 @@ const services = [
 const strategies = [JwtStrategy, BasicStrategy, LocalStrategy];
 
 const guards = [BasicAuthGuard, JwtAuthGuard, LocalAuthGuard, ThrottlerGuard];
+
+const queryHandlers = [GetAllUsersQueryHandler, GetUserQueryHandler];
 
 const commandHandlers = [
   CreateUserUseCase,
@@ -94,7 +96,8 @@ const commandHandlers = [
     AuthQueryRepository,
     UsersFactory,
     ...commandHandlers,
-    ///...eventHandlers,
+    ...queryHandlers,
+    //...eventHandlers,
     ...services,
     ...guards,
     ...strategies,

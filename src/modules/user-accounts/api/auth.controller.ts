@@ -116,22 +116,4 @@ export class AuthController {
       new ConfirmPasswordUserCommand(body),
     );
   }
-
-  //добавлено для примера, когда кастомный гард пропускает, даже если пользователь не авторизован и не найден
-  // @ApiBearerAuth()
-  // @Get('me-or-default')
-  // @UseGuards(JwtOptionalAuthGuard)
-  // async meOrDefault(
-  //   @ExtractUserIfExistsFromRequest() user: UserContextDto,
-  // ): Promise<Nullable<MeViewDto>> {
-  //   if (user) {
-  //     return this.authQueryService.getMeViewDtoOrFail(user.id);
-  //   } else {
-  //     return {
-  //       userId: null,
-  //       login: 'anonymous',
-  //       email: null,
-  //     };
-  //   }
-  // }
 }

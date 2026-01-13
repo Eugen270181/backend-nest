@@ -21,11 +21,12 @@ import { appConfig } from '../../../core/settings/config';
 import { ErrorResponseBodyDto } from '../../../core/dto/base.error-responce-body.view-dto';
 import { ApiPaginatedResponse } from '../../../core/decorators/swagger/api-paginated-response';
 import { BasicAuthGuard } from '../guards/basic/basic-auth.guard';
-import { Public } from '../guards/decorators/public.decorator';
 import { SkipThrottle } from '@nestjs/throttler';
-import { CommandBus } from '@nestjs/cqrs';
+import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { CreateUserCommand } from '../application/usecases/admins/create-user.usecase';
 import { DeleteUserCommand } from '../application/usecases/admins/delete-user.usecase';
+import { GetAllUsersQuery } from '../application/queries/get-all-users.query';
+import { GetUserQuery } from '../application/queries/get-user.query';
 
 @UseGuards(BasicAuthGuard)
 @ApiBasicAuth('basicAuth')
@@ -34,8 +35,7 @@ import { DeleteUserCommand } from '../application/usecases/admins/delete-user.us
 export class UsersController {
   constructor(
     private readonly commandBus: CommandBus,
-    private readonly usersQueryRepository: UsersQueryRepository,
-    private readonly usersQueryService: UsersQueryService,
+    private readonly queryBus: QueryBus,
   ) {
     if (appConfig.IOC_LOG) console.log('UsersController created');
   }
@@ -45,7 +45,10 @@ export class UsersController {
   async getAll(
     @Query() query: GetUsersQueryParams,
   ): Promise<PaginatedViewDto<UserViewDto[]>> {
-    return this.usersQueryRepository.getAll(query);
+    return this.queryBus.execute<
+      GetAllUsersQuery,
+      PaginatedViewDto<UserViewDto[]>
+    >(new GetAllUsersQuery(query));
   }
 
   @Post()
@@ -60,7 +63,9 @@ export class UsersController {
       new CreateUserCommand(createUserInputDto),
     );
 
-    return this.usersQueryService.getUserViewDtoOrFail(userId, true);
+    return this.queryBus.execute<GetUserQuery, UserViewDto>(
+      new GetUserQuery(userId, true),
+    );
   }
 
   @Delete(':id')
