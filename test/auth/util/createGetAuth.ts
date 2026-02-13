@@ -14,6 +14,11 @@ import { App } from 'supertest/types';
 const request = require('supertest');
 //import request from 'supertest'
 
+const extractRefreshToken = (cookies: string[]): string => {
+  const cookie = cookies.find((c) => c.includes('refreshToken'));
+  return cookie?.split(';')[0].split('=')[1] || '';
+};
+
 export const getArrTokensWithUsersLogin = async (
   server: App,
   users: UserViewDto[],

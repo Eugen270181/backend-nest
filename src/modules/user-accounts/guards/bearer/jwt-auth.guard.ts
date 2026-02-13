@@ -21,7 +21,7 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     if (isPublic) {
       return true;
     }
-
+    console.log('can activate method of jwtauthguard');
     // ✅ Вызываем стратегию JWT (только если не public)
     return super.canActivate(context);
   }
@@ -32,6 +32,7 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     user: UserContextDto,
     info: any,
   ): UserContextDto {
+    console.log(user);
     if (err || !user) {
       throw new DomainException({
         code: DomainExceptionCode.Unauthorized,

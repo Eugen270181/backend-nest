@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { MeViewDto } from '../../api/view-dto/user.view-dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { appConfig } from '../../../../core/settings/config';
 import { User, UserDocument, UserModelType } from '../../domain/user.entity';
+import { MeViewDto } from '../../api/view-dto/me.view-dto';
 
 @Injectable()
 export class AuthQueryRepository {

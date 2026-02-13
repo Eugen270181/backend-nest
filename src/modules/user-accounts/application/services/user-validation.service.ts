@@ -5,7 +5,7 @@ import { DomainException } from '../../../../core/exceptions/domain-exceptions';
 import { DomainExceptionCode } from '../../../../core/exceptions/domain-exception-codes';
 import { Injectable } from '@nestjs/common';
 import { appConfig } from '../../../../core/settings/config';
-import { CreateUserDto } from '../dto/user.dto';
+import { CreateUserDto } from '../dto/create-user.dto';
 
 @Injectable()
 export class UserValidationService {

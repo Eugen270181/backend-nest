@@ -10,10 +10,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { CommentViewDto } from './view-dto/comment.view-dto';
-import { CommentsQueryRepository } from '../infrastructure/query/comments.query-repository';
-import { CommentsService } from '../application/comments.service';
 import { appConfig } from '../../../../core/settings/config';
-import { CommentsQueryService } from '../application/query/comments.query-service';
 import { JwtAuthGuard } from '../../../user-accounts/guards/bearer/jwt-auth.guard';
 import { Public } from '../../../user-accounts/guards/decorators/public.decorator';
 import {
@@ -25,12 +22,22 @@ import { UpdateCommentInputDto } from './input-dto/update-comment.input-dto';
 import { LikeCommentInputDto } from './input-dto/like-comment.input-dto';
 import { LikeCommentDto } from '../../likes/application/dto/like-comment.dto';
 import { JwtOptionalAuthGuard } from '../../../user-accounts/guards/bearer/jwt-optional-auth.guard';
+
+import { CommandBus, QueryBus } from '@nestjs/cqrs';
+import { GetCommentQuery } from '../application/queries/get-comment.query';
+
+import { DeleteCommentCommand } from '../application/usecases/delete-comment.usecase';
+
+import { UpdateCommentCommand } from '../application/usecases/update-comment.usecase';
+
+import { UpdateCommentLikeCommand } from '../application/usecases/update-comment-like.usecase';
+
 @UseGuards(JwtAuthGuard)
 @Controller('comments')
 export class CommentsController {
   constructor(
-    private readonly commentsService: CommentsService,
-    private readonly commentsQueryService: CommentsQueryService,
+    private readonly commandBus: CommandBus,
+    private readonly queryBus: QueryBus,
   ) {
     if (appConfig.IOC_LOG) console.log('CommentsController created');
   }
@@ -41,7 +48,9 @@ export class CommentsController {
     @Param('commentId') commentId: string,
     @OptionalUserId() userId?: string,
   ): Promise<CommentViewDto> {
-    return this.commentsQueryService.getCommentViewDtoOrFail(commentId, userId);
+    return this.queryBus.execute<GetCommentQuery, CommentViewDto>(
+      new GetCommentQuery(commentId, userId),
+    );
   }
 
   @HttpCode(HttpStatus.NO_CONTENT)
@@ -50,7 +59,9 @@ export class CommentsController {
     @Param('commentId') commentId: string,
     @UserId() userId: string,
   ) {
-    return this.commentsService.deleteComment(commentId, userId);
+    await this.commandBus.execute<DeleteCommentCommand>(
+      new DeleteCommentCommand(commentId, userId),
+    );
   }
 
   @HttpCode(HttpStatus.NO_CONTENT)
@@ -65,7 +76,9 @@ export class CommentsController {
       commentId,
       userId,
     };
-    return this.commentsService.updateComment(updateCommentDto);
+    await this.commandBus.execute<UpdateCommentCommand>(
+      new UpdateCommentCommand(updateCommentDto),
+    );
   }
 
   @HttpCode(HttpStatus.NO_CONTENT)
@@ -80,6 +93,8 @@ export class CommentsController {
       authorId,
       commentId,
     };
-    return this.commentsService.updateLike(likeCommentDto);
+    await this.commandBus.execute<UpdateCommentLikeCommand>(
+      new UpdateCommentLikeCommand(likeCommentDto),
+    );
   }
 }

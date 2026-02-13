@@ -1,6 +1,6 @@
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { appConfig } from '../../../../../core/settings/config';
-import { CreateUserDto } from '../../dto/user.dto';
+import { CreateUserDto } from '../../dto/create-user.dto';
 import { UsersFactory } from '../../factories/users.factory';
 import { UsersRepository } from '../../../infrastructure/users.repository';
 

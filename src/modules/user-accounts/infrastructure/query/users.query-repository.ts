@@ -51,7 +51,7 @@ export class UsersQueryRepository {
 
     return this.getUsers(filter, query);
   }
-  //todo with userId
+
   private async getUsers(
     filter: FilterQuery<User>,
     query: GetUsersQueryParams,
@@ -70,7 +70,7 @@ export class UsersQueryRepository {
       items,
       totalCount,
       page: query.pageNumber,
-      size: query.pageSize,
+      pageSize: query.pageSize,
     });
   }
 }

@@ -4,7 +4,7 @@ import { Injectable } from '@nestjs/common';
 import { CryptoService } from '../services/crypto.service';
 import { UserValidationService } from '../services/user-validation.service';
 import { appConfig } from '../../../../core/settings/config';
-import { CreateUserDto } from '../dto/user.dto';
+import { CreateUserDto } from '../dto/create-user.dto';
 import { CreateUserDomainDto } from '../../domain/dto/create-user.domain.dto';
 import { UserHelperService } from '../../../../core/adapters/user-helper.service';
 import { UserConfirmCodeDto } from '../../../../core/dto/type/user-confirm-code.dto';
@@ -15,7 +15,6 @@ export class UsersFactory {
   constructor(
     @InjectModel(User.name)
     private UserModel: UserModelType,
-    private usersRepository: UsersRepository,
     private readonly userValidationService: UserValidationService,
     private readonly cryptoService: CryptoService,
     private readonly userHelperService: UserHelperService,

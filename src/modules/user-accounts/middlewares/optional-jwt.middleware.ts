@@ -25,10 +25,10 @@ export class OptionalJwtMiddleware implements NestMiddleware {
 
     try {
       const payload: UserContextDto = await this.jwtService.verifyAsync(token);
-      const user = await this.authValidationService.validateUserById(
-        payload.id,
+      const userId = await this.authValidationService.validateUserById(
+        payload.userId,
       );
-      req.user = user || null; // null если пользователь не найден
+      req.user = userId ? { userId } : null;
     } catch {
       req.user = null; // битый/протухший токен
     }

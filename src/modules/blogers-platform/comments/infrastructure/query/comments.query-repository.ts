@@ -46,7 +46,7 @@ export class CommentsQueryRepository {
       items,
       totalCount,
       page: query.pageNumber,
-      size: query.pageSize,
+      pageSize: query.pageSize,
     });
   }
 

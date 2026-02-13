@@ -26,8 +26,8 @@ export class ExtendedLikesInfo {
   static CreateFromPost(post: PostDocument) {
     const extendedLikesInfo = new ExtendedLikesInfo();
 
-    extendedLikesInfo.likesCount = post.likesCount || 0;
-    extendedLikesInfo.dislikesCount = post.dislikesCount || 0;
+    extendedLikesInfo.likesCount = post.likesCount;
+    extendedLikesInfo.dislikesCount = post.dislikesCount;
 
     return extendedLikesInfo;
   }

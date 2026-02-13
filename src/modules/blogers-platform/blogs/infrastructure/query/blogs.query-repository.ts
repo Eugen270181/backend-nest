@@ -48,7 +48,6 @@ export class BlogsQueryRepository {
     return this.getBlogs(filter, query);
   }
 
-  //todo with userId
   private async getBlogs(
     filter: FilterQuery<Blog>,
     query: GetBlogsQueryParams,
@@ -67,7 +66,7 @@ export class BlogsQueryRepository {
       items,
       totalCount,
       page: query.pageNumber,
-      size: query.pageSize,
+      pageSize: query.pageSize,
     });
   }
 }

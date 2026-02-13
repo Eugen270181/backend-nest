@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { App } from 'supertest/types';
-import { Connection, Types } from 'mongoose';
+import { Connection } from 'mongoose';
 import { AppModule } from '../../src/app.module';
 import { appSetup } from '../../src/setup/app.setup';
 import { getConnectionToken } from '@nestjs/mongoose';
@@ -21,9 +21,7 @@ import {
 } from './util/createGetBlogs';
 import { fullPathTo } from '../getFullPath';
 import { ErrorResponseBody } from '../../src/core/exceptions/filters/error-responce-body.type';
-import {
-  validateErrorsObject,
-} from '../validateErrorsObject';
+import { validateErrorsObject } from '../validateErrorsObject';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { appConfig } from '../../src/core/settings/config';
 

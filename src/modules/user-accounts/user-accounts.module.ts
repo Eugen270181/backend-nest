@@ -6,7 +6,7 @@ import { AuthController } from './api/auth.controller';
 import { User, UserSchema } from './domain/user.entity';
 import { UsersRepository } from './infrastructure/users.repository';
 import { UsersQueryRepository } from './infrastructure/query/users.query-repository';
-import { JwtModule } from '@nestjs/jwt';
+import { JwtModule, JwtService } from '@nestjs/jwt';
 import { CryptoService } from './application/services/crypto.service';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { AuthQueryRepository } from './infrastructure/query/auth.query-repository';
@@ -32,33 +32,59 @@ import { ConfirmPasswordUseCase } from './application/usecases/users/confirm-pas
 import { UsersFactory } from './application/factories/users.factory';
 import { GetAllUsersQueryHandler } from './application/queries/get-all-users.query';
 import { GetUserQueryHandler } from './application/queries/get-user.query';
-<<<<<<< HEAD
-import { SendConfirmationEmailWhenUserRegisteredEventHandler } from '../notifications/application/event-handlers/send-confirmation-email-when-user-registered.event-handler';
-import { SendSmsWhenUserRegisteredEventHandler } from '../notifications/application/event-handlers/send-sms-when-user-registered.event-handler';
-=======
 import { GetMeQueryHandler } from './application/queries/get-me.query';
->>>>>>> f676c70 (nestjs 3 task - without blog module in cqrs)
+import { SessionsController } from './api/sessions.controller';
+import { JwtRefreshStrategy } from './guards/bearer/jwt-refresh.strategy';
+import { JwtRefreshAuthGuard } from './guards/bearer/jwt-refresh-auth.guard';
+import {
+  ACCESS_TOKEN_SERVICE,
+  REFRESH_TOKEN_SERVICE,
+} from './guards/tokens.constants';
+import { GenerateTokensUseCase } from './application/usecases/generate-tokens.usecase';
+import { CreateSessionUseCase } from './application/usecases/sessions/create-session.usecase';
+import { SessionsRepository } from './infrastructure/sessions.repository';
+import { Session, SessionSchema } from './domain/session.entity';
+import { RefreshTokensUseCase } from './application/usecases/refresh-tokens.usecase';
+import { DeleteUserSessionByIdUseCase } from './application/usecases/sessions/delete-user-session-by-id-use.case';
+import { GetSessionDocumentQueryHandler } from './application/queries/get-session-document.query';
+import { DeleteUserSessionsExcCurUseCase } from './application/usecases/sessions/delete-user-sessions-exc-cur-use.case';
+import { GetUserActiveSessionsQueryHandler } from './application/queries/get-user-active-sessions.query';
+import { SessionsQueryRepository } from './infrastructure/query/sessions.query-repository';
 
 const services = [AuthValidationService, UserValidationService, CryptoService];
 
-const strategies = [JwtStrategy, BasicStrategy, LocalStrategy];
+const strategies = [
+  JwtStrategy,
+  JwtRefreshStrategy,
+  BasicStrategy,
+  LocalStrategy,
+];
 
-const guards = [BasicAuthGuard, JwtAuthGuard, LocalAuthGuard, ThrottlerGuard];
+const guards = [
+  BasicAuthGuard,
+  JwtAuthGuard,
+  JwtRefreshAuthGuard,
+  LocalAuthGuard,
+  ThrottlerGuard,
+];
 
-<<<<<<< HEAD
-const queryHandlers = [GetAllUsersQueryHandler, GetUserQueryHandler];
-=======
 const queryHandlers = [
   GetAllUsersQueryHandler,
   GetUserQueryHandler,
   GetMeQueryHandler,
+  GetSessionDocumentQueryHandler,
+  GetUserActiveSessionsQueryHandler,
 ];
->>>>>>> f676c70 (nestjs 3 task - without blog module in cqrs)
 
 const commandHandlers = [
   CreateUserUseCase,
   DeleteUserUseCase,
+  GenerateTokensUseCase,
+  CreateSessionUseCase,
+  DeleteUserSessionByIdUseCase,
+  DeleteUserSessionsExcCurUseCase,
   LoginUserUseCase,
+  RefreshTokensUseCase,
   RegisterUserUseCase,
   ResendRegistrationCodeUseCase,
   ConfirmRegistrationCodeUseCase,
@@ -74,22 +100,45 @@ const commandHandlers = [
     //или написать свой tokens сервис (адаптер), где эти опции будут уже учтены
     //или использовать useFactory и регистрацию через токены для JwtService,
     //для создания нескольких экземпляров в IoC с разными настройками (пример в следующих занятиях)
-    JwtModule.register({
-      secret: appConfig.AT_SECRET, //TODO: move to env. will be in the following lessons
-      signOptions: { expiresIn: appConfig.AT_TIME }, // Время жизни токена
-    }),
+    JwtModule.register({}),
     ThrottlerModule.forRoot([
       {
         ttl: 10000,
         limit: 5,
       },
     ]),
-    MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
+    MongooseModule.forFeature([
+      { name: User.name, schema: UserSchema },
+      { name: Session.name, schema: SessionSchema },
+    ]),
     NotificationsModule,
     AdaptersModule,
   ],
-  controllers: [UsersController, AuthController],
+  controllers: [UsersController, AuthController, SessionsController],
   providers: [
+    // Регистрируем два разных JwtService с разными настройками
+    {
+      provide: ACCESS_TOKEN_SERVICE,
+      useFactory: (): JwtService => {
+        return new JwtService({
+          secret: appConfig.AT_SECRET,
+          signOptions: {
+            expiresIn: appConfig.AT_TIME,
+          },
+        });
+      },
+    },
+    {
+      provide: REFRESH_TOKEN_SERVICE,
+      useFactory: (): JwtService => {
+        return new JwtService({
+          secret: appConfig.RT_SECRET,
+          signOptions: {
+            expiresIn: appConfig.RT_TIME,
+          },
+        });
+      },
+    },
     ...guards,
     ...strategies,
     ...commandHandlers,
@@ -98,17 +147,10 @@ const commandHandlers = [
     ...services,
     UsersRepository,
     UsersQueryRepository,
+    SessionsRepository,
+    SessionsQueryRepository,
+
     AuthQueryRepository,
-<<<<<<< HEAD
-    UsersFactory,
-    ...commandHandlers,
-    ...queryHandlers,
-    //...eventHandlers,
-    ...services,
-    ...guards,
-    ...strategies,
-=======
->>>>>>> f676c70 (nestjs 3 task - without blog module in cqrs)
   ],
   exports: [
     UsersRepository,

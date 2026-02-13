@@ -1,4 +1,4 @@
-import { CreateUserDto } from '../../application/dto/user.dto';
+import { CreateUserDto } from '../../application/dto/create-user.dto';
 import { IsStringWithTrim } from '../../../../core/decorators/validation/is-string-with-trim';
 import {
   IsEmail,

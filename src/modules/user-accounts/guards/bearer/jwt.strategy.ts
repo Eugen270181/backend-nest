@@ -20,20 +20,20 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
   /**
    * функция принимает payload из jwt токена и возвращает то, что впоследствии будет записано в req.user
    * @param payload
-   */
+   **/
   async validate(payload: UserContextDto): Promise<UserContextDto> {
     //todo with validate user by Id across AuthSevice. DI - dependency in constructor
-    const userContextDto = await this.authValidationService.validateUserById(
-      payload.id,
+    const userId = await this.authValidationService.validateUserById(
+      payload.userId,
     );
 
-    if (!userContextDto) {
+    if (!userId) {
       throw new DomainException({
         code: DomainExceptionCode.Unauthorized, //401
-        message: 'User in jwt payload - not found',
+        message: 'UserId in jwt payload - not found',
       });
     }
 
-    return userContextDto;
+    return { userId };
   }
 }

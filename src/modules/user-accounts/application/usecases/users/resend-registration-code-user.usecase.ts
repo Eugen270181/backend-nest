@@ -2,11 +2,8 @@ import { CommandHandler, EventBus, ICommandHandler } from '@nestjs/cqrs';
 import { appConfig } from '../../../../../core/settings/config';
 import { UserSearchType } from '../../dto/enum/user-search-type';
 import { UserValidationService } from '../../services/user-validation.service';
-import { CodeService } from '../../../../../core/adapters/code.service';
-import { DateService } from '../../../../../core/adapters/date.service';
 import { UserDocument } from '../../../domain/user.entity';
 import { UsersRepository } from '../../../infrastructure/users.repository';
-import { EmailService } from '../../../../notifications/email.service';
 import { EmailInputDto } from '../../../api/input-dto/email.input-dto';
 import { UserConfirmCodeDto } from '../../../../../core/dto/type/user-confirm-code.dto';
 import { UserHelperService } from '../../../../../core/adapters/user-helper.service';
@@ -19,7 +16,7 @@ export class ResendRegistrationCodeUserCommand {
 
 @CommandHandler(ResendRegistrationCodeUserCommand)
 export class ResendRegistrationCodeUseCase
-  implements ICommandHandler<ResendRegistrationCodeUserCommand, void>
+  implements ICommandHandler<ResendRegistrationCodeUserCommand>
 {
   constructor(
     private readonly usersRepository: UsersRepository,

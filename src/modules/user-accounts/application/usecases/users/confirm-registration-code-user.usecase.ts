@@ -12,7 +12,7 @@ export class ConfirmRegistrationCodeUserCommand {
 
 @CommandHandler(ConfirmRegistrationCodeUserCommand)
 export class ConfirmRegistrationCodeUseCase
-  implements ICommandHandler<ConfirmRegistrationCodeUserCommand, void>
+  implements ICommandHandler<ConfirmRegistrationCodeUserCommand>
 {
   constructor(
     private readonly usersRepository: UsersRepository,
