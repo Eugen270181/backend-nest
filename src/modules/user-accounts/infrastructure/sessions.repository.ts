@@ -31,8 +31,8 @@ export class SessionsRepository {
     return this.SessionModel.findOne({ deviceId, lastActiveDate });
   }
   //передаем также userId чтобы случайно не удалить чужую сессию - подстраховка
-  async deleteUserSessionById(deviceId: string) {
-    const result = await this.SessionModel.deleteOne({ deviceId });
+  async deleteUserSessionById(deviceId: string, userId: string) {
+    const result = await this.SessionModel.deleteOne({ deviceId, userId });
     return result.deletedCount > 0;
   }
 

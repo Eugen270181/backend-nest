@@ -20,7 +20,7 @@ import {
   getBlogsQty,
 } from './util/createGetBlogs';
 import { fullPathTo } from '../getFullPath';
-import { ErrorResponseBody } from '../../src/core/exceptions/filters/error-responce-body.type';
+import { ErrorResponseBody } from '../../src/core/exceptions/error-responce-body.type';
 import { validateErrorsObject } from '../validateErrorsObject';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { appConfig } from '../../src/core/settings/config';

@@ -39,6 +39,9 @@ export class DeleteUserSessionByIdUseCase
       });
     }
 
-    return await this.sessionsRepository.deleteUserSessionById(deviceId);
+    return await this.sessionsRepository.deleteUserSessionById(
+      deviceId,
+      userId,
+    );
   }
 }

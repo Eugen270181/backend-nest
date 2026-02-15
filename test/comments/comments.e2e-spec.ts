@@ -20,7 +20,7 @@ import { UserViewDto } from '../../src/modules/user-accounts/api/view-dto/user.v
 import request from 'supertest';
 import { fullPathTo } from '../getFullPath';
 import { validateErrorsObject } from '../validateErrorsObject';
-import { ErrorResponseBody } from '../../src/core/exceptions/filters/error-responce-body.type';
+import { ErrorResponseBody } from '../../src/core/exceptions/error-responce-body.type';
 import { createBlog } from '../blogs/util/createGetBlogs';
 import { createPosts } from '../posts/util/createGetPosts';
 import {

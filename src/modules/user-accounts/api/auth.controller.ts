@@ -36,7 +36,7 @@ import { MeViewDto } from './view-dto/me.view-dto';
 import { TokensDto } from '../application/dto/tokens.dto';
 import { JwtRefreshAuthGuard } from '../guards/bearer/jwt-refresh-auth.guard';
 import { RefreshTokensCommand } from '../application/usecases/refresh-tokens.usecase';
-import { DeleteUserSessionByIdCommand } from '../application/usecases/sessions/delete-user-session-by-id-use.case';
+import { LogoutUserCommand } from '../application/usecases/logout-user.usecase';
 
 @UseGuards(ThrottlerGuard)
 // @Throttle({ default: { limit: 5, ttl: 10000 } })
@@ -141,8 +141,8 @@ export class AuthController {
   @UseGuards(JwtRefreshAuthGuard)
   @Post('logout')
   async logout(@UserId() userId: string, @DeviceId() deviceId: string) {
-    await this.commandBus.execute<DeleteUserSessionByIdCommand, boolean>(
-      new DeleteUserSessionByIdCommand(deviceId, userId),
+    await this.commandBus.execute<LogoutUserCommand, boolean>(
+      new LogoutUserCommand(deviceId, userId),
     );
   }
 

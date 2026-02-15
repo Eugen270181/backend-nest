@@ -35,6 +35,7 @@ export class JwtRefreshStrategy extends PassportStrategy(
     req: Request,
     jwtPayload: RefreshTokenPayloadDto,
   ): Promise<UserContextDto> {
+    console.log(jwtPayload);
     if (!jwtPayload.userId) {
       throw new DomainException({
         code: DomainExceptionCode.Unauthorized,

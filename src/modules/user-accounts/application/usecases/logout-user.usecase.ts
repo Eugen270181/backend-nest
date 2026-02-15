@@ -1,29 +1,34 @@
-import { CommandBus, CommandHandler, ICommandHandler } from '@nestjs/cqrs';
-import { appConfig } from '../../../../core/settings/config';
+import { Inject, Logger } from '@nestjs/common'; // Inject из @nestjs/common!
+
+import { SessionsRepository } from '../../infrastructure/sessions.repository';
+import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 
 export class LogoutUserCommand {
-  constructor(public readonly deviceId: string) {}
+  constructor(
+    public readonly deviceId: string,
+    public readonly userId: string,
+  ) {}
 }
 
 @CommandHandler(LogoutUserCommand)
 export class LogoutUserUseCase implements ICommandHandler<LogoutUserCommand> {
-  constructor(private commandBus: CommandBus) {
-    if (appConfig.IOC_LOG) console.log('LogoutUserUseCase created');
-  }
+  private readonly logger = new Logger(LogoutUserUseCase.name);
+  constructor(private readonly sessionsRepository: SessionsRepository) {}
 
-  async execute({ deviceId }: LogoutUserCommand) {
-    // // 1. Удаляем конкретную сессию (как Express)
-    // const isDeleted = await this.sessionsRepo.deleteUserSessionById(
-    //   deviceId,
-    //   userId,
-    // );
-    //
-    // if (!isDeleted) {
-    //   throw new DomainException({
-    //     code: DomainExceptionCode.BadRequest,
-    //     message: 'Session not found or already deleted',
-    //     field: 'deviceId',
-    //   });
-    // }
+  async execute({ deviceId, userId }: LogoutUserCommand) {
+    const isDeleted = await this.sessionsRepository.deleteUserSessionById(
+      deviceId,
+      userId,
+    );
+
+    if (!isDeleted) {
+      // ✅ Template string — TS happy!
+      this.logger.warn(
+        `Logout: session ${deviceId} already deleted for user ${userId}`,
+      );
+      return;
+    }
+
+    this.logger.log(`Logout success for user ${userId}, device ${deviceId}`);
   }
 }

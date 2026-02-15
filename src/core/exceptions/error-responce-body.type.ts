@@ -1,5 +1,5 @@
-import { ErrorsMessages } from '../domain-exceptions';
-import { DomainExceptionCode } from '../domain-exception-codes';
+import { ErrorsMessages } from './domain-exceptions';
+import { DomainExceptionCode } from './domain-exception-codes';
 
 export interface ErrorResponseBody {
   timestamp: string;

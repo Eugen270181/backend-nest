@@ -3,61 +3,104 @@ import {
   passTestsDefault,
   RecoveryPassDto,
   testingDtosCreator,
-  TokenDto,
+  TokensDto,
   UserDto,
 } from '../../testingDtosCreator';
 import { UserViewDto } from '../../../src/modules/user-accounts/api/view-dto/user.view-dto';
 import { fullPathTo } from '../../getFullPath';
 import { routerPaths } from '../../../src/core/settings/paths';
 import { App } from 'supertest/types';
-
-const request = require('supertest');
-//import request from 'supertest'
-
-const extractRefreshToken = (cookies: string[]): string => {
-  const cookie = cookies.find((c) => c.includes('refreshToken'));
-  return cookie?.split(';')[0].split('=')[1] || '';
-};
+import request from 'supertest';
 
 export const getArrTokensWithUsersLogin = async (
   server: App,
   users: UserViewDto[],
-): Promise<TokenDto[]> => {
-  const arrToken: TokenDto[] = [];
+): Promise<TokensDto[]> => {
+  const arrTokens: TokensDto[] = [];
 
   for (let i = 0; i < users.length; i++) {
-    const token = await getTokenWithLogin(server, {
+    const tokens = await getTokensWithLogin(server, {
       loginOrEmail: users[i].login,
       password: passTestsDefault,
     });
-    arrToken.push(token);
+    arrTokens.push(tokens);
   }
 
-  return arrToken;
+  return arrTokens;
 };
-///////////////////////////////////////////////////////////////////////////////
-export const getTokenWithLogin = async (
+
+export const getArrTokensWithUserLogins = async (
   server: App,
   loginDto: LoginDto,
-): Promise<TokenDto> => {
+  count: number,
+): Promise<TokensDto[]> => {
+  const arrTokens: TokensDto[] = [];
+
+  for (let i = 0; i < count; i++) {
+    const tokens = await getTokensWithLogin(server, loginDto);
+    arrTokens.push(tokens);
+  }
+
+  return arrTokens;
+};
+///////////////////////////////////////////////////////////////////////////////
+export const getTokensWithLogin = async (
+  server: App,
+  loginDto: LoginDto,
+): Promise<TokensDto> => {
   const resPost = await request(server)
     .post(`${fullPathTo.auth}${routerPaths.login}`)
     .send(loginDto)
     .expect(200);
 
-  return getTokenInResponseBody(resPost);
+  return getTokensInResponse(resPost);
 };
 
-const getTokenInResponseBody = (resPost: any): TokenDto => {
+const getTokensInResponse = (resPost: any): TokensDto => {
   // Проверка структуры accessToken в теле ответа
   expect(resPost.body).toEqual({
     accessToken: expect.any(String),
   });
-  const AT: string = resPost.body.accessToken;
+  const accessToken: string = resPost.body.accessToken;
   // Проверка наличия AT в теле ответа
-  expect(AT).toBeDefined();
+  expect(accessToken).toBeDefined();
+  ////////////////////////////////////////////
+  const cookies: string[] | undefined = resPost.headers['set-cookie'];
+  expect(cookies).toBeDefined();
+  const cookieWithRefreshToken: string | undefined = cookies?.find((c) =>
+    c.includes('refreshToken'),
+  );
+  expect(cookieWithRefreshToken).toBeDefined();
+  const refreshToken: string | undefined =
+    cookieWithRefreshToken?.split(';')[0].split('=')[1] || '';
+  expect(refreshToken).toBeDefined();
 
-  return { accessToken: AT };
+  return { accessToken, refreshToken };
+};
+
+export const getTokensWithRefreshToken = async (
+  server: App,
+  refreshToken: String,
+): Promise<TokensDto> => {
+  console.log(refreshToken);
+  console.log(`${fullPathTo.auth}${routerPaths.refreshToken}`);
+  const resPost = await request(server)
+    .post(`${fullPathTo.auth}${routerPaths.refreshToken}`)
+    .set('Cookie', `refreshToken=${refreshToken}`)
+    .expect(200);
+
+  return getTokensInResponse(resPost);
+};
+
+export const logoutUser = async (
+  server: App,
+  refreshToken: String,
+  expectedStatus: Number = 204,
+) => {
+  await request(server)
+    .post(`${fullPathTo.auth}${routerPaths.logout}`)
+    .set('Cookie', `refreshToken=${refreshToken}`)
+    .expect(expectedStatus);
 };
 
 export const createUserByReg = async (server: App, userDto?: UserDto) => {

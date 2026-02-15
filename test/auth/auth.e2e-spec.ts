@@ -17,6 +17,7 @@ import {
   ResendRegCodeDto,
   testingDtosCreator,
   TokenDto,
+  TokensDto,
   UserDto,
 } from '../testingDtosCreator';
 import { randomUUID } from 'crypto';
@@ -25,7 +26,8 @@ import { createUserBySa } from '../users/util/createGetUsers';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import {
   createUserByReg,
-  getTokenWithLogin,
+  getTokensWithLogin,
+  getTokensWithRefreshToken, logoutUser,
   recoveryPassByEmail,
 } from './util/createGetAuth';
 import {
@@ -35,11 +37,12 @@ import {
 } from '../../src/modules/user-accounts/domain/user.entity';
 import { EmailService } from '../../src/modules/notifications/email.service';
 import { MockCodeHelper } from './util/mock-code.helper';
-import { ErrorResponseBody } from '../../src/core/exceptions/filters/error-responce-body.type';
+import { ErrorResponseBody } from '../../src/core/exceptions/error-responce-body.type';
 import { validateErrorsObject } from '../validateErrorsObject';
 import { CryptoService } from '../../src/modules/user-accounts/application/services/crypto.service';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import { UserHelperService } from '../../src/core/adapters/user-helper.service';
+import { delay } from 'rxjs';
 
 describe('<<AUTH>> ENDPOINTS TESTING!!!(e2e)', () => {
   let app: NestExpressApplication;
@@ -50,16 +53,17 @@ describe('<<AUTH>> ENDPOINTS TESTING!!!(e2e)', () => {
   let mockCodeHelper: MockCodeHelper;
   let cryptoService: CryptoService;
 
+  const delay = (ms: number) =>
+    new Promise((resolve) => setTimeout(resolve, ms));
   const allowAllThrottleMockGuard = {
     canActivate: () => true,
   };
-
   const mockEmailService = {
     sendConfirmationEmail: jest.fn().mockResolvedValue(undefined),
   };
   const users: UserViewDto[] = [];
   let userDtos: UserDto[] = [];
-  let token: TokenDto;
+  let tokens: TokensDto;
 
   const noValidRegUserDto: RegistrationDto = {
     login: '',
@@ -151,8 +155,8 @@ describe('<<AUTH>> ENDPOINTS TESTING!!!(e2e)', () => {
         password: userDtos[0].password,
       };
 
-      token = await getTokenWithLogin(server, loginDto);
-      console.log(token);
+      tokens = await getTokensWithLogin(server, loginDto);
+      console.log(tokens);
     });
   });
 
@@ -166,7 +170,7 @@ describe('<<AUTH>> ENDPOINTS TESTING!!!(e2e)', () => {
     it(`GET -> "/auth/me": With valid authorization. STATUS 200 + user data`, async () => {
       const res = await request(server)
         .get(`${fullPathTo.auth}${routerPaths.me}`)
-        .set('Authorization', `Bearer ${token.accessToken}`)
+        .set('Authorization', `Bearer ${tokens.accessToken}`)
         .expect(200);
 
       //из ответа мы получим userId но как сравнить с id созданого пользователя в монгусе? к сожалению только напрямую из БД
@@ -181,6 +185,39 @@ describe('<<AUTH>> ENDPOINTS TESTING!!!(e2e)', () => {
         login: users[0].login,
         userId: users[0].id,
       });
+    });
+  });
+
+  describe(`POST -> "/auth/refresh-token":`, () => {
+    it(`STATUS 401: No refreshToken in requests cookies.`, async () => {
+      await request(server)
+        .post(`${fullPathTo.auth}${routerPaths.refreshToken}`)
+        .expect(401);
+    });
+
+    it(` STATUS 200: valid RT in req cookies; STATUS 401: old RT in req cookies`, async () => {
+      const oldTokens = { ...tokens };
+      await delay(1000);
+      tokens = await getTokensWithRefreshToken(server, oldTokens.refreshToken);
+      expect(oldTokens.refreshToken).not.toBe(tokens.refreshToken);
+      await request(server)
+        .post(`${fullPathTo.auth}${routerPaths.refreshToken}`)
+        .set('Cookie', oldTokens.refreshToken)
+        .expect(401);
+    });
+  });
+
+  describe(`POST -> "/auth/logout"`, () => {
+    it(` STATUS 401: No refreshToken in req cookies.`, async () => {
+      await request(server)
+        .post(`${fullPathTo.auth}${routerPaths.logout}`)
+        .expect(401);
+    });
+
+    it(`STATUS 200: Authorized. Everything ok. RT in cookie(req/res).`, async () => {
+      await logoutUser(server, tokens.refreshToken);
+
+      await logoutUser(server, tokens.refreshToken, 401);
     });
   });
 

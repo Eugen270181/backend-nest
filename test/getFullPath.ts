@@ -11,5 +11,6 @@ export const fullPathTo = {
   blogs: getFullPath(routerPaths.blogs),
   posts: getFullPath(routerPaths.posts),
   comments: getFullPath(routerPaths.comments),
+  security: getFullPath(routerPaths.security),
   //add also others entity route
 };

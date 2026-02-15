@@ -32,7 +32,7 @@ export class RefreshTokensUseCase
     const newTokensData: TokensWithTimesDto = await this.commandBus.execute<
       GenerateTokensCommand,
       TokensWithTimesDto
-    >(new GenerateTokensCommand(deviceId, userId));
+    >(new GenerateTokensCommand(userId, deviceId));
 
     // 2. Найти сессию по deviceId (Guard прошёл = точно есть!)
     const sessionDocument =

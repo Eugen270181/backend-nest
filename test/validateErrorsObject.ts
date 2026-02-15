@@ -1,4 +1,4 @@
-import { ErrorResponseBody } from '../src/core/exceptions/filters/error-responce-body.type';
+import { ErrorResponseBody } from '../src/core/exceptions/error-responce-body.type';
 
 export type errorsMessagesType = { message: string; field: string };
 export type OutputErrorsType = {

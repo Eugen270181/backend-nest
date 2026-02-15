@@ -12,7 +12,7 @@ import { createUserBySa, getUsersQty } from './util/createGetUsers';
 import { PaginatedViewDto } from '../../src/core/dto/base.paginated.view-dto';
 import { fullPathTo } from '../getFullPath';
 import { validateErrorsObject } from '../validateErrorsObject';
-import { ErrorResponseBody } from '../../src/core/exceptions/filters/error-responce-body.type';
+import { ErrorResponseBody } from '../../src/core/exceptions/error-responce-body.type';
 
 import {
   testingDtosCreator,

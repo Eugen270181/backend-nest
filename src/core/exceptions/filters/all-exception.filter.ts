@@ -5,7 +5,7 @@ import {
   ExceptionFilter,
   HttpStatus,
 } from '@nestjs/common';
-import { ErrorResponseBody } from './error-responce-body.type';
+import { ErrorResponseBody } from '../error-responce-body.type';
 import { DomainExceptionCode } from '../domain-exception-codes';
 import { Response, Request } from 'express';
 

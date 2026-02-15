@@ -35,7 +35,7 @@ import {
 } from '../../src/modules/user-accounts/domain/user.entity';
 import { EmailService } from '../../src/modules/notifications/email.service';
 import { MockCodeHelper } from './util/mock-code.helper';
-import { ErrorResponseBody } from '../../src/core/exceptions/filters/error-responce-body.type';
+import { ErrorResponseBody } from '../../src/core/exceptions/error-responce-body.type';
 import { validateErrorsObject } from '../validateErrorsObject';
 import { CryptoService } from '../../src/modules/user-accounts/application/services/crypto.service';
 import { ThrottlerGuard } from '@nestjs/throttler';

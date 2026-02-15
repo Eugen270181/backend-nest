@@ -50,6 +50,7 @@ import { GetSessionDocumentQueryHandler } from './application/queries/get-sessio
 import { DeleteUserSessionsExcCurUseCase } from './application/usecases/sessions/delete-user-sessions-exc-cur-use.case';
 import { GetUserActiveSessionsQueryHandler } from './application/queries/get-user-active-sessions.query';
 import { SessionsQueryRepository } from './infrastructure/query/sessions.query-repository';
+import { LogoutUserUseCase } from './application/usecases/logout-user.usecase';
 
 const services = [AuthValidationService, UserValidationService, CryptoService];
 
@@ -85,6 +86,7 @@ const commandHandlers = [
   DeleteUserSessionsExcCurUseCase,
   LoginUserUseCase,
   RefreshTokensUseCase,
+  LogoutUserUseCase,
   RegisterUserUseCase,
   ResendRegistrationCodeUseCase,
   ConfirmRegistrationCodeUseCase,

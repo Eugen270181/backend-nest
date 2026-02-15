@@ -29,7 +29,7 @@ import {
 import request from 'supertest';
 import { fullPathTo } from '../getFullPath';
 import { validateErrorsObject } from '../validateErrorsObject';
-import { ErrorResponseBody } from '../../src/core/exceptions/filters/error-responce-body.type';
+import { ErrorResponseBody } from '../../src/core/exceptions/error-responce-body.type';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { appConfig } from '../../src/core/settings/config';
 
