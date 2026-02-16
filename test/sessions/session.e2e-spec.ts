@@ -5,15 +5,13 @@ import { UserViewDto } from '../../src/modules/user-accounts/api/view-dto/user.v
 import {
   LoginDto,
   passTestsDefault,
-  testingDtosCreator,
-  TokenDto,
   TokensDto,
   UserDto,
 } from '../testingDtosCreator';
 import { Test, TestingModule } from '@nestjs/testing';
 import { AppModule } from '../../src/app.module';
 import { appSetup } from '../../src/setup/app.setup';
-import { getConnectionToken, getModelToken } from '@nestjs/mongoose';
+import { getConnectionToken } from '@nestjs/mongoose';
 import { dropDbCollections } from '../dropDbCollections';
 import {
   getArrTokensWithUserLogins,
@@ -21,11 +19,10 @@ import {
   logoutUser,
 } from '../auth/util/createGetAuth';
 import request from 'supertest';
-import { createUserBySa, createUsersBySa } from '../users/util/createGetUsers';
+import { createUsersBySa } from '../users/util/createGetUsers';
 import { SessionViewDto } from '../../src/modules/user-accounts/api/view-dto/session-view.dto';
 import { fullPathTo } from '../getFullPath';
 import { routerPaths } from '../../src/core/settings/paths';
-import { skip } from 'rxjs';
 
 describe('<<SECURITY>> ENDPOINTS TESTING!!!(e2e)', () => {
   let app: NestExpressApplication;
@@ -33,9 +30,8 @@ describe('<<SECURITY>> ENDPOINTS TESTING!!!(e2e)', () => {
   let server: App;
 
   let users: UserViewDto[] = [];
-  let userDtos: UserDto[] = [];
-  let loginDto: LoginDto[] = [];
-  let arrTokens: TokensDto[] = [];
+  const loginDto: LoginDto[] = [];
+  const arrTokens: TokensDto[] = [];
   let devicesUser1, devicesUser0: SessionViewDto[];
   const password = passTestsDefault;
 
@@ -118,28 +114,114 @@ describe('<<SECURITY>> ENDPOINTS TESTING!!!(e2e)', () => {
           .expect(200);
         expect(resGetDev1.body).toHaveLength(2);
       });
-    });
 
-    describe.skip(`DELETE -> "/security/devices/:deviceId"`, () => {
-      it('STATUS 201. Delete one.', async () => {
-        const tokens = await getTokensWithLogin(server, loginDto[0]);
-        const deviceId = 'some-device-uuid'; // из login response?
-
+      it(`STATUS 401. Unauthorized with no RT and not Valid RT.`, async () => {
+        //без токена
         await request(server)
-          .delete(`/security/devices/${deviceId}`)
-          .set('Cookie', `refreshToken=${tokens.refreshToken}`)
-          .expect(204);
+          .get(`${fullPathTo.security}${routerPaths.inSecurity}`)
+          .expect(401);
+        //с протухшим в бд сессий пред.тесте - arrTokens[3].refreshToken
+        await request(server)
+          .get(`${fullPathTo.security}${routerPaths.inSecurity}`)
+          .set('Cookie', `refreshToken=${arrTokens[3].refreshToken}`)
+          .expect(401);
       });
     });
 
-    describe.skip(`GET -> "/security/devices"`, () => {
-      it('STATUS 201. DELETE /security/devices — delete all except current', async () => {
-        const tokens = await getTokensWithLogin(server, loginDto[1]);
+    describe(`DELETE -> "/security/devices/:deviceId"`, () => {
+      it(` STATUS 401. Unauthorized with no RT and not Valid RT.`, async () => {
+        //без токена
+        await request(server)
+          .delete(`${fullPathTo.security}${routerPaths.inSecurity}/1`)
+          .expect(401);
+        //с протухшим в пред.тесте - arrTokens[3].refreshToken
+        await request(server)
+          .delete(`${fullPathTo.security}${routerPaths.inSecurity}/1`)
+          .set('Cookie', `refreshToken=${arrTokens[3].refreshToken}`)
+          .expect(401);
+      });
+
+      it(`STATUS 404. Not Found deviceId.`, async () => {
+        await request(server)
+          .delete(
+            `${fullPathTo.security}${routerPaths.inSecurity}/${devicesUser1[2].deviceId}`,
+          )
+          .set('Cookie', `refreshToken=${arrTokens[2].refreshToken}`)
+          .expect(404);
+      });
+
+      it(`STATUS 403. Forbidden. `, async () => {
+        await request(server)
+          .delete(
+            `${fullPathTo.security}${routerPaths.inSecurity}/${devicesUser1[1].deviceId}`,
+          )
+          .set('Cookie', `refreshToken = ${arrTokens[0].refreshToken}`)
+          .expect(403);
+      });
+
+      it(`STATUS 204. Everything OK.`, async () => {
+        //удаляем
+        await request(server)
+          .delete(
+            `${fullPathTo.security}${routerPaths.inSecurity}/${devicesUser1[1].deviceId}`,
+          )
+          .set('Cookie', `refreshToken = ${arrTokens[1].refreshToken}`)
+          .expect(204);
+
+        //добавляем
+        arrTokens.push(
+          await getTokensWithLogin(server, {
+            loginOrEmail: users[1].login,
+            password,
+          }),
+        );
+        //3в. Проверка через RT кол-ва сессий второго пользователя( = 2)
+        const resGet = await request(server)
+          .get(`${fullPathTo.security}${routerPaths.inSecurity}`)
+          .set('Cookie', `refreshToken = ${arrTokens[1].refreshToken}`)
+          .expect(200);
+        expect(resGet.body).toHaveLength(2);
+      });
+    });
+
+    describe(`DELETE -> "/security/devices"`, () => {
+      it(` STATUS 401. Unauthorized with no RT and not Valid RT.`, async () => {
+        //без токена
+        await request(server)
+          .delete(`${fullPathTo.security}${routerPaths.inSecurity}`)
+          .expect(401);
+        //с протухшим в пред.тесте - arrTokens[3].refreshToken
+        await request(server)
+          .delete(`${fullPathTo.security}${routerPaths.inSecurity}`)
+          .set('Cookie', `refreshToken=${arrTokens[3].refreshToken}`)
+          .expect(401);
+      });
+
+      it(`STATUS 204. Everything OK.`, async () => {
+        const resGet = await request(server)
+          .get(`${fullPathTo.security}${routerPaths.inSecurity}`)
+          .set('Cookie', `refreshToken=${arrTokens[1].refreshToken}`)
+          .expect(200);
+        expect(resGet.body).toHaveLength(2);
 
         await request(server)
-          .delete('/security/devices')
-          .set('Cookie', `refreshToken=${tokens.refreshToken}`)
+          .delete(`${fullPathTo.security}${routerPaths.inSecurity}`)
+          .set('Cookie', `refreshToken=${arrTokens[1].refreshToken}`)
           .expect(204);
+
+        //3в. Проверка через RT кол-ва сессий второго пользователя( = 2)
+        const resGet2 = await request(server)
+          .get(`${fullPathTo.security}${routerPaths.inSecurity}`)
+          .set('Cookie', `refreshToken=${arrTokens[1].refreshToken}`)
+          .expect(200);
+        expect(resGet2.body).toHaveLength(1);
+
+        ///////////////////////////////////////////
+        const resGet3 = await request(server)
+          .get(`${fullPathTo.security}${routerPaths.inSecurity}`)
+          .set('Cookie', `refreshToken=${arrTokens[1].refreshToken}`)
+          .expect(200);
+        expect(resGet3.body).toHaveLength(1);
       });
     });
   });

@@ -24,7 +24,6 @@ import { ThrottlerExceptionFilter } from './core/exceptions/filters/throttler-ex
     //   ],
     // }),
     CoreModule,
-    //LoggerModule,
     UserAccountsModule,
     BloggersPlatformModule,
     TestingModule,

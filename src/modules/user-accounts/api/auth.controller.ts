@@ -10,7 +10,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { Response, Request } from 'express';
-import { SkipThrottle, ThrottlerGuard } from '@nestjs/throttler';
+import { SkipThrottle, Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { appConfig } from '../../../core/settings/config';
 import { LocalAuthGuard } from '../guards/local/local-auth.guard';
 import { ApiBearerAuth, ApiBody } from '@nestjs/swagger';
@@ -39,7 +39,7 @@ import { RefreshTokensCommand } from '../application/usecases/refresh-tokens.use
 import { LogoutUserCommand } from '../application/usecases/logout-user.usecase';
 
 @UseGuards(ThrottlerGuard)
-// @Throttle({ default: { limit: 5, ttl: 10000 } })
+//@Throttle({ default: { limit: 5, ttl: 10000 } })
 @Controller('auth')
 export class AuthController {
   constructor(
@@ -73,7 +73,6 @@ export class AuthController {
     );
   }
   //////////////////////////LOGIN_REGRESH_ABOUTME_LOGOUT//////////////
-  @SkipThrottle()
   @HttpCode(HttpStatus.OK)
   @Post('login')
   @UseGuards(LocalAuthGuard)
