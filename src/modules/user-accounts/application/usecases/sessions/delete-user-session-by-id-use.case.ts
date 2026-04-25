@@ -1,11 +1,11 @@
 import { CommandHandler, ICommandHandler, QueryBus } from '@nestjs/cqrs';
-import { appConfig } from '../../../../../core/settings/config';
 import { SessionsRepository } from '../../../infrastructure/sessions.repository';
 import { DomainException } from '../../../../../core/exceptions/domain-exceptions';
 import { DomainExceptionCode } from '../../../../../core/exceptions/domain-exception-codes';
 
 import { GetSessionDocumentQuery } from '../../queries/get-session-document.query';
 import { SessionDocument } from '../../../domain/session.entity';
+import { CoreConfig } from '../../../../../core/core.config';
 
 export class DeleteUserSessionByIdCommand {
   constructor(
@@ -19,10 +19,11 @@ export class DeleteUserSessionByIdUseCase
   implements ICommandHandler<DeleteUserSessionByIdCommand, boolean>
 {
   constructor(
+    private coreConfig: CoreConfig,
     private readonly sessionsRepository: SessionsRepository,
     private readonly queryBus: QueryBus,
   ) {
-    if (appConfig.IOC_LOG) console.log('DeleteSessionUseCase created');
+    if (this.coreConfig.IOC_LOG) console.log('DeleteSessionUseCase created');
   }
 
   async execute({ deviceId, userId }: DeleteUserSessionByIdCommand) {

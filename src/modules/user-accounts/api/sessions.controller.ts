@@ -7,7 +7,6 @@ import {
   Param,
   UseGuards,
 } from '@nestjs/common';
-import { appConfig } from '../../../core/settings/config';
 import { JwtRefreshAuthGuard } from '../guards/bearer/jwt-refresh-auth.guard';
 import {
   DeviceId,
@@ -18,15 +17,18 @@ import { DeleteUserSessionByIdCommand } from '../application/usecases/sessions/d
 import { GetUserActiveSessionsQuery } from '../application/queries/get-user-active-sessions.query';
 import { SessionViewDto } from './view-dto/session-view.dto';
 import { DeleteUserSessionsExcCurCommand } from '../application/usecases/sessions/delete-user-sessions-exc-cur-use.case';
+import { CoreConfig } from '../../../core/core.config';
 
 @UseGuards(JwtRefreshAuthGuard)
 @Controller('security')
 export class SessionsController {
   constructor(
+    private coreConfig: CoreConfig,
     private readonly commandBus: CommandBus,
     private readonly queryBus: QueryBus,
   ) {
-    if (appConfig.IOC_LOG) console.log('SecurityDevicesController created');
+    if (this.coreConfig.IOC_LOG)
+      console.log('SecurityDevicesController created');
   }
 
   @HttpCode(HttpStatus.OK)

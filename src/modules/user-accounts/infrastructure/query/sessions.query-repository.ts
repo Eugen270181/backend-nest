@@ -5,16 +5,17 @@ import {
   SessionDocument,
   SessionModelType,
 } from '../../domain/session.entity';
-import { appConfig } from '../../../../core/settings/config';
 import { SessionViewDto } from '../../api/view-dto/session-view.dto';
 import { FilterQuery } from 'mongoose';
+import { CoreConfig } from '../../../../core/core.config';
 
 @Injectable()
 export class SessionsQueryRepository {
   constructor(
+    private coreConfig: CoreConfig,
     @InjectModel(Session.name) private readonly SessionModel: SessionModelType,
   ) {
-    if (appConfig.IOC_LOG) console.log('SessionsQueryRepository created');
+    if (this.coreConfig.IOC_LOG) console.log('SessionsQueryRepository created');
   }
 
   private async findById(deviceId: string): Promise<SessionDocument | null> {

@@ -1,10 +1,10 @@
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
-import { appConfig } from '../../../../../core/settings/config';
 import { DomainException } from '../../../../../core/exceptions/domain-exceptions';
 import { DomainExceptionCode } from '../../../../../core/exceptions/domain-exception-codes';
 import { CommentsQueryRepository } from '../../infrastructure/query/comments.query-repository';
 import { CommentViewDto } from '../../api/view-dto/comment.view-dto';
 import { CommentEnrichmentService } from '../services/comment-enrichment.service';
+import { CoreConfig } from '../../../../../core/core.config';
 
 export class GetCommentQuery {
   constructor(
@@ -19,10 +19,11 @@ export class GetCommentQueryHandler
   implements IQueryHandler<GetCommentQuery, CommentViewDto>
 {
   constructor(
+    private coreConfig: CoreConfig,
     private commentsQueryRepository: CommentsQueryRepository,
     private commentsEnrichmentService: CommentEnrichmentService,
   ) {
-    if (appConfig.IOC_LOG) console.log('GetPostQueryHandler created');
+    if (this.coreConfig.IOC_LOG) console.log('GetPostQueryHandler created');
   }
 
   async execute({ commentId, userId, justCreated }: GetCommentQuery) {

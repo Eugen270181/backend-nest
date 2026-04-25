@@ -4,13 +4,16 @@ import { UserDocument } from '../../domain/user.entity';
 import { DomainException } from '../../../../core/exceptions/domain-exceptions';
 import { DomainExceptionCode } from '../../../../core/exceptions/domain-exception-codes';
 import { Injectable } from '@nestjs/common';
-import { appConfig } from '../../../../core/settings/config';
 import { CreateUserDto } from '../dto/create-user.dto';
+import { CoreConfig } from '../../../../core/core.config';
 
 @Injectable()
 export class UserValidationService {
-  constructor(private readonly usersRepository: UsersRepository) {
-    if (appConfig.IOC_LOG) console.log('UserValidationService created');
+  constructor(
+    private coreConfig: CoreConfig,
+    private readonly usersRepository: UsersRepository,
+  ) {
+    if (this.coreConfig.IOC_LOG) console.log('UserValidationService created');
   }
   //1. Блок поиска юзера по ключу поиска
   async findUser(

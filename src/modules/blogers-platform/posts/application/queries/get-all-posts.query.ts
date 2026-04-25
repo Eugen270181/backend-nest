@@ -1,10 +1,10 @@
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { PaginatedViewDto } from '../../../../../core/dto/base.paginated.view-dto';
-import { appConfig } from '../../../../../core/settings/config';
 import { GetPostsQueryParams } from '../../../blogs/api/input-dto/get-posts-query-params.input-dto';
 import { PostsQueryRepository } from '../../infrastructure/query/posts.query-repository';
 import { PostEnrichmentService } from '../services/post-enrichment.service';
 import { PostViewDto } from '../../api/view-dto/post.view-dto';
+import { CoreConfig } from '../../../../../core/core.config';
 
 export class GetAllPostsQuery {
   constructor(
@@ -18,10 +18,11 @@ export class GetAllPostsQueryHandler
   implements IQueryHandler<GetAllPostsQuery, PaginatedViewDto<PostViewDto[]>>
 {
   constructor(
+    private coreConfig: CoreConfig,
     private postsQueryRepository: PostsQueryRepository,
     private postEnrichmentService: PostEnrichmentService,
   ) {
-    if (appConfig.IOC_LOG) console.log('GetAllPostsQueryHandler created');
+    if (this.coreConfig.IOC_LOG) console.log('GetAllPostsQueryHandler created');
   }
 
   async execute({

@@ -1,15 +1,16 @@
 import { InjectModel } from '@nestjs/mongoose';
 import { User, UserDocument, UserModelType } from '../domain/user.entity';
 import { Injectable } from '@nestjs/common';
-import { appConfig } from '../../../core/settings/config';
+import { CoreConfig } from '../../../core/core.config';
 
 @Injectable()
 export class UsersRepository {
   //инжектирование модели через DI
   constructor(
+    private coreConfig: CoreConfig,
     @InjectModel(User.name) private readonly UserModel: UserModelType,
   ) {
-    if (appConfig.IOC_LOG) console.log('UsersRepository created');
+    if (this.coreConfig.IOC_LOG) console.log('UsersRepository created');
   }
 
   async save(userDocument: UserDocument) {

@@ -3,7 +3,7 @@ import { UpdateBlogDto } from '../dto/blog.dto';
 import { BlogsRepository } from '../../infrastructure/blogs.repository';
 import { GetBlogDocumentQuery } from '../queries/get-blog-document.query';
 import { BlogDocument } from '../../domain/blog.entity';
-import { appConfig } from '../../../../../core/settings/config';
+import { CoreConfig } from '../../../../../core/core.config';
 
 export class UpdateBlogCommand {
   constructor(public readonly dto: UpdateBlogDto) {}
@@ -12,10 +12,11 @@ export class UpdateBlogCommand {
 @CommandHandler(UpdateBlogCommand)
 export class UpdateBlogUseCase implements ICommandHandler<UpdateBlogCommand> {
   constructor(
+    private coreConfig: CoreConfig,
     private readonly queryBus: QueryBus,
     private readonly blogsRepository: BlogsRepository,
   ) {
-    if (appConfig.IOC_LOG) console.log('UpdateBlogUseCase created');
+    if (this.coreConfig.IOC_LOG) console.log('UpdateBlogUseCase created');
   }
 
   async execute({ dto }: UpdateBlogCommand) {

@@ -3,7 +3,7 @@ import { BlogsRepository } from '../../infrastructure/blogs.repository';
 import { BlogDocument } from '../../domain/blog.entity';
 import { DomainException } from '../../../../../core/exceptions/domain-exceptions';
 import { DomainExceptionCode } from '../../../../../core/exceptions/domain-exception-codes';
-import { appConfig } from '../../../../../core/settings/config';
+import { CoreConfig } from '../../../../../core/core.config';
 
 export class GetBlogDocumentQuery {
   constructor(public readonly id: string) {}
@@ -13,8 +13,12 @@ export class GetBlogDocumentQuery {
 export class GetBlogDocumentQueryHandler
   implements IQueryHandler<GetBlogDocumentQuery, BlogDocument>
 {
-  constructor(private readonly blogsRepository: BlogsRepository) {
-    if (appConfig.IOC_LOG) console.log('GetBlogDocumentQueryHandler created');
+  constructor(
+    private coreConfig: CoreConfig,
+    private readonly blogsRepository: BlogsRepository,
+  ) {
+    if (this.coreConfig.IOC_LOG)
+      console.log('GetBlogDocumentQueryHandler created');
   }
 
   async execute({ id }: GetBlogDocumentQuery): Promise<BlogDocument> {

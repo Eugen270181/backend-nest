@@ -4,17 +4,18 @@ import { BlogViewDto } from '../../../src/modules/blogers-platform/blogs/api/vie
 import request from 'supertest';
 import { PaginatedViewDto } from '../../../src/core/dto/base.paginated.view-dto';
 import { fullPathTo } from '../../getFullPath';
-import { appConfig } from '../../../src/core/settings/config';
+import { AuthCredentials } from '../../users/util/createGetUsers';
 
 export const createBlog = async (
   server: App,
+  creds: AuthCredentials,
   blogDto?: BlogDto,
 ): Promise<BlogViewDto> => {
   const dto = blogDto ?? testingDtosCreator.createBlogDto({});
 
   const resp = await request(server)
     .post(fullPathTo.blogs)
-    .auth(appConfig.SA_LOGIN, appConfig.SA_PASS)
+    .auth(creds.login, creds.password)
     .send(dto)
     .expect(201);
 
@@ -45,6 +46,7 @@ export const getBlogById = async (
 
 export const createBlogs = async (
   server: App,
+  creds: AuthCredentials,
   count: number,
 ): Promise<BlogViewDto[]> => {
   const blogs: BlogViewDto[] = [];
@@ -54,7 +56,7 @@ export const createBlogs = async (
   for (let i = 0; i < count; i++) {
     const resp = await request(server)
       .post(fullPathTo.blogs)
-      .auth(appConfig.SA_LOGIN, appConfig.SA_PASS)
+      .auth(creds.login, creds.password)
       .send(blogDtos[i])
       .expect(201);
     blogs.push(resp.body as BlogViewDto);

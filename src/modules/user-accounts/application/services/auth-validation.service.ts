@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { appConfig } from '../../../../core/settings/config';
 import { UserValidationService } from './user-validation.service';
 import { UserContextDto } from '../../guards/dto/user-context.dto';
 import { UserSearchType } from '../dto/enum/user-search-type';
@@ -8,15 +7,17 @@ import { SessionsRepository } from '../../infrastructure/sessions.repository';
 import { RefreshTokenPayloadDto } from '../../guards/dto/refresh-token-payload.dto';
 import { SessionDocument } from '../../domain/session.entity';
 import { UserDocument } from '../../domain/user.entity';
+import { CoreConfig } from '../../../../core/core.config';
 
 @Injectable()
 export class AuthValidationService {
   constructor(
+    private coreConfig: CoreConfig,
     private userValidationService: UserValidationService,
     private cryptoService: CryptoService,
     private sessionsRepository: SessionsRepository,
   ) {
-    if (appConfig.IOC_LOG) console.log('AuthValidationService created');
+    if (this.coreConfig.IOC_LOG) console.log('AuthValidationService created');
   }
 
   /**

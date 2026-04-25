@@ -1,9 +1,9 @@
 import { CommandBus, CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { TokensDto } from '../dto/tokens.dto';
-import { appConfig } from '../../../../core/settings/config';
 import { GenerateTokensCommand } from './generate-tokens.usecase';
 import { TokensWithTimesDto } from '../dto/tokens-with-times.dto';
 import { SessionsRepository } from '../../infrastructure/sessions.repository';
+import { CoreConfig } from '../../../../core/core.config';
 
 export class RefreshTokensCommand {
   constructor(
@@ -17,10 +17,11 @@ export class RefreshTokensUseCase
   implements ICommandHandler<RefreshTokensCommand, TokensDto>
 {
   constructor(
+    private coreConfig: CoreConfig,
     private sessionsRepository: SessionsRepository,
     private commandBus: CommandBus,
   ) {
-    if (appConfig.IOC_LOG) console.log('RefreshTokensUseCase created');
+    if (this.coreConfig.IOC_LOG) console.log('RefreshTokensUseCase created');
   }
 
   async execute({

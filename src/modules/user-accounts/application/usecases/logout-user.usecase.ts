@@ -1,7 +1,6 @@
-import { Inject, Logger } from '@nestjs/common'; // Inject из @nestjs/common!
-
 import { SessionsRepository } from '../../infrastructure/sessions.repository';
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
+import { Logger } from '@nestjs/common';
 
 export class LogoutUserCommand {
   constructor(
@@ -16,6 +15,8 @@ export class LogoutUserUseCase implements ICommandHandler<LogoutUserCommand> {
   constructor(private readonly sessionsRepository: SessionsRepository) {}
 
   async execute({ deviceId, userId }: LogoutUserCommand) {
+    this.logger.log(`Login success for user ${userId}, device ${deviceId}`);
+
     const isDeleted = await this.sessionsRepository.deleteUserSessionById(
       deviceId,
       userId,

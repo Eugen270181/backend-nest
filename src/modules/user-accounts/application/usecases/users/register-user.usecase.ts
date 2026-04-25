@@ -1,5 +1,4 @@
 import { CommandHandler, EventBus, ICommandHandler } from '@nestjs/cqrs';
-import { appConfig } from '../../../../../core/settings/config';
 import { CreateUserDto } from '../../dto/create-user.dto';
 import { UserDocument } from '../../../domain/user.entity';
 import { UsersRepository } from '../../../infrastructure/users.repository';
@@ -7,6 +6,7 @@ import { UsersFactory } from '../../factories/users.factory';
 
 import { SendUserEmailCodeEvent } from '../../../domain/events/send-user-email-code.event';
 import { EmailType } from '../../../../../core/dto/enum/email-type.enum';
+import { CoreConfig } from '../../../../../core/core.config';
 
 export class RegisterUserCommand {
   constructor(public readonly dto: CreateUserDto) {}
@@ -17,11 +17,12 @@ export class RegisterUserUseCase
   implements ICommandHandler<RegisterUserCommand, void>
 {
   constructor(
+    private coreConfig: CoreConfig,
     private readonly usersRepository: UsersRepository,
     private readonly usersFactory: UsersFactory,
     private readonly eventBus: EventBus,
   ) {
-    if (appConfig.IOC_LOG) console.log('RegisterUserUseCase created');
+    if (this.coreConfig.IOC_LOG) console.log('RegisterUserUseCase created');
   }
 
   async execute({ dto }: RegisterUserCommand) {

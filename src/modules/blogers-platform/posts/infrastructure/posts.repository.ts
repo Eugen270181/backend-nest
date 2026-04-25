@@ -1,15 +1,16 @@
 import { InjectModel } from '@nestjs/mongoose';
 import { Injectable } from '@nestjs/common';
 import { Post, PostDocument, PostModelType } from '../domain/post.entity';
-import { appConfig } from '../../../../core/settings/config';
+import { CoreConfig } from '../../../../core/core.config';
 
 @Injectable()
 export class PostsRepository {
   //инжектирование модели через DI
   constructor(
+    private coreConfig: CoreConfig,
     @InjectModel(Post.name) private readonly PostModel: PostModelType,
   ) {
-    if (appConfig.IOC_LOG) console.log('PostsRepository created');
+    if (this.coreConfig.IOC_LOG) console.log('PostsRepository created');
   }
 
   async findById(id: string): Promise<PostDocument | null> {

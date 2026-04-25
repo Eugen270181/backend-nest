@@ -1,19 +1,20 @@
 import { InjectModel } from '@nestjs/mongoose';
 import { Injectable } from '@nestjs/common';
-import { appConfig } from '../../../core/settings/config';
 import {
   Session,
   SessionDocument,
   SessionModelType,
 } from '../domain/session.entity';
+import { CoreConfig } from '../../../core/core.config';
 
 @Injectable()
 export class SessionsRepository {
   //инжектирование модели через DI
   constructor(
+    private coreConfig: CoreConfig,
     @InjectModel(Session.name) private readonly SessionModel: SessionModelType,
   ) {
-    if (appConfig.IOC_LOG) console.log('SessionsRepository created');
+    if (this.coreConfig.IOC_LOG) console.log('SessionsRepository created');
   }
 
   async save(sessionDocument: SessionDocument) {

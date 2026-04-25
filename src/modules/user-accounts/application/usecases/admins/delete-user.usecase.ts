@@ -3,7 +3,7 @@ import { UsersRepository } from '../../../infrastructure/users.repository';
 
 import { UserValidationService } from '../../services/user-validation.service';
 import { UserSearchType } from '../../dto/enum/user-search-type';
-import { appConfig } from '../../../../../core/settings/config';
+import { CoreConfig } from '../../../../../core/core.config';
 
 export class DeleteUserCommand {
   constructor(public readonly id: string) {}
@@ -14,10 +14,11 @@ export class DeleteUserUseCase
   implements ICommandHandler<DeleteUserCommand, void>
 {
   constructor(
+    private coreConfig: CoreConfig,
     private readonly usersRepository: UsersRepository,
     private readonly userValidationService: UserValidationService,
   ) {
-    if (appConfig.IOC_LOG) console.log('DeleteUserUseCase created');
+    if (this.coreConfig.IOC_LOG) console.log('DeleteUserUseCase created');
   }
 
   async execute({ id }: DeleteUserCommand): Promise<void> {

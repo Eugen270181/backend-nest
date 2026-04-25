@@ -5,15 +5,16 @@ import { FilterQuery } from 'mongoose';
 import { Post, PostDocument, PostModelType } from '../../domain/post.entity';
 import { PostViewDto } from '../../api/view-dto/post.view-dto';
 import { GetPostsQueryParams } from '../../../blogs/api/input-dto/get-posts-query-params.input-dto';
-import { appConfig } from '../../../../../core/settings/config';
+import { CoreConfig } from '../../../../../core/core.config';
 
 @Injectable()
 export class PostsQueryRepository {
   constructor(
+    private coreConfig: CoreConfig,
     @InjectModel(Post.name)
     private readonly PostModel: PostModelType,
   ) {
-    if (appConfig.IOC_LOG) console.log('PostsQueryRepository created');
+    if (this.coreConfig.IOC_LOG) console.log('PostsQueryRepository created');
   }
 
   private async findById(_id: string): Promise<PostDocument | null> {

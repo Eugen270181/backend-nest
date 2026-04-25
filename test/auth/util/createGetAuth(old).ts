@@ -8,7 +8,7 @@ import {
 } from '../../testingDtosCreator';
 import { UserViewDto } from '../../../src/modules/user-accounts/api/view-dto/user.view-dto';
 import { fullPathTo } from '../../getFullPath';
-import { routerPaths } from '../../../src/core/settings/paths';
+import { routerPaths } from '../../../src/core/constants/router-paths';
 import { App } from 'supertest/types';
 
 const request = require('supertest');

@@ -14,7 +14,6 @@ import { LocalStrategy } from './guards/local/local.strategy';
 import { JwtStrategy } from './guards/bearer/jwt.strategy';
 import { BasicStrategy } from './guards/basic/basic.strategy';
 import { AdaptersModule } from '../../core/adapters/adapters.module';
-import { appConfig } from '../../core/settings/config';
 import { JwtAuthGuard } from './guards/bearer/jwt-auth.guard';
 import { BasicAuthGuard } from './guards/basic/basic-auth.guard';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
@@ -51,8 +50,11 @@ import { DeleteUserSessionsExcCurUseCase } from './application/usecases/sessions
 import { GetUserActiveSessionsQueryHandler } from './application/queries/get-user-active-sessions.query';
 import { SessionsQueryRepository } from './infrastructure/query/sessions.query-repository';
 import { LogoutUserUseCase } from './application/usecases/logout-user.usecase';
+import { UserAccountsConfig } from './user-accounts.config';
+import { CoreConfig } from '../../core/core.config';
 
 const services = [AuthValidationService, UserValidationService, CryptoService];
+const configs = [UserAccountsConfig];
 
 const strategies = [
   JwtStrategy,
@@ -121,26 +123,36 @@ const commandHandlers = [
     // Регистрируем два разных JwtService с разными настройками
     {
       provide: ACCESS_TOKEN_SERVICE,
-      useFactory: (): JwtService => {
+      useFactory: (
+        coreConfig: CoreConfig,
+        userAccountsConfig: UserAccountsConfig,
+      ): JwtService => {
         return new JwtService({
-          secret: appConfig.AT_SECRET,
+          secret: coreConfig.accessTokenSecret,
           signOptions: {
-            expiresIn: appConfig.AT_TIME,
+            expiresIn: userAccountsConfig.accessTokenExpireIn,
           },
         });
       },
+      inject: [CoreConfig, UserAccountsConfig],
     },
     {
       provide: REFRESH_TOKEN_SERVICE,
-      useFactory: (): JwtService => {
+      useFactory: (
+        coreConfig: CoreConfig,
+        userAccountsConfig: UserAccountsConfig,
+      ): JwtService => {
         return new JwtService({
-          secret: appConfig.RT_SECRET,
+          secret: coreConfig.refreshTokenSecret,
           signOptions: {
-            expiresIn: appConfig.RT_TIME,
+            expiresIn: userAccountsConfig.refreshTokenExpireIn,
           },
         });
       },
+      inject: [CoreConfig, UserAccountsConfig],
     },
+
+    ...configs,
     ...guards,
     ...strategies,
     ...commandHandlers,

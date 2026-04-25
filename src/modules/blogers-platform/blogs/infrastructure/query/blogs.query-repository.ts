@@ -5,15 +5,16 @@ import { FilterQuery } from 'mongoose';
 import { Blog, BlogDocument, BlogModelType } from '../../domain/blog.entity';
 import { BlogViewDto } from '../../api/view-dto/blog.view-dto';
 import { GetBlogsQueryParams } from '../../api/input-dto/get-blogs-query-params.input-dto';
-import { appConfig } from '../../../../../core/settings/config';
+import { CoreConfig } from '../../../../../core/core.config';
 
 @Injectable()
 export class BlogsQueryRepository {
   constructor(
+    private coreConfig: CoreConfig,
     @InjectModel(Blog.name)
     private readonly BlogModel: BlogModelType,
   ) {
-    if (appConfig.IOC_LOG) console.log('BlogsQueryRepository created');
+    if (this.coreConfig.IOC_LOG) console.log('BlogsQueryRepository created');
   }
 
   async findById(id: string): Promise<BlogDocument | null> {

@@ -10,8 +10,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { Response, Request } from 'express';
-import { SkipThrottle, Throttle, ThrottlerGuard } from '@nestjs/throttler';
-import { appConfig } from '../../../core/settings/config';
+import { SkipThrottle, ThrottlerGuard } from '@nestjs/throttler';
 import { LocalAuthGuard } from '../guards/local/local-auth.guard';
 import { ApiBearerAuth, ApiBody } from '@nestjs/swagger';
 import {
@@ -37,16 +36,18 @@ import { TokensDto } from '../application/dto/tokens.dto';
 import { JwtRefreshAuthGuard } from '../guards/bearer/jwt-refresh-auth.guard';
 import { RefreshTokensCommand } from '../application/usecases/refresh-tokens.usecase';
 import { LogoutUserCommand } from '../application/usecases/logout-user.usecase';
+import { CoreConfig } from '../../../core/core.config';
 
 @UseGuards(ThrottlerGuard)
 //@Throttle({ default: { limit: 5, ttl: 10000 } })
 @Controller('auth')
 export class AuthController {
   constructor(
+    private coreConfig: CoreConfig,
     private readonly commandBus: CommandBus,
     private readonly queryBus: QueryBus,
   ) {
-    if (appConfig.IOC_LOG) console.log('AuthController created');
+    if (this.coreConfig.IOC_LOG) console.log('AuthController created');
   }
 
   @HttpCode(HttpStatus.NO_CONTENT)

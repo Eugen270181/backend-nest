@@ -3,7 +3,7 @@ import { UsersQueryRepository } from '../../infrastructure/query/users.query-rep
 import { UserViewDto } from '../../api/view-dto/user.view-dto';
 import { DomainException } from '../../../../core/exceptions/domain-exceptions';
 import { DomainExceptionCode } from '../../../../core/exceptions/domain-exception-codes';
-import { appConfig } from '../../../../core/settings/config';
+import { CoreConfig } from '../../../../core/core.config';
 
 export class GetUserQuery {
   constructor(
@@ -16,8 +16,11 @@ export class GetUserQuery {
 export class GetUserQueryHandler
   implements IQueryHandler<GetUserQuery, UserViewDto>
 {
-  constructor(private usersQueryRepository: UsersQueryRepository) {
-    if (appConfig.IOC_LOG) console.log('GetUserQueryHandler created');
+  constructor(
+    private coreConfig: CoreConfig,
+    private usersQueryRepository: UsersQueryRepository,
+  ) {
+    if (this.coreConfig.IOC_LOG) console.log('GetUserQueryHandler created');
   }
 
   async execute({ id, justCreated }: GetUserQuery): Promise<UserViewDto> {

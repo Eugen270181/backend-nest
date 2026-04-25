@@ -22,7 +22,6 @@ import { CreateBlogPostInputDto } from './input-dto/create-blog-post.input-dto';
 import { CreatePostDto } from '../../posts/application/dto/post.dto';
 
 import { UpdateBlogDto } from '../application/dto/blog.dto';
-import { appConfig } from '../../../../core/settings/config';
 import { BasicAuthGuard } from '../../../user-accounts/guards/basic/basic-auth.guard';
 import { Public } from '../../../user-accounts/guards/decorators/public.decorator';
 import { JwtOptionalAuthGuard } from '../../../user-accounts/guards/bearer/jwt-optional-auth.guard';
@@ -36,14 +35,16 @@ import { GetAllBlogsQuery } from '../application/queries/get-all-blogs.query';
 import { GetPostQuery } from '../../posts/application/queries/get-post.query';
 import { CreatePostCommand } from '../../posts/application/usecases/create-post.usecase';
 import { GetBlogPostsQuery } from '../../posts/application/queries/get-blog-posts.query';
+import { CoreConfig } from '../../../../core/core.config';
 
 @Controller('blogs')
 export class BlogsController {
   constructor(
+    private coreConfig: CoreConfig,
     private readonly commandBus: CommandBus,
     private readonly queryBus: QueryBus,
   ) {
-    if (appConfig.IOC_LOG) console.log('BlogsController created');
+    if (this.coreConfig.IOC_LOG) console.log('BlogsController created');
   }
 
   @Get(':id')

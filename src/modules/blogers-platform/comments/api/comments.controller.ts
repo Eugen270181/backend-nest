@@ -10,7 +10,6 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { CommentViewDto } from './view-dto/comment.view-dto';
-import { appConfig } from '../../../../core/settings/config';
 import { JwtAuthGuard } from '../../../user-accounts/guards/bearer/jwt-auth.guard';
 import { Public } from '../../../user-accounts/guards/decorators/public.decorator';
 import {
@@ -31,15 +30,17 @@ import { DeleteCommentCommand } from '../application/usecases/delete-comment.use
 import { UpdateCommentCommand } from '../application/usecases/update-comment.usecase';
 
 import { UpdateCommentLikeCommand } from '../application/usecases/update-comment-like.usecase';
+import { CoreConfig } from '../../../../core/core.config';
 
 @UseGuards(JwtAuthGuard)
 @Controller('comments')
 export class CommentsController {
   constructor(
+    private coreConfig: CoreConfig,
     private readonly commandBus: CommandBus,
     private readonly queryBus: QueryBus,
   ) {
-    if (appConfig.IOC_LOG) console.log('CommentsController created');
+    if (this.coreConfig.IOC_LOG) console.log('CommentsController created');
   }
   @Public()
   @UseGuards(JwtOptionalAuthGuard)

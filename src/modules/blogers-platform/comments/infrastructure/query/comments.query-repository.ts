@@ -9,15 +9,16 @@ import { CommentViewDto } from '../../api/view-dto/comment.view-dto';
 import { PaginatedViewDto } from '../../../../../core/dto/base.paginated.view-dto';
 import { FilterQuery } from 'mongoose';
 import { GetCommentsQueryParams } from '../../../posts/api/input-dto/get-comments-query-params.input-dto';
-import { appConfig } from '../../../../../core/settings/config';
+import { CoreConfig } from '../../../../../core/core.config';
 
 @Injectable()
 export class CommentsQueryRepository {
   constructor(
+    private coreConfig: CoreConfig,
     @InjectModel(Comment.name)
     private readonly CommentModel: CommentModelType,
   ) {
-    if (appConfig.IOC_LOG) console.log('CommentsQueryRepository created');
+    if (this.coreConfig.IOC_LOG) console.log('CommentsQueryRepository created');
   }
 
   private async findById(_id: string): Promise<CommentDocument | null> {

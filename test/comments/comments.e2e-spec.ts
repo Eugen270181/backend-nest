@@ -1,17 +1,13 @@
-import { NestExpressApplication } from '@nestjs/platform-express';
 import { Connection } from 'mongoose';
 import { App } from 'supertest/types';
-import { Test, TestingModule } from '@nestjs/testing';
-import { AppModule } from '../../src/app.module';
-import { appSetup } from '../../src/setup/app.setup';
 import { getConnectionToken } from '@nestjs/mongoose';
 import { dropDbCollections } from '../dropDbCollections';
 import {
   CommentDto,
   createString,
   LikeStatus,
-  testingDtosCreator, TokenDto,
-  TokensDto,
+  testingDtosCreator,
+  TokenDto,
   validObjectIdString,
 } from '../testingDtosCreator';
 import { PostViewDto } from '../../src/modules/blogers-platform/posts/api/view-dto/post.view-dto';
@@ -29,27 +25,28 @@ import {
   getPostComments,
   getPostCommentsQty,
 } from './util/createGetComments';
-import { appConfig } from '../../src/core/settings/config';
-import { createUsersBySa } from '../users/util/createGetUsers';
+import { AuthCredentials, createUsersBySa } from '../users/util/createGetUsers';
 import { getArrTokensWithUsersLogin } from '../auth/util/createGetAuth';
+import { UserAccountsConfig } from '../../src/modules/user-accounts/user-accounts.config';
+import { INestApplication } from '@nestjs/common';
+import { initTestApp } from '../init-test-app';
 
 describe('<<COMMENTS>> ENDPOINTS TESTING!!!(e2e)', () => {
-  let app: NestExpressApplication;
+  let app: INestApplication;
   let connection: Connection;
   let server: App;
+  let userAccountsConfig: UserAccountsConfig;
+  let creds: AuthCredentials;
 
   beforeAll(async () => {
-    const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
-    }).compile();
-
-    app = moduleFixture.createNestApplication();
-    appSetup(app);
-    await app.init();
-
+    app = await initTestApp(false);
     server = app.getHttpServer();
-
-    connection = moduleFixture.get<Connection>(getConnectionToken());
+    connection = app.get<Connection>(getConnectionToken());
+    userAccountsConfig = app.get<UserAccountsConfig>(UserAccountsConfig);
+    creds = {
+      login: userAccountsConfig.saLogin,
+      password: userAccountsConfig.saPass,
+    };
     await dropDbCollections(connection);
   });
 
@@ -68,16 +65,16 @@ describe('<<COMMENTS>> ENDPOINTS TESTING!!!(e2e)', () => {
   describe(`POST -> "posts/:id/comments":`, () => {
     it(`POST -> "posts/:id/comments": Create new comment: STATUS 201;`, async () => {
       // 0. Создание 2 пользователей суперадмином, их авторизация и получение токенов
-      users = await createUsersBySa(server, 2);
+      users = await createUsersBySa(server, creds, 2);
       tokens = await getArrTokensWithUsersLogin(server, users);
 
       // 1. Создание блога
-      const blog = await createBlog(server);
+      const blog = await createBlog(server, creds);
       const blogId = blog.id;
 
       // 2. Создание 2-ух постов(предвар.создание дтошек)
       const postDtos = testingDtosCreator.createPostDtos(2, blogId);
-      posts = await createPosts(server, postDtos);
+      posts = await createPosts(server, creds, postDtos);
 
       // 3. Создание валидных 2 комментов от юзера 1 к первому посту(предвар.создание дтошек)
       commentDtos = testingDtosCreator.createCommentDtos(2);

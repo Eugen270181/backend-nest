@@ -1,5 +1,5 @@
 import { INestApplication } from '@nestjs/common';
-import { routerPaths } from '../core/settings/paths';
+import { routerPaths } from '../core/constants/router-paths';
 
 export const GLOBAL_PREFIX: string = 'api';
 

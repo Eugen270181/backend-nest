@@ -1,36 +1,41 @@
-import { Module } from '@nestjs/common';
+import { Global, Module } from '@nestjs/common';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { EmailService } from './email.service';
-import { appConfig } from '../../core/settings/config';
 import { SendConfirmationEmailWhenUserRegisteredEventHandler } from './application/event-handlers/send-confirmation-email-when-user-registered.event-handler';
 import { SendSmsWhenUserRegisteredEventHandler } from './application/event-handlers/send-sms-when-user-registered.event-handler';
 import { CqrsModule } from '@nestjs/cqrs';
 import { EmailFactoryService } from './application/email/email-factory.service';
+import { NotificationsConfig } from './notifications.config';
 
+@Global()
 @Module({
   imports: [
     CqrsModule,
-    MailerModule.forRoot({
-      transport: {
-        host: 'smtp.gmail.com',
-        port: 465,
-        secure: true, // для 465 порта нужно true
-        auth: {
-          user: appConfig.EMAIL, // ваш email
-          pass: appConfig.EMAIL_PASS, // пароль приложения (не обычный пароль Gmail)
+    MailerModule.forRootAsync({
+      useFactory: (notificationsConfig: NotificationsConfig) => ({
+        transport: {
+          host: 'smtp.gmail.com',
+          port: 465,
+          secure: true,
+          auth: {
+            user: notificationsConfig.email, // или coreConfig.EMAIL, в зависимости от названия поля
+            pass: notificationsConfig.emailPass, // или coreConfig.EMAIL_PASS
+          },
         },
-      },
-      defaults: {
-        from: '"nest-modules" <modules@nestjs.com>',
-      },
+        defaults: {
+          from: '"nest-modules" <modules@nestjs.com>',
+        },
+      }),
+      inject: [NotificationsConfig],
     }),
   ],
   providers: [
+    NotificationsConfig,
     EmailService,
     EmailFactoryService,
     SendConfirmationEmailWhenUserRegisteredEventHandler,
     SendSmsWhenUserRegisteredEventHandler,
   ],
-  exports: [],
+  exports: [NotificationsConfig],
 })
 export class NotificationsModule {}

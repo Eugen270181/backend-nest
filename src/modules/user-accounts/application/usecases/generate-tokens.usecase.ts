@@ -1,12 +1,12 @@
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { JwtService } from '@nestjs/jwt';
-import { appConfig } from '../../../../core/settings/config';
 import {
   ACCESS_TOKEN_SERVICE,
   REFRESH_TOKEN_SERVICE,
 } from '../../guards/tokens.constants';
 import { Inject } from '@nestjs/common';
 import { TokensWithTimesDto } from '../dto/tokens-with-times.dto';
+import { CoreConfig } from '../../../../core/core.config';
 
 export interface RefreshJwtPayload {
   iat: number;
@@ -27,12 +27,13 @@ export class GenerateTokensUseCase
   implements ICommandHandler<GenerateTokensCommand, TokensWithTimesDto>
 {
   constructor(
+    private coreConfig: CoreConfig,
     @Inject(ACCESS_TOKEN_SERVICE)
     private readonly accessTokenService: JwtService,
     @Inject(REFRESH_TOKEN_SERVICE)
     private readonly refreshTokenService: JwtService,
   ) {
-    if (appConfig.IOC_LOG) console.log('GenerateTokensUseCase created');
+    if (this.coreConfig.IOC_LOG) console.log('GenerateTokensUseCase created');
   }
 
   async execute({

@@ -1,11 +1,11 @@
 import { CommandBus, CommandHandler, ICommandHandler } from '@nestjs/cqrs';
-import { appConfig } from '../../../../core/settings/config';
 import { TokensDto } from '../dto/tokens.dto';
 import { randomUUID } from 'crypto';
 import { GenerateTokensCommand } from './generate-tokens.usecase';
 import { CreateSessionCommand } from './sessions/create-session.usecase';
 import { CreateSessionDto } from '../dto/create-session.dto';
 import { TokensWithTimesDto } from '../dto/tokens-with-times.dto';
+import { CoreConfig } from '../../../../core/core.config';
 
 export class LoginUserCommand {
   constructor(
@@ -19,8 +19,11 @@ export class LoginUserCommand {
 export class LoginUserUseCase
   implements ICommandHandler<LoginUserCommand, TokensDto>
 {
-  constructor(private readonly commandBus: CommandBus) {
-    if (appConfig.IOC_LOG) console.log('LoginUserUseCase created');
+  constructor(
+    private coreConfig: CoreConfig,
+    private readonly commandBus: CommandBus,
+  ) {
+    if (this.coreConfig.IOC_LOG) console.log('LoginUserUseCase created');
   }
 
   async execute({ userId, ip, title }: LoginUserCommand): Promise<TokensDto> {

@@ -1,21 +1,22 @@
 import { InjectModel } from '@nestjs/mongoose';
 
 import { Injectable } from '@nestjs/common';
-import { appConfig } from '../../../../core/settings/config';
 import {
   LikePost,
   LikePostDocument,
   LikePostModelType,
 } from '../domain/like-post.entity';
 import { LikeStatus } from '../../../../core/dto/enum/like-status.enum';
+import { CoreConfig } from '../../../../core/core.config';
 
 @Injectable()
 export class LikesPostsRepository {
   constructor(
+    private coreConfig: CoreConfig,
     @InjectModel(LikePost.name)
     private readonly LikePostModel: LikePostModelType,
   ) {
-    if (appConfig.IOC_LOG) console.log('LikesPostsRepository created');
+    if (this.coreConfig.IOC_LOG) console.log('LikesPostsRepository created');
   }
 
   async save(likePostDocument: LikePostDocument): Promise<void> {

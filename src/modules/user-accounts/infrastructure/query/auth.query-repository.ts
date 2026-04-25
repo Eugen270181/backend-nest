@@ -1,16 +1,17 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { appConfig } from '../../../../core/settings/config';
 import { User, UserDocument, UserModelType } from '../../domain/user.entity';
 import { MeViewDto } from '../../api/view-dto/me.view-dto';
+import { CoreConfig } from '../../../../core/core.config';
 
 @Injectable()
 export class AuthQueryRepository {
   constructor(
+    private coreConfig: CoreConfig,
     @InjectModel(User.name)
     private readonly UserModel: UserModelType,
   ) {
-    if (appConfig.IOC_LOG) console.log('AuthQueryRepository created');
+    if (this.coreConfig.IOC_LOG) console.log('AuthQueryRepository created');
   }
 
   async findById(_id: string): Promise<UserDocument | null> {

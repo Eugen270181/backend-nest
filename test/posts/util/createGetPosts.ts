@@ -8,15 +8,16 @@ import { App } from 'supertest/types';
 import request from 'supertest';
 import { PaginatedViewDto } from '../../../src/core/dto/base.paginated.view-dto';
 import { fullPathTo } from '../../getFullPath';
-import { appConfig } from '../../../src/core/settings/config';
+import { AuthCredentials } from '../../users/util/createGetUsers';
 
 export const createPost = async (
   server: App,
+  creds: AuthCredentials,
   dto: PostDto,
 ): Promise<PostViewDto> => {
   const resp = await request(server)
     .post(fullPathTo.posts)
-    .auth(appConfig.SA_LOGIN, appConfig.SA_PASS)
+    .auth(creds.login, creds.password)
     .send(dto)
     .expect(201);
 
@@ -25,12 +26,13 @@ export const createPost = async (
 
 export const createPosts = async (
   server: App,
+  creds: AuthCredentials,
   dtos: PostDto[],
 ): Promise<PostViewDto[]> => {
   const posts: PostViewDto[] = [];
 
   for (let i = 0; i < dtos.length; i++) {
-    const post = await createPost(server, dtos[i]);
+    const post = await createPost(server, creds, dtos[i]);
     posts.push(post);
   }
 
@@ -39,6 +41,7 @@ export const createPosts = async (
 
 export const createBlogPost = async (
   server: App,
+  creds: AuthCredentials,
   blogId: string,
   blogPostDto?: BlogPostDto,
 ): Promise<PostViewDto> => {
@@ -46,7 +49,7 @@ export const createBlogPost = async (
 
   const resp = await request(server)
     .post(`${fullPathTo.blogs}/${blogId}/posts`)
-    .auth(appConfig.SA_LOGIN, appConfig.SA_PASS)
+    .auth(creds.login, creds.password)
     .send(dto)
     .expect(201);
 

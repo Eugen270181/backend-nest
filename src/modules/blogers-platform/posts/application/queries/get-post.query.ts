@@ -1,10 +1,10 @@
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
-import { appConfig } from '../../../../../core/settings/config';
 import { DomainException } from '../../../../../core/exceptions/domain-exceptions';
 import { DomainExceptionCode } from '../../../../../core/exceptions/domain-exception-codes';
 import { PostsQueryRepository } from '../../infrastructure/query/posts.query-repository';
 import { PostViewDto } from '../../api/view-dto/post.view-dto';
 import { PostEnrichmentService } from '../services/post-enrichment.service';
+import { CoreConfig } from '../../../../../core/core.config';
 
 export class GetPostQuery {
   constructor(
@@ -19,10 +19,11 @@ export class GetPostQueryHandler
   implements IQueryHandler<GetPostQuery, PostViewDto>
 {
   constructor(
+    private coreConfig: CoreConfig,
     private postsQueryRepository: PostsQueryRepository,
     private postsEnrichmentService: PostEnrichmentService,
   ) {
-    if (appConfig.IOC_LOG) console.log('GetPostQueryHandler created');
+    if (this.coreConfig.IOC_LOG) console.log('GetPostQueryHandler created');
   }
 
   async execute({ postId, userId, justCreated }: GetPostQuery) {

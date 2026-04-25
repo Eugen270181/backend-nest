@@ -5,15 +5,16 @@ import {
   CommentDocument,
   CommentModelType,
 } from '../domain/comment.entity';
-import { appConfig } from '../../../../core/settings/config';
+import { CoreConfig } from '../../../../core/core.config';
 
 @Injectable()
 export class CommentsRepository {
   //инжектирование модели через DI
   constructor(
+    private coreConfig: CoreConfig,
     @InjectModel(Comment.name) private readonly CommentModel: CommentModelType,
   ) {
-    if (appConfig.IOC_LOG) console.log('CommentsRepository created');
+    if (this.coreConfig.IOC_LOG) console.log('CommentsRepository created');
   }
 
   async findById(id: string): Promise<CommentDocument | null> {

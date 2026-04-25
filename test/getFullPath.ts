@@ -1,5 +1,5 @@
 import { GLOBAL_PREFIX } from '../src/setup/global-prefix.setup';
-import { routerPaths } from '../src/core/settings/paths';
+import { routerPaths } from '../src/core/constants/router-paths';
 
 export const getFullPath = (path: string) => {
   return GLOBAL_PREFIX ? `/${GLOBAL_PREFIX}${path}` : path;

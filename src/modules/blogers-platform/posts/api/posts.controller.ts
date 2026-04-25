@@ -19,11 +19,9 @@ import { UpdatePostInputDto } from './input-dto/update-post.input-dto';
 import { GetCommentsQueryParams } from './input-dto/get-comments-query-params.input-dto';
 import { CommentViewDto } from '../../comments/api/view-dto/comment.view-dto';
 import { UpdatePostDto } from '../application/dto/post.dto';
-import { appConfig } from '../../../../core/settings/config';
 import { BasicAuthGuard } from '../../../user-accounts/guards/basic/basic-auth.guard';
 import { CreateCommentInputDto } from '../../comments/api/input-dto/create-comment.input-dto';
 import { CreateCommentDto } from '../../comments/application/dto/comment.dto';
-import { SkipThrottle } from '@nestjs/throttler';
 import { ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../../user-accounts/guards/bearer/jwt-auth.guard';
 import {
@@ -32,8 +30,6 @@ import {
 } from '../../../user-accounts/guards/decorators/param/extract-user-from-request.decorator';
 import { LikePostInputDto } from './input-dto/like-post.input-dto';
 import { LikePostDto } from '../../likes/application/dto/like-post.dto';
-import { UseOptionalAuth } from '../../../user-accounts/middlewares/export const with-optional-user.decorator';
-import { Public } from '../../../user-accounts/guards/decorators/public.decorator';
 import { JwtOptionalAuthGuard } from '../../../user-accounts/guards/bearer/jwt-optional-auth.guard';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { CreatePostCommand } from '../application/usecases/create-post.usecase';
@@ -46,14 +42,16 @@ import { GetPostDocumentQuery } from '../application/queries/get-post-document.q
 import { CreateCommentCommand } from '../../comments/application/usecases/create-comment.usecase';
 import { GetCommentQuery } from '../../comments/application/queries/get-comment.query';
 import { GetPostCommentsQuery } from '../../comments/application/queries/get-post-comments.query';
+import { CoreConfig } from '../../../../core/core.config';
 
 @Controller('posts')
 export class PostsController {
   constructor(
+    private coreConfig: CoreConfig,
     private readonly commandBus: CommandBus,
     private readonly queryBus: QueryBus,
   ) {
-    if (appConfig.IOC_LOG) console.log('Posts Controller created');
+    if (this.coreConfig.IOC_LOG) console.log('Posts Controller created');
   }
 
   @UseGuards(JwtOptionalAuthGuard)

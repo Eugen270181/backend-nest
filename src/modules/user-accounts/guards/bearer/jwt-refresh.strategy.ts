@@ -3,22 +3,25 @@ import { PassportStrategy } from '@nestjs/passport';
 import { Injectable } from '@nestjs/common';
 import { Request } from 'express';
 import { AuthValidationService } from '../../application/services/auth-validation.service';
-import { appConfig } from '../../../../core/settings/config';
 import { UserContextDto } from '../dto/user-context.dto';
 import { DomainException } from '../../../../core/exceptions/domain-exceptions';
 import { DomainExceptionCode } from '../../../../core/exceptions/domain-exception-codes';
 import { RefreshTokenPayloadDto } from '../dto/refresh-token-payload.dto';
+import { CoreConfig } from '../../../../core/core.config';
 
 @Injectable()
 export class JwtRefreshStrategy extends PassportStrategy(
   Strategy,
   'jwt-refresh',
 ) {
-  constructor(private authValidationService: AuthValidationService) {
+  constructor(
+    private coreConfig: CoreConfig,
+    private authValidationService: AuthValidationService,
+  ) {
     super({
       jwtFromRequest: JwtRefreshStrategy.extractJWTFromCookie,
       ignoreExpiration: false,
-      secretOrKey: appConfig.RT_SECRET, // Другой секрет для RT
+      secretOrKey: coreConfig.refreshTokenSecret, // Другой секрет для RT
       passReqToCallback: true, // Чтобы получить доступ к Request
     });
   }
@@ -35,7 +38,7 @@ export class JwtRefreshStrategy extends PassportStrategy(
     req: Request,
     jwtPayload: RefreshTokenPayloadDto,
   ): Promise<UserContextDto> {
-    console.log(jwtPayload);
+    //console.log(jwtPayload);
     if (!jwtPayload.userId) {
       throw new DomainException({
         code: DomainExceptionCode.Unauthorized,

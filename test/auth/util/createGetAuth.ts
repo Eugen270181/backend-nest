@@ -8,7 +8,7 @@ import {
 } from '../../testingDtosCreator';
 import { UserViewDto } from '../../../src/modules/user-accounts/api/view-dto/user.view-dto';
 import { fullPathTo } from '../../getFullPath';
-import { routerPaths } from '../../../src/core/settings/paths';
+import { routerPaths } from '../../../src/core/constants/router-paths';
 import { App } from 'supertest/types';
 import request from 'supertest';
 
@@ -80,7 +80,7 @@ const getTokensInResponse = (resPost: any): TokensDto => {
 
 export const getTokensWithRefreshToken = async (
   server: App,
-  refreshToken: String,
+  refreshToken: string,
 ): Promise<TokensDto> => {
   console.log(refreshToken);
   console.log(`${fullPathTo.auth}${routerPaths.refreshToken}`);
@@ -94,8 +94,8 @@ export const getTokensWithRefreshToken = async (
 
 export const logoutUser = async (
   server: App,
-  refreshToken: String,
-  expectedStatus: Number = 204,
+  refreshToken: string,
+  expectedStatus: number = 204,
 ) => {
   await request(server)
     .post(`${fullPathTo.auth}${routerPaths.logout}`)

@@ -1,9 +1,9 @@
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { DomainException } from '../../../../core/exceptions/domain-exceptions';
 import { DomainExceptionCode } from '../../../../core/exceptions/domain-exception-codes';
-import { appConfig } from '../../../../core/settings/config';
 import { AuthQueryRepository } from '../../infrastructure/query/auth.query-repository';
 import { MeViewDto } from '../../api/view-dto/me.view-dto';
+import { CoreConfig } from '../../../../core/core.config';
 
 export class GetMeQuery {
   constructor(public readonly id: string) {}
@@ -11,8 +11,11 @@ export class GetMeQuery {
 
 @QueryHandler(GetMeQuery)
 export class GetMeQueryHandler implements IQueryHandler<GetMeQuery, MeViewDto> {
-  constructor(private authQueryRepository: AuthQueryRepository) {
-    if (appConfig.IOC_LOG) console.log('GetMeQueryHandler created');
+  constructor(
+    private coreConfig: CoreConfig,
+    private authQueryRepository: AuthQueryRepository,
+  ) {
+    if (this.coreConfig.IOC_LOG) console.log('GetMeQueryHandler created');
   }
 
   async execute({ id }: GetMeQuery): Promise<MeViewDto> {

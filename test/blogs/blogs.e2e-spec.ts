@@ -1,9 +1,6 @@
-import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { Connection } from 'mongoose';
-import { AppModule } from '../../src/app.module';
-import { appSetup } from '../../src/setup/app.setup';
 import { getConnectionToken } from '@nestjs/mongoose';
 import { dropDbCollections } from '../dropDbCollections';
 import {
@@ -22,26 +19,27 @@ import {
 import { fullPathTo } from '../getFullPath';
 import { ErrorResponseBody } from '../../src/core/exceptions/error-responce-body.type';
 import { validateErrorsObject } from '../validateErrorsObject';
-import { NestExpressApplication } from '@nestjs/platform-express';
-import { appConfig } from '../../src/core/settings/config';
+import { UserAccountsConfig } from '../../src/modules/user-accounts/user-accounts.config';
+import { AuthCredentials } from '../users/util/createGetUsers';
+import { initTestApp } from '../init-test-app';
+import { INestApplication } from '@nestjs/common';
 
 describe('<<BLOGS>> ENDPOINTS TESTING!!!(e2e)', () => {
-  let app: NestExpressApplication;
+  let app: INestApplication;
   let connection: Connection;
   let server: App;
+  let userAccountsConfig: UserAccountsConfig;
+  let creds: AuthCredentials;
 
   beforeAll(async () => {
-    const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
-    }).compile();
-
-    app = moduleFixture.createNestApplication();
-    appSetup(app);
-    await app.init();
-
+    app = await initTestApp(false);
     server = app.getHttpServer();
-
-    connection = moduleFixture.get<Connection>(getConnectionToken());
+    connection = app.get<Connection>(getConnectionToken());
+    userAccountsConfig = app.get<UserAccountsConfig>(UserAccountsConfig);
+    creds = {
+      login: userAccountsConfig.saLogin,
+      password: userAccountsConfig.saPass,
+    };
     await dropDbCollections(connection);
   });
 
@@ -71,7 +69,7 @@ describe('<<BLOGS>> ENDPOINTS TESTING!!!(e2e)', () => {
     it('STATUS 400: shouldn`t create blog with no valid data', async () => {
       const resPost = await request(server)
         .post(fullPathTo.blogs)
-        .auth(appConfig.SA_LOGIN, appConfig.SA_PASS)
+        .auth(creds.login, creds.password)
         .send(noValidBlogDto)
         .expect(400);
 
@@ -85,7 +83,7 @@ describe('<<BLOGS>> ENDPOINTS TESTING!!!(e2e)', () => {
 
     it('STATUS 201: should create blog', async () => {
       blogDtos = testingDtosCreator.createBlogDtos(2);
-      blogs.push(await createBlog(server, blogDtos[0]));
+      blogs.push(await createBlog(server, creds, blogDtos[0]));
 
       //проверка соответствия схемы представления ответа по полям модели ответа, и значений полученых
       expect(blogs[0]).toEqual({
@@ -137,7 +135,7 @@ describe('<<BLOGS>> ENDPOINTS TESTING!!!(e2e)', () => {
       //запрос на обонвление блога по неверному/несуществующему id
       await request(server)
         .put(`${fullPathTo.blogs}/${validObjectIdString}`)
-        .auth(appConfig.SA_LOGIN, appConfig.SA_PASS)
+        .auth(creds.login, creds.password)
         .send(blogDtos[1])
         .expect(404);
       //запрос на получение блога по id, проверка на ошибочное обновление блога в БД
@@ -149,7 +147,7 @@ describe('<<BLOGS>> ENDPOINTS TESTING!!!(e2e)', () => {
       //запрос на обонвление существующего блога по id с невалидными данными
       const resPut = await request(server)
         .put(`${fullPathTo.blogs}/${blogs[0].id}`)
-        .auth(appConfig.SA_LOGIN, appConfig.SA_PASS)
+        .auth(creds.login, creds.password)
         .send(noValidBlogDto)
         .expect(400);
       const resPostBody: ErrorResponseBody = resPut.body;
@@ -165,7 +163,7 @@ describe('<<BLOGS>> ENDPOINTS TESTING!!!(e2e)', () => {
       //запрос на обонвление существующего блога по id
       await request(server)
         .put(`${fullPathTo.blogs}/${blogs[0].id}`)
-        .auth(appConfig.SA_LOGIN, appConfig.SA_PASS)
+        .auth(creds.login, creds.password)
         .send(blogDtos[1])
         .expect(204);
       //запрос на получение обновленного блога по Id - проверка операции обновления нового блога в БД
@@ -189,7 +187,7 @@ describe('<<BLOGS>> ENDPOINTS TESTING!!!(e2e)', () => {
       //запрос на удаление блога по неверному/несуществующему id
       await request(server)
         .delete(`${fullPathTo.blogs}/${validObjectIdString}`)
-        .auth(appConfig.SA_LOGIN, appConfig.SA_PASS)
+        .auth(creds.login, creds.password)
         .expect(404);
       //запрос на получение блогов, проверка на ошибочное удаление блога в БД
       const blogCounter = await getBlogsQty(server);
@@ -200,7 +198,7 @@ describe('<<BLOGS>> ENDPOINTS TESTING!!!(e2e)', () => {
       //запрос на удаление существующего блога по id
       await request(server)
         .delete(`${fullPathTo.blogs}/${blogs[0].id}`)
-        .auth(appConfig.SA_LOGIN, appConfig.SA_PASS)
+        .auth(creds.login, creds.password)
         .expect(204);
       //запрос на получение блогов, проверка на удаление блога в БД
       const blogCounter = await getBlogsQty(server);

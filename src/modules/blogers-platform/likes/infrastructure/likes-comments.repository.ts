@@ -5,15 +5,16 @@ import {
   LikeCommentModelType,
 } from '../domain/like-comment.entity';
 import { Injectable } from '@nestjs/common';
-import { appConfig } from '../../../../core/settings/config';
+import { CoreConfig } from '../../../../core/core.config';
 
 @Injectable()
 export class LikesCommentsRepository {
   constructor(
+    private coreConfig: CoreConfig,
     @InjectModel(LikeComment.name)
     private readonly LikeCommentModel: LikeCommentModelType,
   ) {
-    if (appConfig.IOC_LOG) console.log('LikesCommentsRepository created');
+    if (this.coreConfig.IOC_LOG) console.log('LikesCommentsRepository created');
   }
 
   async save(likeCommentDocument: LikeCommentDocument): Promise<void> {

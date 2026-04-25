@@ -21,7 +21,7 @@ export class JwtRefreshAuthGuard extends AuthGuard('jwt-refresh') {
     if (isPublic) {
       return true;
     }
-    console.log('can activate method of jwtRefresh-authguard');
+    //console.log('can activate method of jwtRefresh-authguard');
     // ✅ Вызываем стратегию JWT (только если не public)
     return super.canActivate(context); //super.canActivate() вызывает passport.authenticate()->call strategy class
   }
@@ -32,7 +32,7 @@ export class JwtRefreshAuthGuard extends AuthGuard('jwt-refresh') {
     user: UserContextDto,
     info: any,
   ): UserContextDto {
-    console.log(user);
+    //console.log(user);
     if (err || !user) {
       throw new DomainException({
         code: DomainExceptionCode.Unauthorized,

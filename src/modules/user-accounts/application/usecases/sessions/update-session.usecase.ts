@@ -1,7 +1,7 @@
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { UsersFactory } from '../../factories/users.factory';
 import { UsersRepository } from '../../../infrastructure/users.repository';
-import { appConfig } from '../../../../../core/settings/config';
+import { CoreConfig } from '../../../../../core/core.config';
 
 export class UpdateSessionCommand {
   constructor(public readonly dto: string) {}
@@ -12,10 +12,11 @@ export class UpdateSessionUseCase
   implements ICommandHandler<UpdateSessionCommand>
 {
   constructor(
+    private coreConfig: CoreConfig,
     private readonly usersFactory: UsersFactory,
     private readonly usersRepository: UsersRepository,
   ) {
-    if (appConfig.IOC_LOG) console.log('UpdateSessionUseCase created');
+    if (this.coreConfig.IOC_LOG) console.log('UpdateSessionUseCase created');
   }
 
   async execute({ dto }: UpdateSessionCommand) {}

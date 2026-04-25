@@ -15,7 +15,6 @@ import { CreateUserInputDto } from './input-dto/create-users.input-dto';
 import { GetUsersQueryParams } from './input-dto/get-users-query-params.input-dto';
 import { PaginatedViewDto } from '../../../core/dto/base.paginated.view-dto';
 import { ApiBadRequestResponse, ApiBasicAuth } from '@nestjs/swagger';
-import { appConfig } from '../../../core/settings/config';
 import { ErrorResponseBodyDto } from '../../../core/dto/base.error-responce-body.view-dto';
 import { ApiPaginatedResponse } from '../../../core/decorators/swagger/api-paginated-response';
 import { BasicAuthGuard } from '../guards/basic/basic-auth.guard';
@@ -25,6 +24,7 @@ import { CreateUserCommand } from '../application/usecases/admins/create-user.us
 import { DeleteUserCommand } from '../application/usecases/admins/delete-user.usecase';
 import { GetAllUsersQuery } from '../application/queries/get-all-users.query';
 import { GetUserQuery } from '../application/queries/get-user.query';
+import { CoreConfig } from '../../../core/core.config';
 
 @UseGuards(BasicAuthGuard)
 @ApiBasicAuth('basicAuth')
@@ -32,10 +32,11 @@ import { GetUserQuery } from '../application/queries/get-user.query';
 @SkipThrottle()
 export class UsersController {
   constructor(
+    private coreConfig: CoreConfig,
     private readonly commandBus: CommandBus,
     private readonly queryBus: QueryBus,
   ) {
-    if (appConfig.IOC_LOG) console.log('UsersController created');
+    if (this.coreConfig.IOC_LOG) console.log('UsersController created');
   }
   //@Public()
   @Get()

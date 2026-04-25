@@ -4,16 +4,17 @@ import { UserViewDto } from '../../api/view-dto/user.view-dto';
 import { PaginatedViewDto } from '../../../../core/dto/base.paginated.view-dto';
 import { GetUsersQueryParams } from '../../api/input-dto/get-users-query-params.input-dto';
 import { FilterQuery } from 'mongoose';
-import { appConfig } from '../../../../core/settings/config';
 import { Injectable } from '@nestjs/common';
+import { CoreConfig } from '../../../../core/core.config';
 
 @Injectable()
 export class UsersQueryRepository {
   constructor(
+    private coreConfig: CoreConfig,
     @InjectModel(User.name)
     private readonly UserModel: UserModelType,
   ) {
-    if (appConfig.IOC_LOG) console.log('UsersQueryRepository created');
+    if (this.coreConfig.IOC_LOG) console.log('UsersQueryRepository created');
   }
 
   private async findById(_id: string): Promise<UserDocument | null> {

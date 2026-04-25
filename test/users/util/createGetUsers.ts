@@ -4,17 +4,23 @@ import { UserViewDto } from '../../../src/modules/user-accounts/api/view-dto/use
 import request from 'supertest';
 import { PaginatedViewDto } from '../../../src/core/dto/base.paginated.view-dto';
 import { fullPathTo } from '../../getFullPath';
-import { appConfig } from '../../../src/core/settings/config';
+
+// Вспомогательный тип для параметров аутентификации
+export type AuthCredentials = {
+  login: string;
+  password: string;
+};
 
 export const createUserBySa = async (
   server: App,
+  credentials: AuthCredentials,
   userDto?: UserDto,
 ): Promise<UserViewDto> => {
   const dto = userDto ?? testingDtosCreator.createUserDto({});
 
   const resp = await request(server)
     .post(fullPathTo.users)
-    .auth(appConfig.SA_LOGIN, appConfig.SA_PASS)
+    .auth(credentials.login, credentials.password)
     .send(dto)
     .expect(201);
 
@@ -23,22 +29,26 @@ export const createUserBySa = async (
 
 export const createUsersBySa = async (
   server: App,
+  credentials: AuthCredentials,
   count: number,
 ): Promise<UserViewDto[]> => {
   const users: UserViewDto[] = [];
   const userDtos: UserDto[] = testingDtosCreator.createUserDtos(count);
 
   for (let i = 0; i < count; i++) {
-    users.push(await createUserBySa(server, userDtos[i]));
+    users.push(await createUserBySa(server, credentials, userDtos[i]));
   }
 
   return users;
 };
 
-export const getUsersQty = async (server: App): Promise<number> => {
+export const getUsersQty = async (
+  server: App,
+  credentials: AuthCredentials,
+): Promise<number> => {
   const resp = await request(server)
     .get(fullPathTo.users)
-    .auth(appConfig.SA_LOGIN, appConfig.SA_PASS)
+    .auth(credentials.login, credentials.password)
     .expect(200);
   const data = resp.body as PaginatedViewDto<UserViewDto[]>;
   return data.totalCount;

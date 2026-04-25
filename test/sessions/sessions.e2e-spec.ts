@@ -1,16 +1,7 @@
-import { NestExpressApplication } from '@nestjs/platform-express';
 import { Connection } from 'mongoose';
 import { App } from 'supertest/types';
 import { UserViewDto } from '../../src/modules/user-accounts/api/view-dto/user.view-dto';
-import {
-  LoginDto,
-  passTestsDefault,
-  TokensDto,
-  UserDto,
-} from '../testingDtosCreator';
-import { Test, TestingModule } from '@nestjs/testing';
-import { AppModule } from '../../src/app.module';
-import { appSetup } from '../../src/setup/app.setup';
+import { LoginDto, passTestsDefault, TokensDto } from '../testingDtosCreator';
 import { getConnectionToken } from '@nestjs/mongoose';
 import { dropDbCollections } from '../dropDbCollections';
 import {
@@ -19,15 +10,20 @@ import {
   logoutUser,
 } from '../auth/util/createGetAuth';
 import request from 'supertest';
-import { createUsersBySa } from '../users/util/createGetUsers';
+import { AuthCredentials, createUsersBySa } from '../users/util/createGetUsers';
 import { SessionViewDto } from '../../src/modules/user-accounts/api/view-dto/session-view.dto';
 import { fullPathTo } from '../getFullPath';
-import { routerPaths } from '../../src/core/settings/paths';
+import { routerPaths } from '../../src/core/constants/router-paths';
+import { UserAccountsConfig } from '../../src/modules/user-accounts/user-accounts.config';
+import { initTestApp } from '../init-test-app';
+import { INestApplication } from '@nestjs/common';
 
 describe('<<SECURITY>> ENDPOINTS TESTING!!!(e2e)', () => {
-  let app: NestExpressApplication;
+  let app: INestApplication;
   let connection: Connection;
   let server: App;
+  let userAccountsConfig: UserAccountsConfig;
+  let creds: AuthCredentials;
 
   let users: UserViewDto[] = [];
   const loginDto: LoginDto[] = [];
@@ -36,16 +32,14 @@ describe('<<SECURITY>> ENDPOINTS TESTING!!!(e2e)', () => {
   const password = passTestsDefault;
 
   beforeAll(async () => {
-    const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
-    }).compile();
-
-    app = moduleFixture.createNestApplication();
-    appSetup(app);
-    await app.init();
-
+    app = await initTestApp(false);
     server = app.getHttpServer();
-    connection = moduleFixture.get<Connection>(getConnectionToken());
+    connection = app.get<Connection>(getConnectionToken());
+    userAccountsConfig = app.get<UserAccountsConfig>(UserAccountsConfig);
+    creds = {
+      login: userAccountsConfig.saLogin,
+      password: userAccountsConfig.saPass,
+    };
     await dropDbCollections(connection);
   });
 
@@ -64,7 +58,7 @@ describe('<<SECURITY>> ENDPOINTS TESTING!!!(e2e)', () => {
         let resGetDev1;
 
         //1. Создание 2 пользователей суперадмином через 2 дтошки автоматом
-        users = await createUsersBySa(server, 2);
+        users = await createUsersBySa(server, creds, 2);
 
         //2. Залогинивание 1 пользователя - 1 раз, 2-го - 3 раза с разных устройств
         loginDto[0] = {

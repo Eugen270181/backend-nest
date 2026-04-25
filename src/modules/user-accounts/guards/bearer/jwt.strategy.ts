@@ -2,18 +2,21 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 import { PassportStrategy } from '@nestjs/passport';
 import { Injectable } from '@nestjs/common';
 import { UserContextDto } from '../dto/user-context.dto';
-import { appConfig } from '../../../../core/settings/config';
 import { DomainException } from '../../../../core/exceptions/domain-exceptions';
 import { DomainExceptionCode } from '../../../../core/exceptions/domain-exception-codes';
 import { AuthValidationService } from '../../application/services/auth-validation.service';
+import { CoreConfig } from '../../../../core/core.config';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
-  constructor(private authValidationService: AuthValidationService) {
+  constructor(
+    private authValidationService: AuthValidationService,
+    coreConfig: CoreConfig,
+  ) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: appConfig.AT_SECRET, //TODO: move to env. will be in the following lessons
+      secretOrKey: coreConfig.accessTokenSecret,
     });
   }
 

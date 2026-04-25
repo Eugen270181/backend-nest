@@ -1,5 +1,4 @@
 import { IQueryHandler, QueryBus, QueryHandler } from '@nestjs/cqrs';
-import { appConfig } from '../../../../../core/settings/config';
 import { CommentsQueryRepository } from '../../infrastructure/query/comments.query-repository';
 import { CommentViewDto } from '../../api/view-dto/comment.view-dto';
 import { CommentEnrichmentService } from '../services/comment-enrichment.service';
@@ -7,6 +6,7 @@ import { GetCommentsQueryParams } from '../../../posts/api/input-dto/get-comment
 import { PaginatedViewDto } from '../../../../../core/dto/base.paginated.view-dto';
 import { GetPostDocumentQuery } from '../../../posts/application/queries/get-post-document.query';
 import { PostDocument } from '../../../posts/domain/post.entity';
+import { CoreConfig } from '../../../../../core/core.config';
 
 export class GetPostCommentsQuery {
   constructor(
@@ -22,11 +22,13 @@ export class GetPostCommentsQueryHandler
     IQueryHandler<GetPostCommentsQuery, PaginatedViewDto<CommentViewDto[]>>
 {
   constructor(
+    private coreConfig: CoreConfig,
     private commentsQueryRepository: CommentsQueryRepository,
     private commentsEnrichmentService: CommentEnrichmentService,
     private queryBus: QueryBus,
   ) {
-    if (appConfig.IOC_LOG) console.log('GetPostCommentsQueryHandler created');
+    if (this.coreConfig.IOC_LOG)
+      console.log('GetPostCommentsQueryHandler created');
   }
 
   async execute({ query, postId, userId }: GetPostCommentsQuery) {

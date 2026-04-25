@@ -1,5 +1,4 @@
 import { CommandHandler, EventBus, ICommandHandler } from '@nestjs/cqrs';
-import { appConfig } from '../../../../../core/settings/config';
 import { UserSearchType } from '../../dto/enum/user-search-type';
 import { UserValidationService } from '../../services/user-validation.service';
 import { UserDocument } from '../../../domain/user.entity';
@@ -9,6 +8,8 @@ import { UserConfirmCodeDto } from '../../../../../core/dto/type/user-confirm-co
 import { UserHelperService } from '../../../../../core/adapters/user-helper.service';
 import { SendUserEmailCodeEvent } from '../../../domain/events/send-user-email-code.event';
 import { EmailType } from '../../../../../core/dto/enum/email-type.enum';
+import { CoreConfig } from '../../../../../core/core.config';
+import { UserAccountsConfig } from '../../../user-accounts.config';
 
 export class ResendRegistrationCodeUserCommand {
   constructor(public readonly dto: EmailInputDto) {}
@@ -19,12 +20,15 @@ export class ResendRegistrationCodeUseCase
   implements ICommandHandler<ResendRegistrationCodeUserCommand>
 {
   constructor(
+    private coreConfig: CoreConfig,
+    private userAccountsConfig: UserAccountsConfig,
     private readonly usersRepository: UsersRepository,
     private readonly userValidationService: UserValidationService,
     private readonly userHelperService: UserHelperService,
     private readonly eventBus: EventBus,
   ) {
-    if (appConfig.IOC_LOG) console.log('ResendRegistrationCodeUseCase created');
+    if (this.coreConfig.IOC_LOG)
+      console.log('ResendRegistrationCodeUseCase created');
   }
 
   async execute({ dto }: ResendRegistrationCodeUserCommand) {
@@ -35,7 +39,9 @@ export class ResendRegistrationCodeUseCase
       );
 
     const userConfirmCodeDto: UserConfirmCodeDto =
-      this.userHelperService.createUserConfirmCodeDto(appConfig.EMAIL_TIME);
+      this.userHelperService.createUserConfirmCodeDto(
+        this.userAccountsConfig.emailTime,
+      );
 
     userDocument.setRegConfirmationCode(userConfirmCodeDto);
 

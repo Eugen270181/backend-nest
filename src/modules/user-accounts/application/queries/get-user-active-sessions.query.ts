@@ -1,7 +1,7 @@
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
-import { appConfig } from '../../../../core/settings/config';
 import { SessionViewDto } from '../../api/view-dto/session-view.dto';
 import { SessionsQueryRepository } from '../../infrastructure/query/sessions.query-repository';
+import { CoreConfig } from '../../../../core/core.config';
 
 export class GetUserActiveSessionsQuery {
   constructor(public readonly userId: string) {}
@@ -11,8 +11,11 @@ export class GetUserActiveSessionsQuery {
 export class GetUserActiveSessionsQueryHandler
   implements IQueryHandler<GetUserActiveSessionsQuery, SessionViewDto[]>
 {
-  constructor(private sessionsQueryRepository: SessionsQueryRepository) {
-    if (appConfig.IOC_LOG)
+  constructor(
+    private coreConfig: CoreConfig,
+    private sessionsQueryRepository: SessionsQueryRepository,
+  ) {
+    if (this.coreConfig.IOC_LOG)
       console.log('GetUserActiveSessionsQueryHandler created');
   }
 

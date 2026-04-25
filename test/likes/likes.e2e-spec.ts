@@ -1,9 +1,5 @@
-import { NestExpressApplication } from '@nestjs/platform-express';
-import { Connection, Model } from 'mongoose';
+import { Connection } from 'mongoose';
 import { App } from 'supertest/types';
-import { Test, TestingModule } from '@nestjs/testing';
-import { AppModule } from '../../src/app.module';
-import { appSetup } from '../../src/setup/app.setup';
 import { getConnectionToken, getModelToken } from '@nestjs/mongoose';
 import { dropDbCollections } from '../dropDbCollections';
 import {
@@ -17,7 +13,7 @@ import { CommentViewDto } from '../../src/modules/blogers-platform/comments/api/
 import { UserViewDto } from '../../src/modules/user-accounts/api/view-dto/user.view-dto';
 import request from 'supertest';
 import { fullPathTo } from '../getFullPath';
-import { createUsersBySa } from '../users/util/createGetUsers';
+import { AuthCredentials, createUsersBySa } from '../users/util/createGetUsers';
 import { getArrTokensWithUsersLogin } from '../auth/util/createGetAuth';
 import { createBlog } from '../blogs/util/createGetBlogs';
 import { createPosts, getPostById } from '../posts/util/createGetPosts';
@@ -39,30 +35,31 @@ import {
   LikeComment,
   LikeCommentModelType,
 } from '../../src/modules/blogers-platform/likes/domain/like-comment.entity';
+import { UserAccountsConfig } from '../../src/modules/user-accounts/user-accounts.config';
+import { INestApplication } from '@nestjs/common';
+import { initTestApp } from '../init-test-app';
 
 describe('<<LIKES>> ENDPOINTS TESTING!!!(e2e)', () => {
-  let app: NestExpressApplication;
+  let app: INestApplication;
   let connection: Connection;
   let server: App;
+  let userAccountsConfig: UserAccountsConfig;
+  let creds: AuthCredentials;
   let likePostModel: LikePostModelType;
   let likeCommentModel: LikeCommentModelType;
 
   beforeAll(async () => {
-    const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
-    }).compile();
-
-    app = moduleFixture.createNestApplication();
-    appSetup(app);
-    await app.init();
-
+    app = await initTestApp(false);
     server = app.getHttpServer();
+    connection = app.get<Connection>(getConnectionToken());
+    userAccountsConfig = app.get<UserAccountsConfig>(UserAccountsConfig);
+    creds = {
+      login: userAccountsConfig.saLogin,
+      password: userAccountsConfig.saPass,
+    };
 
-    connection = moduleFixture.get<Connection>(getConnectionToken());
-    likePostModel = moduleFixture.get<LikePostModelType>(
-      getModelToken(LikePost.name),
-    );
-    likeCommentModel = moduleFixture.get<LikeCommentModelType>(
+    likePostModel = app.get<LikePostModelType>(getModelToken(LikePost.name));
+    likeCommentModel = app.get<LikeCommentModelType>(
       getModelToken(LikeComment.name),
     );
 
@@ -70,6 +67,7 @@ describe('<<LIKES>> ENDPOINTS TESTING!!!(e2e)', () => {
   });
 
   afterAll(async () => {
+    if (connection) await connection.close(); // закрываем соединение с БД
     await app.close();
   });
 
@@ -84,16 +82,16 @@ describe('<<LIKES>> ENDPOINTS TESTING!!!(e2e)', () => {
   describe(`PUT -> "posts/:id/like-status":`, () => {
     it(`PUT -> "posts/:id/like-status": Ok. STATUS 204`, async () => {
       // 0. Создание 4 пользователей суперадмином, их авторизация и получение токенов
-      users = await createUsersBySa(server, 4);
+      users = await createUsersBySa(server, creds, 4);
       tokens = await getArrTokensWithUsersLogin(server, users);
 
       // 1. Создание блога
-      const blog = await createBlog(server);
+      const blog = await createBlog(server, creds);
       const blogId = blog.id;
 
       // 2. Создание 2-ух постов (предвар.создание дтошек)
       const postDtos = testingDtosCreator.createPostDtos(2, blogId);
-      posts = await createPosts(server, postDtos);
+      posts = await createPosts(server, creds, postDtos);
 
       // 3. Создание валидного лайка юзера 1 к первому посту
       await createPostLike(server, tokens[0].accessToken, posts[0].id, likeDto);

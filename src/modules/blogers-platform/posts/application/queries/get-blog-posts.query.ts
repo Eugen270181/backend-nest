@@ -1,12 +1,12 @@
 import { IQueryHandler, QueryBus, QueryHandler } from '@nestjs/cqrs';
 import { PaginatedViewDto } from '../../../../../core/dto/base.paginated.view-dto';
-import { appConfig } from '../../../../../core/settings/config';
 import { GetPostsQueryParams } from '../../../blogs/api/input-dto/get-posts-query-params.input-dto';
 import { PostsQueryRepository } from '../../infrastructure/query/posts.query-repository';
 import { PostEnrichmentService } from '../services/post-enrichment.service';
 import { PostViewDto } from '../../api/view-dto/post.view-dto';
 import { GetBlogDocumentQuery } from '../../../blogs/application/queries/get-blog-document.query';
 import { BlogDocument } from '../../../blogs/domain/blog.entity';
+import { CoreConfig } from '../../../../../core/core.config';
 
 export class GetBlogPostsQuery {
   constructor(
@@ -21,11 +21,13 @@ export class GetBlogPostsQueryHandler
   implements IQueryHandler<GetBlogPostsQuery, PaginatedViewDto<PostViewDto[]>>
 {
   constructor(
+    private coreConfig: CoreConfig,
     private queryBus: QueryBus,
     private postsQueryRepository: PostsQueryRepository,
     private postEnrichmentService: PostEnrichmentService,
   ) {
-    if (appConfig.IOC_LOG) console.log('GetBlogPostsQueryHandler created');
+    if (this.coreConfig.IOC_LOG)
+      console.log('GetBlogPostsQueryHandler created');
   }
 
   async execute({

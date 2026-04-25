@@ -2,7 +2,7 @@ import { CommandHandler, ICommandHandler, QueryBus } from '@nestjs/cqrs';
 import { BlogsRepository } from '../../infrastructure/blogs.repository';
 import { GetBlogDocumentQuery } from '../queries/get-blog-document.query';
 import { BlogDocument } from '../../domain/blog.entity';
-import { appConfig } from '../../../../../core/settings/config';
+import { CoreConfig } from '../../../../../core/core.config';
 
 export class DeleteBlogCommand {
   constructor(public readonly id: string) {}
@@ -11,10 +11,11 @@ export class DeleteBlogCommand {
 @CommandHandler(DeleteBlogCommand)
 export class DeleteBlogUseCase implements ICommandHandler<DeleteBlogCommand> {
   constructor(
+    private coreConfig: CoreConfig,
     private readonly queryBus: QueryBus,
     private readonly blogsRepository: BlogsRepository,
   ) {
-    if (appConfig.IOC_LOG) console.log('DeleteBlogUseCase created');
+    if (this.coreConfig.IOC_LOG) console.log('DeleteBlogUseCase created');
   }
 
   async execute({ id }: DeleteBlogCommand): Promise<void> {

@@ -2,17 +2,18 @@ import { EventsHandler, IEventHandler } from '@nestjs/cqrs';
 import { EmailService } from '../../email.service';
 import { SendUserEmailCodeEvent } from '../../../user-accounts/domain/events/send-user-email-code.event';
 import { EmailFactoryService } from '../email/email-factory.service';
-import { appConfig } from '../../../../core/settings/config';
+import { CoreConfig } from '../../../../core/core.config';
 
 @EventsHandler(SendUserEmailCodeEvent)
 export class SendConfirmationEmailWhenUserRegisteredEventHandler
   implements IEventHandler<SendUserEmailCodeEvent>
 {
   constructor(
+    private coreConfig: CoreConfig,
     private emailService: EmailService,
     private emailFactory: EmailFactoryService,
   ) {
-    if (appConfig.IOC_LOG)
+    if (this.coreConfig.IOC_LOG)
       console.log(
         'SendConfirmationEmailWhenUserRegisteredEventHandler created',
       );

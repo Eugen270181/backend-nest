@@ -1,8 +1,5 @@
-import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { App } from 'supertest/types';
-import { AppModule } from '../../src/app.module';
-import { appSetup } from '../../src/setup/app.setup';
 import { UserViewDto } from '../../src/modules/user-accounts/api/view-dto/user.view-dto';
 import { Connection } from 'mongoose';
 import { getConnectionToken, getModelToken } from '@nestjs/mongoose';
@@ -16,18 +13,17 @@ import {
   RegistrationDto,
   ResendRegCodeDto,
   testingDtosCreator,
-  TokenDto,
   TokensDto,
   UserDto,
 } from '../testingDtosCreator';
 import { randomUUID } from 'crypto';
-import { routerPaths } from '../../src/core/settings/paths';
-import { createUserBySa } from '../users/util/createGetUsers';
-import { NestExpressApplication } from '@nestjs/platform-express';
+import { routerPaths } from '../../src/core/constants/router-paths';
+import { AuthCredentials, createUserBySa } from '../users/util/createGetUsers';
 import {
   createUserByReg,
   getTokensWithLogin,
-  getTokensWithRefreshToken, logoutUser,
+  getTokensWithRefreshToken,
+  logoutUser,
   recoveryPassByEmail,
 } from './util/createGetAuth';
 import {
@@ -42,12 +38,16 @@ import { validateErrorsObject } from '../validateErrorsObject';
 import { CryptoService } from '../../src/modules/user-accounts/application/services/crypto.service';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import { UserHelperService } from '../../src/core/adapters/user-helper.service';
-import { delay } from 'rxjs';
+import { UserAccountsConfig } from '../../src/modules/user-accounts/user-accounts.config';
+import { INestApplication } from '@nestjs/common';
+import { initTestAppWithOverrides } from '../init-test-app';
 
 describe('<<AUTH>> ENDPOINTS TESTING!!!(e2e)', () => {
-  let app: NestExpressApplication;
+  let app: INestApplication;
   let connection: Connection;
   let server: App;
+  let userAccountsConfig: UserAccountsConfig;
+  let creds: AuthCredentials;
   let UserModel: UserModelType;
   let userHelperService: UserHelperService;
   let mockCodeHelper: MockCodeHelper;
@@ -98,25 +98,28 @@ describe('<<AUTH>> ENDPOINTS TESTING!!!(e2e)', () => {
   };
 
   beforeAll(async () => {
-    const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
-    })
-      .overrideProvider(EmailService)
-      .useValue(mockEmailService)
-      .overrideProvider(ThrottlerGuard)
-      .useValue(allowAllThrottleMockGuard)
-      .compile();
+    const { app: appInstance, moduleFixture } = await initTestAppWithOverrides(
+      false,
+      [
+        { token: EmailService, useValue: mockEmailService },
+        { token: ThrottlerGuard, useValue: allowAllThrottleMockGuard },
+      ],
+    );
 
-    app = moduleFixture.createNestApplication();
-    appSetup(app);
-    await app.init();
-
+    app = appInstance;
     server = app.getHttpServer();
     connection = moduleFixture.get<Connection>(getConnectionToken());
+    userAccountsConfig =
+      moduleFixture.get<UserAccountsConfig>(UserAccountsConfig);
+    creds = {
+      login: userAccountsConfig.saLogin,
+      password: userAccountsConfig.saPass,
+    };
     UserModel = moduleFixture.get<UserModelType>(getModelToken(User.name));
     userHelperService = moduleFixture.get(UserHelperService);
     cryptoService = moduleFixture.get(CryptoService);
     mockCodeHelper = new MockCodeHelper();
+
     await dropDbCollections(connection);
   });
 
@@ -133,14 +136,14 @@ describe('<<AUTH>> ENDPOINTS TESTING!!!(e2e)', () => {
 
   describe(`POST -> "/auth/login":`, () => {
     it('STATUS 400: couldn`t login with no valid data', async () => {
-      const resPost = await request(server)
+      await request(server)
         .post(`${fullPathTo.auth}${routerPaths.login}`)
         .send(noValidLoginDto)
         .expect(400);
     });
 
     it('STATUS 401: If the password or login or email is wrong', async () => {
-      const resPost = await request(server)
+      await request(server)
         .post(`${fullPathTo.auth}${routerPaths.login}`)
         .send(noUserLoginDto)
         .expect(401);
@@ -148,7 +151,7 @@ describe('<<AUTH>> ENDPOINTS TESTING!!!(e2e)', () => {
 
     it('STATUS 200: valid credential.', async () => {
       userDtos = testingDtosCreator.createUserDtos(3);
-      users.push(await createUserBySa(server, userDtos[0]));
+      users.push(await createUserBySa(server, creds, userDtos[0]));
 
       const loginDto = {
         loginOrEmail: userDtos[0].login,
@@ -248,7 +251,7 @@ describe('<<AUTH>> ENDPOINTS TESTING!!!(e2e)', () => {
         codes.confirmReg,
       );
       console.log('Mock set with code:', codes.confirmReg);
-      const resPost = await request(server)
+      await request(server)
         .post(`${fullPathTo.auth}${routerPaths.registration}`)
         .send(userDtos[1])
         .expect(204);
@@ -291,7 +294,7 @@ describe('<<AUTH>> ENDPOINTS TESTING!!!(e2e)', () => {
         codes.resendReg,
       );
       console.log('Mock set with resend code:', codes.resendReg);
-      const resPost = await request(server)
+      await request(server)
         .post(`${fullPathTo.auth}${routerPaths.registrationEmailResending}`)
         .send({ email: userDtos[1].email })
         .expect(204);
@@ -309,7 +312,7 @@ describe('<<AUTH>> ENDPOINTS TESTING!!!(e2e)', () => {
 
   describe(`POST -> "/auth/registration-confirmation"`, () => {
     it('STATUS 204: confirm is ok.', async () => {
-      const resPost = await request(server)
+      await request(server)
         .post(`${fullPathTo.auth}${routerPaths.registrationConfirmation}`)
         .send({ code: codes.resendReg })
         .expect(204);

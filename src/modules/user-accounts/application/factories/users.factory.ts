@@ -3,23 +3,25 @@ import { User, UserDocument, UserModelType } from '../../domain/user.entity';
 import { Injectable } from '@nestjs/common';
 import { CryptoService } from '../services/crypto.service';
 import { UserValidationService } from '../services/user-validation.service';
-import { appConfig } from '../../../../core/settings/config';
 import { CreateUserDto } from '../dto/create-user.dto';
 import { CreateUserDomainDto } from '../../domain/dto/create-user.domain.dto';
 import { UserHelperService } from '../../../../core/adapters/user-helper.service';
 import { UserConfirmCodeDto } from '../../../../core/dto/type/user-confirm-code.dto';
-import { UsersRepository } from '../../infrastructure/users.repository';
+import { CoreConfig } from '../../../../core/core.config';
+import { UserAccountsConfig } from '../../user-accounts.config';
 
 @Injectable()
 export class UsersFactory {
   constructor(
+    private coreConfig: CoreConfig,
+    private userAccountsConfig: UserAccountsConfig,
     @InjectModel(User.name)
     private UserModel: UserModelType,
     private readonly userValidationService: UserValidationService,
     private readonly cryptoService: CryptoService,
     private readonly userHelperService: UserHelperService,
   ) {
-    if (appConfig.IOC_LOG) console.log('UsersFactory created');
+    if (this.coreConfig.IOC_LOG) console.log('UsersFactory created');
   }
 
   private async createUserEntity(dto: CreateUserDto): Promise<UserDocument> {
@@ -53,7 +55,9 @@ export class UsersFactory {
     const userDocument: UserDocument = await this.createUserEntity(dto);
     //создаем дто для регистрации юзера с кодом и датой протухания кода
     const userConfirmCodeDto: UserConfirmCodeDto =
-      this.userHelperService.createUserConfirmCodeDto(appConfig.EMAIL_TIME);
+      this.userHelperService.createUserConfirmCodeDto(
+        this.userAccountsConfig.emailTime,
+      );
     //устанавливаем ее в сущность юзера через метод
     userDocument.setRegConfirmationCode(userConfirmCodeDto);
     //возвращаем расширеную сущность - документ юзера
