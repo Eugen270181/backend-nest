@@ -25,12 +25,6 @@ export class SessionsRepository {
     return this.SessionModel.findOne({ deviceId });
   }
 
-  async findSessionByActiveToken(
-    deviceId: string,
-    lastActiveDate: Date,
-  ): Promise<SessionDocument | null> {
-    return this.SessionModel.findOne({ deviceId, lastActiveDate });
-  }
   //передаем также userId чтобы случайно не удалить чужую сессию - подстраховка
   async deleteUserSessionById(deviceId: string, userId: string) {
     const result = await this.SessionModel.deleteOne({ deviceId, userId });

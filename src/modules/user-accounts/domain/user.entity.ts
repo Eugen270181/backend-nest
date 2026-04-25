@@ -13,7 +13,7 @@ import { UserConfirmCodeDto } from '../../../core/dto/type/user-confirm-code.dto
 
 @Schema({ timestamps: true })
 export class User {
-  @Prop({ type: String, required: true, min: 3, max: 10 })
+  @Prop({ type: String, required: true, minlength: 3, maxlength: 10 })
   login: string;
 
   @Prop({ type: String, required: true })

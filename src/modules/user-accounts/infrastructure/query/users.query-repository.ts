@@ -3,9 +3,10 @@ import { User, UserDocument, UserModelType } from '../../domain/user.entity';
 import { UserViewDto } from '../../api/view-dto/user.view-dto';
 import { PaginatedViewDto } from '../../../../core/dto/base.paginated.view-dto';
 import { GetUsersQueryParams } from '../../api/input-dto/get-users-query-params.input-dto';
-import { FilterQuery } from 'mongoose';
+import { Error as MongooseError, FilterQuery } from 'mongoose';
 import { Injectable } from '@nestjs/common';
 import { CoreConfig } from '../../../../core/core.config';
+import { escapeRegex } from '../../../../core/constants/router-paths';
 
 @Injectable()
 export class UsersQueryRepository {
@@ -17,8 +18,13 @@ export class UsersQueryRepository {
     if (this.coreConfig.IOC_LOG) console.log('UsersQueryRepository created');
   }
 
-  private async findById(_id: string): Promise<UserDocument | null> {
-    return this.UserModel.findOne({ _id }).catch(() => null);
+  private async findById(id: string): Promise<UserDocument | null> {
+    try {
+      return this.UserModel.findOne({ _id: id });
+    } catch (e) {
+      if (e instanceof MongooseError.CastError) return null; // невалидный id → «не найдено»
+      throw e; // обрыв коннекта и пр. → 500
+    }
   }
 
   async getById(id: string): Promise<UserViewDto | null> {
@@ -39,14 +45,14 @@ export class UsersQueryRepository {
     if (query.searchLoginTerm) {
       filter.$or = filter.$or || [];
       filter.$or.push({
-        login: { $regex: query.searchLoginTerm, $options: 'i' },
+        login: { $regex: escapeRegex(query.searchLoginTerm), $options: 'i' },
       });
     }
 
     if (query.searchEmailTerm) {
       filter.$or = filter.$or || [];
       filter.$or.push({
-        email: { $regex: query.searchEmailTerm, $options: 'i' },
+        email: { $regex: escapeRegex(query.searchEmailTerm), $options: 'i' },
       });
     }
 
@@ -57,13 +63,14 @@ export class UsersQueryRepository {
     filter: FilterQuery<User>,
     query: GetUsersQueryParams,
   ): Promise<PaginatedViewDto<UserViewDto[]>> {
-    const users: UserDocument[] = await this.UserModel.find(filter)
-      .sort({ [query.sortBy]: query.sortDirection })
-      .skip(query.calculateSkip())
-      .limit(query.pageSize)
-      .lean();
-
-    const totalCount = await this.UserModel.countDocuments(filter);
+    const [users, totalCount] = await Promise.all([
+      this.UserModel.find(filter)
+        .sort({ [query.sortBy]: query.sortDirection })
+        .skip(query.calculateSkip())
+        .limit(query.pageSize)
+        .lean(),
+      this.UserModel.countDocuments(filter),
+    ]);
 
     const items = users.map((el: UserDocument) => UserViewDto.mapToView(el));
 

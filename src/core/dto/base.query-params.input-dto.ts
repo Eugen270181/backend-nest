@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsEnum, IsNumber } from 'class-validator';
+import { IsEnum, IsInt, Max, Min } from 'class-validator';
 
 export enum SortDirection {
   Asc = 'asc',
@@ -10,11 +10,14 @@ export enum SortDirection {
 //значения по-умолчанию применятся автоматически при настройке глобального ValidationPipe в main.ts
 export class BaseQueryParams {
   @Type(() => Number)
-  @IsNumber()
+  @IsInt()
+  @Min(1)
   pageNumber: number = 1;
 
   @Type(() => Number)
-  @IsNumber()
+  @IsInt()
+  @Min(1)
+  @Max(100)
   pageSize: number = 10;
 
   @IsEnum(SortDirection)

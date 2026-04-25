@@ -1,7 +1,7 @@
 // import of this config module must be on the top of imports
 import { configModule } from './config-dynamic-module';
 import { CoreModule } from './core/core.module';
-import { DynamicModule, Module } from '@nestjs/common';
+import { Logger, Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -16,13 +16,13 @@ import { CoreConfig } from './core/core.config';
 
 @Module({
   imports: [
-    //TODO: move to env. will be in the following lessons
     MongooseModule.forRootAsync({
       useFactory: (coreConfig: CoreConfig) => {
         const uri = coreConfig.mongoURI;
+        //const env = coreConfig.node_env;
 
-        console.log('DB_URI', uri);
-        console.log('NODE_ENV', coreConfig.node_env);
+        //console.log('DB_URI', uri);
+        //console.log('NODE_ENV', env);
 
         return {
           uri: uri,
@@ -44,6 +44,7 @@ import { CoreConfig } from './core/core.config';
     //     useClass: ThrottlerGuard, // глобально активируем ThrottlerGuard
     //   },
     AppService,
+    Logger,
     //регистрация глобальных exception filters
     //важен порядок регистрации! Первым сработает DomainHttpExceptionsFilter!
     {
@@ -61,14 +62,14 @@ import { CoreConfig } from './core/core.config';
   ],
 })
 export class AppModule {
-  static async forRoot(coreConfig: CoreConfig): Promise<DynamicModule> {
+  static forRoot(includeTestingModule?: boolean) {
     // такой мудрёный способ мы используем, чтобы добавить к основным модулям необязательный модуль.
     // чтобы не обращаться в декораторе к переменной окружения через process.env в декораторе, потому что
     // запуск декораторов происходит на этапе склейки всех модулей до старта жизненного цикла самого NestJS
 
     return {
       module: AppModule,
-      imports: [...(coreConfig.includeTestingModule ? [TestingModule] : [])], // Add dynamic modules here
+      imports: [...(includeTestingModule ? [TestingModule] : [])], // Add dynamic modules here
     };
   }
 }

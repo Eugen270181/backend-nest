@@ -17,6 +17,9 @@ export class Session {
   @Prop({ type: String, required: true })
   title: string;
 
+  @Prop({ type: String, required: true })
+  tokenVersion: string;
+
   @Prop({ type: Date, required: true })
   lastActiveDate: Date;
 
@@ -30,12 +33,14 @@ export class Session {
     sessionDocument.userId = sessionDto.userId;
     sessionDocument.ip = sessionDto.ip;
     sessionDocument.title = sessionDto.title;
+    sessionDocument.tokenVersion = sessionDto.tokenVersion;
     sessionDocument.lastActiveDate = sessionDto.lastActiveDate;
     sessionDocument.expDate = sessionDto.expDate;
 
     return sessionDocument as SessionDocument;
   }
   updateSession(updateDto: UpdateSessionDomainDto) {
+    this.tokenVersion = updateDto.tokenVersion;
     this.expDate = updateDto.expDate;
     this.lastActiveDate = updateDto.lastActiveDate;
   }

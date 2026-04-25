@@ -2,6 +2,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { User, UserDocument, UserModelType } from '../domain/user.entity';
 import { Injectable } from '@nestjs/common';
 import { CoreConfig } from '../../../core/core.config';
+import { Error as MongooseError } from 'mongoose';
 
 @Injectable()
 export class UsersRepository {
@@ -17,8 +18,16 @@ export class UsersRepository {
     await userDocument.save();
   }
 
-  async findById(_id: string): Promise<UserDocument | null> {
-    return this.UserModel.findOne({ _id }).catch(() => null);
+  async findById(id: string): Promise<UserDocument | null> {
+    try {
+      return this.UserModel.findOne({
+        _id: id,
+        deletedAt: null,
+      });
+    } catch (e) {
+      if (e instanceof MongooseError.CastError) return null; // невалидный id → «не найдено»
+      throw e; // обрыв коннекта и пр. → 500
+    }
   }
 
   async findByLogin(login: string): Promise<UserDocument | null> {

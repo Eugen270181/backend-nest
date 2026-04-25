@@ -4,7 +4,8 @@ import { initAppModule } from './init-app-module';
 import { CoreConfig } from './core/core.config';
 
 async function bootstrap() {
-  const DynamicAppModule = await initAppModule();
+  //создаем динамический модуль, чтобы еще до старта, знать переменные окружения
+  const DynamicAppModule = initAppModule();
   // создаём на основе донастроенного модуля наше приложение
   const app = await NestFactory.create(DynamicAppModule);
 
@@ -17,6 +18,7 @@ async function bootstrap() {
   await app.listen(port, () => {
     console.log('App starting listen port: ', port);
     console.log('NODE_ENV: ', coreConfig.node_env);
+    console.log('includeTestingModule: ', coreConfig.includeTestingModule);
   });
 }
 bootstrap();

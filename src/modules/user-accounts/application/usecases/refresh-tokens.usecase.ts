@@ -44,6 +44,7 @@ export class RefreshTokensUseCase
 
     // 3. Обновить через domain method
     sessionDocument.updateSession({
+      tokenVersion: newTokensData.tokenVersion,
       lastActiveDate: newTokensData.lastActiveDate,
       expDate: newTokensData.expDate,
     });

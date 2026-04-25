@@ -19,7 +19,7 @@ export class SessionsQueryRepository {
   }
 
   private async findById(deviceId: string): Promise<SessionDocument | null> {
-    return this.SessionModel.findOne({ deviceId }).catch(() => null);
+    return this.SessionModel.findOne({ deviceId });
   }
 
   async getById(id: string): Promise<SessionViewDto | null> {

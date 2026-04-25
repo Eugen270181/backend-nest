@@ -5,7 +5,6 @@ import { UserSearchType } from '../dto/enum/user-search-type';
 import { CryptoService } from './crypto.service';
 import { SessionsRepository } from '../../infrastructure/sessions.repository';
 import { RefreshTokenPayloadDto } from '../../guards/dto/refresh-token-payload.dto';
-import { SessionDocument } from '../../domain/session.entity';
 import { UserDocument } from '../../domain/user.entity';
 import { CoreConfig } from '../../../../core/core.config';
 
@@ -65,20 +64,16 @@ export class AuthValidationService {
   async validateRefreshToken(
     jwtPayload: RefreshTokenPayloadDto,
   ): Promise<UserContextDto | null> {
-    // 1. Проверяем user существует (вдруг удалили)
     const validUserId = await this.validateUserById(jwtPayload.userId);
     if (!validUserId) return null;
 
-    // 2. Проверяем активную сессию {deviceId, lastActiveDate}
-    const activeSession: SessionDocument | null =
-      await this.sessionsRepository.findSessionByActiveToken(
-        jwtPayload.deviceId,
-        new Date(jwtPayload.iat * 1000),
-      );
+    const session = await this.sessionsRepository.findSessionById(
+      jwtPayload.deviceId,
+    );
+    if (!session) return null;
 
-    if (!activeSession || activeSession.expDate < new Date()) {
-      return null; // Сессия не найдена или протухла(мало ли)
-    }
+    if (session.tokenVersion !== jwtPayload.ver) return null; // старый/уже использованный RT
+    if (session.expDate < new Date()) return null; // сессия протухла
 
     return { userId: validUserId, deviceId: jwtPayload.deviceId };
   }

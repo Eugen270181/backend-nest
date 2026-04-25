@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import { initTestAppModule } from './init-test-app-module';
 import { appSetup } from '../src/setup/app.setup';
+import { initAppModule } from '../src/init-app-module';
 
 type Override = {
   token: any;
@@ -13,7 +13,7 @@ type Override = {
 export async function initTestApp(
   enableSwagger = false,
 ): Promise<INestApplication> {
-  const dynamicAppModule = await initTestAppModule();
+  const dynamicAppModule = initAppModule();
   const moduleFixture: TestingModule = await Test.createTestingModule({
     imports: [dynamicAppModule],
   }).compile();
@@ -27,7 +27,7 @@ export async function initTestAppWithOverrides(
   enableSwagger = false,
   overrides: Override[] = [],
 ): Promise<{ app: INestApplication; moduleFixture: TestingModule }> {
-  const dynamicAppModule = await initTestAppModule();
+  const dynamicAppModule = initAppModule();
   let builder = Test.createTestingModule({
     imports: [dynamicAppModule],
   });

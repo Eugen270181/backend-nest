@@ -1,11 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { PaginatedViewDto } from '../../../../../core/dto/base.paginated.view-dto';
-import { FilterQuery } from 'mongoose';
+import { Error as MongooseError, FilterQuery } from 'mongoose';
 import { Blog, BlogDocument, BlogModelType } from '../../domain/blog.entity';
 import { BlogViewDto } from '../../api/view-dto/blog.view-dto';
 import { GetBlogsQueryParams } from '../../api/input-dto/get-blogs-query-params.input-dto';
 import { CoreConfig } from '../../../../../core/core.config';
+import { escapeRegex } from '../../../../../core/constants/router-paths';
 
 @Injectable()
 export class BlogsQueryRepository {
@@ -18,10 +19,15 @@ export class BlogsQueryRepository {
   }
 
   async findById(id: string): Promise<BlogDocument | null> {
-    return this.BlogModel.findOne({
-      _id: id,
-      deletedAt: null,
-    }).catch(() => null);
+    try {
+      return this.BlogModel.findOne({
+        _id: id,
+        deletedAt: null,
+      });
+    } catch (e) {
+      if (e instanceof MongooseError.CastError) return null; // невалидный id → «не найдено»
+      throw e; // обрыв коннекта и пр. → 500
+    }
   }
 
   async getById(id: string): Promise<BlogViewDto | null> {
@@ -42,7 +48,7 @@ export class BlogsQueryRepository {
     if (query.searchNameTerm) {
       filter.$or = filter.$or || [];
       filter.$or.push({
-        name: { $regex: query.searchNameTerm, $options: 'i' },
+        name: { $regex: escapeRegex(query.searchNameTerm), $options: 'i' },
       });
     }
 
@@ -53,15 +59,16 @@ export class BlogsQueryRepository {
     filter: FilterQuery<Blog>,
     query: GetBlogsQueryParams,
   ): Promise<PaginatedViewDto<BlogViewDto[]>> {
-    const posts: BlogDocument[] = await this.BlogModel.find(filter)
-      .sort({ [query.sortBy]: query.sortDirection })
-      .skip(query.calculateSkip())
-      .limit(query.pageSize)
-      .lean();
+    const [blogs, totalCount] = await Promise.all([
+      this.BlogModel.find(filter)
+        .sort({ [query.sortBy]: query.sortDirection })
+        .skip(query.calculateSkip())
+        .limit(query.pageSize)
+        .lean(),
+      this.BlogModel.countDocuments(filter),
+    ]);
 
-    const totalCount = await this.BlogModel.countDocuments(filter);
-
-    const items = posts.map((el: BlogDocument) => BlogViewDto.mapToView(el));
+    const items = blogs.map((el: BlogDocument) => BlogViewDto.mapToView(el));
 
     return PaginatedViewDto.mapToView<BlogViewDto[]>({
       items,

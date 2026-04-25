@@ -7,7 +7,7 @@ import {
 } from '../../domain/comment.entity';
 import { CommentViewDto } from '../../api/view-dto/comment.view-dto';
 import { PaginatedViewDto } from '../../../../../core/dto/base.paginated.view-dto';
-import { FilterQuery } from 'mongoose';
+import { Error as MongooseError, FilterQuery } from 'mongoose';
 import { GetCommentsQueryParams } from '../../../posts/api/input-dto/get-comments-query-params.input-dto';
 import { CoreConfig } from '../../../../../core/core.config';
 
@@ -21,23 +21,29 @@ export class CommentsQueryRepository {
     if (this.coreConfig.IOC_LOG) console.log('CommentsQueryRepository created');
   }
 
-  private async findById(_id: string): Promise<CommentDocument | null> {
-    return this.CommentModel.findOne({
-      _id,
-      deletedAt: null,
-    }).catch(() => null);
+  private async findById(id: string): Promise<CommentDocument | null> {
+    try {
+      return this.CommentModel.findOne({
+        _id: id,
+        deletedAt: null,
+      });
+    } catch (e) {
+      if (e instanceof MongooseError.CastError) return null; // невалидный id → «не найдено»
+      throw e; // обрыв коннекта и пр. → 500
+    }
   }
   private async getComments(
     query: GetCommentsQueryParams,
     filter: FilterQuery<Comment>,
   ): Promise<PaginatedViewDto<CommentViewDto[]>> {
-    const comments: CommentDocument[] = await this.CommentModel.find(filter)
-      .sort({ [query.sortBy]: query.sortDirection })
-      .skip(query.calculateSkip())
-      .limit(query.pageSize)
-      .lean();
-
-    const totalCount = await this.CommentModel.countDocuments(filter);
+    const [comments, totalCount] = await Promise.all([
+      this.CommentModel.find(filter)
+        .sort({ [query.sortBy]: query.sortDirection })
+        .skip(query.calculateSkip())
+        .limit(query.pageSize)
+        .lean(),
+      this.CommentModel.countDocuments(filter),
+    ]);
 
     const items = comments.map((el: CommentDocument) =>
       CommentViewDto.mapToView(el),

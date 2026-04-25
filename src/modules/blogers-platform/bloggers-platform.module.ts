@@ -104,7 +104,6 @@ const services = [PostEnrichmentService, CommentEnrichmentService];
     CommentsQueryRepository,
     LikesPostsRepository,
     LikesCommentsRepository,
-    //OptionalJwtMiddleware,
   ],
 })
 export class BloggersPlatformModule {}

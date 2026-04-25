@@ -6,6 +6,7 @@ import {
   CommentModelType,
 } from '../domain/comment.entity';
 import { CoreConfig } from '../../../../core/core.config';
+import { Error as MongooseError } from 'mongoose';
 
 @Injectable()
 export class CommentsRepository {
@@ -18,10 +19,15 @@ export class CommentsRepository {
   }
 
   async findById(id: string): Promise<CommentDocument | null> {
-    return this.CommentModel.findOne({
-      _id: id,
-      deletedAt: null,
-    }).catch(() => null);
+    try {
+      return this.CommentModel.findOne({
+        _id: id,
+        deletedAt: null,
+      });
+    } catch (e) {
+      if (e instanceof MongooseError.CastError) return null; // невалидный id → «не найдено»
+      throw e; // обрыв коннекта и пр. → 500
+    }
   }
 
   async save(commentDocument: CommentDocument) {

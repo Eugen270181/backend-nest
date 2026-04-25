@@ -27,7 +27,8 @@ export class LoginUserUseCase
   }
 
   async execute({ userId, ip, title }: LoginUserCommand): Promise<TokensDto> {
-    const deviceId = randomUUID(); //todo
+    const deviceId = randomUUID();
+
     const jwtData = await this.commandBus.execute<
       GenerateTokensCommand,
       TokensWithTimesDto
@@ -38,6 +39,7 @@ export class LoginUserUseCase
       userId,
       ip,
       title,
+      tokenVersion: jwtData.tokenVersion,
       lastActiveDate: jwtData.lastActiveDate,
       expDate: jwtData.expDate,
     };

@@ -2,6 +2,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Injectable } from '@nestjs/common';
 import { Post, PostDocument, PostModelType } from '../domain/post.entity';
 import { CoreConfig } from '../../../../core/core.config';
+import { Error as MongooseError } from 'mongoose';
 
 @Injectable()
 export class PostsRepository {
@@ -14,10 +15,15 @@ export class PostsRepository {
   }
 
   async findById(id: string): Promise<PostDocument | null> {
-    return this.PostModel.findOne({
-      _id: id,
-      deletedAt: null,
-    }).catch(() => null);
+    try {
+      return this.PostModel.findOne({
+        _id: id,
+        deletedAt: null,
+      });
+    } catch (e) {
+      if (e instanceof MongooseError.CastError) return null; // невалидный id → «не найдено»
+      throw e; // обрыв коннекта и пр. → 500
+    }
   }
 
   async save(postDocument: PostDocument) {

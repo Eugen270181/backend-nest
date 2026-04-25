@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { User, UserDocument, UserModelType } from '../../domain/user.entity';
 import { UserExternalViewDto } from './external-dto/user.external-view-dto';
 import { CoreConfig } from '../../../../core/core.config';
+import { Error as MongooseError } from 'mongoose';
 
 @Injectable()
 export class UsersExternalQueryRepository {
@@ -16,10 +17,12 @@ export class UsersExternalQueryRepository {
   }
 
   async findById(id: string): Promise<UserDocument | null> {
-    return await this.UserModel.findOne({
-      _id: id,
-      deletedAt: null,
-    }).catch(() => null);
+    try {
+      return this.UserModel.findOne({ _id: id });
+    } catch (e) {
+      if (e instanceof MongooseError.CastError) return null; // невалидный id → «не найдено»
+      throw e; // обрыв коннекта и пр. → 500
+    }
   }
 
   async getById(id: string): Promise<UserExternalViewDto | null> {

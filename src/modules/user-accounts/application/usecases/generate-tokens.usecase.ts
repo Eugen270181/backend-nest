@@ -7,13 +7,8 @@ import {
 import { Inject } from '@nestjs/common';
 import { TokensWithTimesDto } from '../dto/tokens-with-times.dto';
 import { CoreConfig } from '../../../../core/core.config';
-
-export interface RefreshJwtPayload {
-  iat: number;
-  exp: number;
-  userId: string;
-  deviceId: string;
-}
+import { randomUUID } from 'crypto';
+import { RefreshTokenPayloadDto } from '../../guards/dto/refresh-token-payload.dto';
 
 export class GenerateTokensCommand {
   constructor(
@@ -40,23 +35,25 @@ export class GenerateTokensUseCase
     userId,
     deviceId,
   }: GenerateTokensCommand): Promise<TokensWithTimesDto> {
+    const tokenVersion = randomUUID(); // уникальна для этой пары токенов
+
     const [accessToken, refreshToken] = await Promise.all([
       this.accessTokenService.signAsync({ userId }),
-      this.refreshTokenService.signAsync({ userId, deviceId }),
+      this.refreshTokenService.signAsync({
+        userId,
+        deviceId,
+        ver: tokenVersion,
+      }),
     ]);
+    if (!accessToken || !refreshToken) throw new Error('...');
 
-    if (!accessToken || !refreshToken) {
-      throw new Error('Something wrong with generate tokens, try later');
-    }
-
-    //записываем дату создания RT по user в соответ объект соотв коллекции бд
-    const jwtPayload: RefreshJwtPayload =
+    const jwtPayload: RefreshTokenPayloadDto =
       this.refreshTokenService.decode(refreshToken);
-
     return {
       accessToken,
       refreshToken,
-      lastActiveDate: new Date(jwtPayload.iat * 1000),
+      tokenVersion, // <-- новое поле
+      lastActiveDate: new Date(jwtPayload.iat * 1000), // остаётся только для отображения "last active"
       expDate: new Date(jwtPayload.exp * 1000),
     };
   }

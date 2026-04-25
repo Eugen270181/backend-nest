@@ -20,3 +20,6 @@ export const routerPaths = {
   logout: '/logout',
   docs: '/docs',
 };
+
+export const escapeRegex = (s: string) =>
+  s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');

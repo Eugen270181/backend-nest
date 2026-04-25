@@ -3,6 +3,7 @@ export class CreateSessionDto {
   userId: string;
   ip: string;
   title: string;
+  tokenVersion: string;
   lastActiveDate: Date;
   expDate: Date;
 }
