@@ -34,6 +34,12 @@ export class CoreConfig {
   })
   mongoURI!: string;
 
+  @IsNotEmpty({
+    message:
+      'Set Env variable MONGO_URI, example: mongodb://localhost:27017/my-app-local-db',
+  })
+  postgresURI!: string;
+
   @IsEnum(Environments, {
     message:
       'Set correct NODE_ENV value, available values: ' +
@@ -77,6 +83,7 @@ export class CoreConfig {
   constructor(private configService: ConfigService<any, true>) {
     this.port = Number(this.configService.get('PORT'));
     this.mongoURI = this.configService.get('MONGO_URI');
+    this.postgresURI = this.configService.get('POSTRGES_URI');
     this.node_env = this.configService.get('NODE_ENV');
 
     this.accessTokenSecret = this.configService.get('ACCESS_TOKEN_SECRET');
