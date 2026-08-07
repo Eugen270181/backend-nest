@@ -3,7 +3,6 @@ import { CqrsModule } from '@nestjs/cqrs';
 import { MongooseModule } from '@nestjs/mongoose';
 import { UsersController } from './api/users.controller';
 import { AuthController } from './api/auth.controller';
-import { User, UserSchema } from './domain/user.entity';
 import { UsersRepository } from './infrastructure/users.repository';
 import { UsersQueryRepository } from './infrastructure/query/users.query-repository';
 import { JwtModule, JwtService } from '@nestjs/jwt';
@@ -111,8 +110,8 @@ const commandHandlers = [
         limit: 5,
       },
     ]),
+    //User переехал в Postgres; Session пока остаётся в Mongo (следующий шаг)
     MongooseModule.forFeature([
-      { name: User.name, schema: UserSchema },
       { name: Session.name, schema: SessionSchema },
     ]),
     NotificationsModule,

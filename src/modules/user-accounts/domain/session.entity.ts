@@ -3,27 +3,30 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { UpdateSessionDomainDto } from './dto/update-session.domain.dto';
 import { HydratedDocument, Model } from 'mongoose';
 
-//@Schema()
+//ВАЖНО: сессии пока остаются в Mongo, поэтому декораторы должны быть активны,
+//иначе SchemaFactory создаст пустую схему и Mongo не сохранит ни одного поля.
+//Перевод сессий на Postgres — следующий шаг после проверки юзеров.
+@Schema()
 export class Session {
-  //@Prop({ type: String, required: true })
+  @Prop({ type: String, required: true })
   deviceId: string;
 
-  //@Prop({ type: String, required: true })
+  @Prop({ type: String, required: true })
   userId: string;
 
-  //@Prop({ type: String, required: true })
+  @Prop({ type: String, required: true })
   ip: string;
 
-  //@Prop({ type: String, required: true })
+  @Prop({ type: String, required: true })
   title: string;
 
-  //@Prop({ type: String, required: true })
+  @Prop({ type: String, required: true })
   tokenVersion: string;
 
-  //@Prop({ type: Date, required: true })
+  @Prop({ type: Date, required: true })
   lastActiveDate: Date;
 
-  //@Prop({ type: Date, required: true })
+  @Prop({ type: Date, required: true })
   expDate: Date;
 
   static createSessionDocument(sessionDto: CreateSessionDomainDto) {

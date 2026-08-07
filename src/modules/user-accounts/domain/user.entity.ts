@@ -1,77 +1,34 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { HydratedDocument, Model } from 'mongoose';
-import {
-  EmailConfirmation,
-  EmailConfirmationSchema,
-} from './email-confirmation.schema';
-import {
-  PassConfirmation,
-  PassConfirmationSchema,
-} from './pass-confirmation.schema';
+import { EmailConfirmation } from './email-confirmation.schema';
+import { PassConfirmation } from './pass-confirmation.schema';
 import { CreateUserDomainDto } from './dto/create-user.domain.dto';
 import { UserConfirmCodeDto } from '../../../core/dto/type/user-confirm-code.dto';
-//@Entity() - 4example
-//@Schema({ timestamps: true })
+
+//Доменная сущность без ORM-декораторов: хранение теперь в Postgres (raw SQL),
+//всю работу с таблицей делает UsersRepository
 export class User {
-  //@Column() - 4example
-  //@PrimaryGeneratedColumn()
-  //@Prop({ type: String, required: true, minlength: 3, maxlength: 10 })
-  id: string;
+  //генерируется базой (gen_random_uuid) — до первого INSERT его ещё нет
+  id: string | null = null;
 
   login: string;
-
-  //@Prop({ type: String, required: true })
   email: string;
-
-  //@Prop({ type: String, required: true })
   passwordHash: string;
+  isConfirmed: boolean = false;
 
-  //@Prop({ type: Boolean, required: true, default: false })
-  isConfirmed: boolean;
+  emailConfirmation: EmailConfirmation | null = null;
+  passConfirmation: PassConfirmation | null = null;
 
-  //@Prop({ type: EmailConfirmationSchema, nullable: true, default: null })
-  emailConfirmation: EmailConfirmation | null;
-
-  //@Prop({ type: PassConfirmationSchema, nullable: true, default: null })
-  passConfirmation: PassConfirmation | null;
-
+  //заполняются базой (DEFAULT now()), репозиторий пишет их обратно в объект
   createdAt: Date;
   updatedAt: Date;
+  deletedAt: Date | null = null;
 
-  static createInstance(dto: CreateUserDomainDto): UserDocument {
-    const userDocument = new this();
+  static createInstance(dto: CreateUserDomainDto): User {
+    const user = new this();
 
-    userDocument.login = dto.login;
-    userDocument.email = dto.email;
-    userDocument.passwordHash = dto.passwordHash;
+    user.login = dto.login;
+    user.email = dto.email;
+    user.passwordHash = dto.passwordHash;
 
-    return userDocument as UserDocument;
-  }
-
-  private mapToUser(row: any): User {
-    const user = new User();
-    user.id = row.id;
-    user.login = row.login;
-    user.email = row.email;
-    user.passwordHash = row.passwordHash; // имя совпадает 1:1 — pg вернёт ключ как в кавычках
-    user.isConfirmed = row.isConfirmed;
-
-    user.emailConfirmation = row.emailConfirmationCode
-      ? {
-          confirmationCode: row.emailConfirmationCode,
-          expirationDate: row.emailExpirationDate,
-        }
-      : null;
-
-    user.passConfirmation = row.passConfirmationCode
-      ? {
-          confirmationCode: row.passConfirmationCode,
-          expirationDate: row.passExpirationDate,
-        }
-      : null;
-
-    user.createdAt = row.createdAt;
-    user.updatedAt = row.updatedAt;
     return user;
   }
 
@@ -92,13 +49,6 @@ export class User {
   }
 }
 
-export const UserSchema = SchemaFactory.createForClass(User);
-
-//регистрирует методы сущности в схеме
-UserSchema.loadClass(User);
-
-//Типизация документа
-export type UserDocument = HydratedDocument<User>;
-
-//Типизация модели + статические методы
-export type UserModelType = Model<UserDocument> & typeof User;
+//АЛИАС: раньше UserDocument = HydratedDocument<User>, теперь это просто User.
+//Благодаря этому use-case'ы и сервисы, импортирующие UserDocument, не меняются.
+export type UserDocument = User;

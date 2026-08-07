@@ -1,18 +1,17 @@
-import { UserDocument } from '../../domain/user.entity';
-
 export class UserViewDto {
   id: string;
   login: string;
   email: string;
-  createdAt: string;
+  createdAt: Date;
 
-  static mapToView(user: UserDocument): UserViewDto {
+  //маппер принимает строку таблицы users (snake_case)
+  static mapRowToView(row: any): UserViewDto {
     const dto = new UserViewDto();
 
-    dto.email = user.email;
-    dto.login = user.login;
-    dto.id = user._id.toString();
-    dto.createdAt = user.createdAt.toISOString();
+    dto.id = row.id;
+    dto.login = row.login;
+    dto.email = row.email;
+    dto.createdAt = row.created_at;
 
     return dto;
   }

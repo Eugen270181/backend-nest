@@ -1,17 +1,15 @@
-//https://docs.nestjs.com/openapi/mapped-types
-import { UserDocument } from '../../domain/user.entity';
-
 export class MeViewDto {
   email: string;
   login: string;
   userId: string;
 
-  static mapToView(user: UserDocument): MeViewDto {
+  //маппер принимает строку таблицы users (snake_case)
+  static mapRowToView(row: any): MeViewDto {
     const dto = new MeViewDto();
 
-    dto.email = user.email;
-    dto.login = user.login;
-    dto.userId = user._id.toString();
+    dto.email = row.email;
+    dto.login = row.login;
+    dto.userId = row.id;
 
     return dto;
   }

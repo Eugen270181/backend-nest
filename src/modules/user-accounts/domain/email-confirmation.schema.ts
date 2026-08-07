@@ -1,15 +1,6 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-
-@Schema({
-  _id: false,
-})
+//простой вложенный объект юзера; в Postgres хранится развёрнуто
+//в колонках email_confirmation_code / email_expiration_date
 export class EmailConfirmation {
-  @Prop({ type: String, required: true })
   confirmationCode: string;
-
-  @Prop({ type: Date, required: true })
   expirationDate: Date;
 }
-
-export const EmailConfirmationSchema =
-  SchemaFactory.createForClass(EmailConfirmation);

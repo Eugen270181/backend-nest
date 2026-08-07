@@ -1,5 +1,4 @@
-import { InjectModel } from '@nestjs/mongoose';
-import { User, UserDocument, UserModelType } from '../../domain/user.entity';
+import { User, UserDocument } from '../../domain/user.entity';
 import { Injectable } from '@nestjs/common';
 import { CryptoService } from '../services/crypto.service';
 import { UserValidationService } from '../services/user-validation.service';
@@ -15,8 +14,6 @@ export class UsersFactory {
   constructor(
     private coreConfig: CoreConfig,
     private userAccountsConfig: UserAccountsConfig,
-    @InjectModel(User.name)
-    private UserModel: UserModelType,
     private readonly userValidationService: UserValidationService,
     private readonly cryptoService: CryptoService,
     private readonly userHelperService: UserHelperService,
@@ -36,7 +33,7 @@ export class UsersFactory {
       passwordHash,
     };
 
-    return this.UserModel.createInstance(createUserDomainDto);
+    return User.createInstance(createUserDomainDto);
   }
 
   // PUBLIC сценарий 1: Админ создаёт пользователя (подтвержден)

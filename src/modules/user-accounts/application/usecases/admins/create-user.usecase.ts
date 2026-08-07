@@ -25,6 +25,7 @@ export class CreateUserUseCase
 
     await this.usersRepository.save(userDocument);
 
-    return userDocument._id.toString();
+    //id уже записан в объект через RETURNING в usersRepository.save()
+    return userDocument.id!;
   }
 }
