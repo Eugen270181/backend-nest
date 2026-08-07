@@ -16,6 +16,8 @@ import { DomainHttpExceptionsFilter } from './core/exceptions/filters/domain-exc
 import { ThrottlerExceptionFilter } from './core/exceptions/filters/throttler-exception.filter';
 import { CoreConfig } from './core/core.config';
 import { ensureDatabaseExistCreateIfNot } from './ensure-database-exist-create-if-not';
+import { readFileSync } from 'fs';
+import { join } from 'path';
 
 @Module({
   imports: [
@@ -32,7 +34,7 @@ import { ensureDatabaseExistCreateIfNot } from './ensure-database-exist-create-i
       useFactory: (coreConfig: CoreConfig) => ({
         type: 'postgres' as const,
         url: coreConfig.postgresURI,
-        synchronize: false,
+        //synchronize: true,
       }),
       dataSourceFactory: async (
         options?: DataSourceOptions,
@@ -51,9 +53,12 @@ import { ensureDatabaseExistCreateIfNot } from './ensure-database-exist-create-i
 
         const dataSource = await new DataSource(options).initialize();
 
-        // const schemaSql = readFileSync(join(process.cwd(), 'schema.sql'), 'utf8');
-        // await dataSource.query(schemaSql);
-        // logger.log('schema.sql применена');
+        const schemaSql = readFileSync(
+          join(process.cwd(), 'schema.sql'),
+          'utf8',
+        );
+        await dataSource.query(schemaSql);
+        logger.log('schema.sql применена');
 
         return dataSource;
       },

@@ -10,25 +10,29 @@ import {
 } from './pass-confirmation.schema';
 import { CreateUserDomainDto } from './dto/create-user.domain.dto';
 import { UserConfirmCodeDto } from '../../../core/dto/type/user-confirm-code.dto';
-
-@Schema({ timestamps: true })
+//@Entity() - 4example
+//@Schema({ timestamps: true })
 export class User {
-  @Prop({ type: String, required: true, minlength: 3, maxlength: 10 })
+  //@Column() - 4example
+  //@PrimaryGeneratedColumn()
+  //@Prop({ type: String, required: true, minlength: 3, maxlength: 10 })
+  id: string;
+
   login: string;
 
-  @Prop({ type: String, required: true })
+  //@Prop({ type: String, required: true })
   email: string;
 
-  @Prop({ type: String, required: true })
+  //@Prop({ type: String, required: true })
   passwordHash: string;
 
-  @Prop({ type: Boolean, required: true, default: false })
+  //@Prop({ type: Boolean, required: true, default: false })
   isConfirmed: boolean;
 
-  @Prop({ type: EmailConfirmationSchema, nullable: true, default: null })
+  //@Prop({ type: EmailConfirmationSchema, nullable: true, default: null })
   emailConfirmation: EmailConfirmation | null;
 
-  @Prop({ type: PassConfirmationSchema, nullable: true, default: null })
+  //@Prop({ type: PassConfirmationSchema, nullable: true, default: null })
   passConfirmation: PassConfirmation | null;
 
   createdAt: Date;
@@ -42,6 +46,33 @@ export class User {
     userDocument.passwordHash = dto.passwordHash;
 
     return userDocument as UserDocument;
+  }
+
+  private mapToUser(row: any): User {
+    const user = new User();
+    user.id = row.id;
+    user.login = row.login;
+    user.email = row.email;
+    user.passwordHash = row.passwordHash; // имя совпадает 1:1 — pg вернёт ключ как в кавычках
+    user.isConfirmed = row.isConfirmed;
+
+    user.emailConfirmation = row.emailConfirmationCode
+      ? {
+          confirmationCode: row.emailConfirmationCode,
+          expirationDate: row.emailExpirationDate,
+        }
+      : null;
+
+    user.passConfirmation = row.passConfirmationCode
+      ? {
+          confirmationCode: row.passConfirmationCode,
+          expirationDate: row.passExpirationDate,
+        }
+      : null;
+
+    user.createdAt = row.createdAt;
+    user.updatedAt = row.updatedAt;
+    return user;
   }
 
   updatePassHash(passwordHash: string) {

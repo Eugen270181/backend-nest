@@ -3,27 +3,27 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { UpdateSessionDomainDto } from './dto/update-session.domain.dto';
 import { HydratedDocument, Model } from 'mongoose';
 
-@Schema()
+//@Schema()
 export class Session {
-  @Prop({ type: String, required: true })
+  //@Prop({ type: String, required: true })
   deviceId: string;
 
-  @Prop({ type: String, required: true })
+  //@Prop({ type: String, required: true })
   userId: string;
 
-  @Prop({ type: String, required: true })
+  //@Prop({ type: String, required: true })
   ip: string;
 
-  @Prop({ type: String, required: true })
+  //@Prop({ type: String, required: true })
   title: string;
 
-  @Prop({ type: String, required: true })
+  //@Prop({ type: String, required: true })
   tokenVersion: string;
 
-  @Prop({ type: Date, required: true })
+  //@Prop({ type: Date, required: true })
   lastActiveDate: Date;
 
-  @Prop({ type: Date, required: true })
+  //@Prop({ type: Date, required: true })
   expDate: Date;
 
   static createSessionDocument(sessionDto: CreateSessionDomainDto) {
