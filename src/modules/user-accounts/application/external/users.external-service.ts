@@ -1,6 +1,4 @@
-import { User, UserModelType } from '../../domain/user.entity';
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
 import { UsersRepository } from '../../infrastructure/users.repository';
 import { CoreConfig } from '../../../../core/core.config';
 
@@ -8,8 +6,6 @@ import { CoreConfig } from '../../../../core/core.config';
 export class UsersExternalService {
   constructor(
     private coreConfig: CoreConfig,
-    @InjectModel(User.name)
-    private readonly UserModel: UserModelType,
     private readonly usersRepository: UsersRepository,
   ) {
     if (this.coreConfig.IOC_LOG) console.log('UsersExternalService created');

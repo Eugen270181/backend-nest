@@ -2,7 +2,8 @@ import request from 'supertest';
 import { App } from 'supertest/types';
 import { UserViewDto } from '../../src/modules/user-accounts/api/view-dto/user.view-dto';
 import { Connection } from 'mongoose';
-import { getConnectionToken, getModelToken } from '@nestjs/mongoose';
+import { DataSource } from 'typeorm';
+import { getConnectionToken } from '@nestjs/mongoose';
 import { dropDbCollections } from '../dropDbCollections';
 
 import { fullPathTo } from '../getFullPath';
@@ -26,11 +27,8 @@ import {
   logoutUser,
   recoveryPassByEmail,
 } from './util/createGetAuth';
-import {
-  User,
-  UserDocument,
-  UserModelType,
-} from '../../src/modules/user-accounts/domain/user.entity';
+import { UserDocument } from '../../src/modules/user-accounts/domain/user.entity';
+import { UsersRepository } from '../../src/modules/user-accounts/infrastructure/users.repository';
 import { EmailService } from '../../src/modules/notifications/email.service';
 import { MockCodeHelper } from './util/mock-code.helper';
 import { ErrorResponseBody } from '../../src/core/exceptions/error-responce-body.type';
@@ -45,10 +43,11 @@ import { initTestAppWithOverrides } from '../init-test-app';
 describe('<<AUTH>> ENDPOINTS TESTING!!!(e2e)', () => {
   let app: INestApplication;
   let connection: Connection;
+  let dataSource: DataSource;
   let server: App;
   let userAccountsConfig: UserAccountsConfig;
   let creds: AuthCredentials;
-  let UserModel: UserModelType;
+  let usersRepository: UsersRepository;
   let userHelperService: UserHelperService;
   let mockCodeHelper: MockCodeHelper;
   let cryptoService: CryptoService;
@@ -109,18 +108,19 @@ describe('<<AUTH>> ENDPOINTS TESTING!!!(e2e)', () => {
     app = appInstance;
     server = app.getHttpServer();
     connection = moduleFixture.get<Connection>(getConnectionToken());
+    dataSource = moduleFixture.get(DataSource);
     userAccountsConfig =
       moduleFixture.get<UserAccountsConfig>(UserAccountsConfig);
     creds = {
       login: userAccountsConfig.saLogin,
       password: userAccountsConfig.saPass,
     };
-    UserModel = moduleFixture.get<UserModelType>(getModelToken(User.name));
+    usersRepository = moduleFixture.get(UsersRepository);
     userHelperService = moduleFixture.get(UserHelperService);
     cryptoService = moduleFixture.get(CryptoService);
     mockCodeHelper = new MockCodeHelper();
 
-    await dropDbCollections(connection);
+    await dropDbCollections(connection, dataSource);
   });
 
   afterAll(async () => {
@@ -257,9 +257,9 @@ describe('<<AUTH>> ENDPOINTS TESTING!!!(e2e)', () => {
         .expect(204);
 
       // Проверяем что код установлен
-      const userInDB: UserDocument = (await UserModel.findOne({
-        login: userDtos[1].login,
-      }).lean()) as UserDocument;
+      const userInDB: UserDocument = (await usersRepository.findByLogin(
+        userDtos[1].login,
+      )) as UserDocument;
 
       console.log('User in DB emailConfirmation:', userInDB?.emailConfirmation);
       expect(userInDB?.emailConfirmation?.confirmationCode).toBe(
@@ -300,9 +300,9 @@ describe('<<AUTH>> ENDPOINTS TESTING!!!(e2e)', () => {
         .expect(204);
 
       //aditional in DB
-      const foundRegUserInDB: UserDocument = (await UserModel.findOne({
-        login: userDtos[1].login,
-      }).lean()) as UserDocument;
+      const foundRegUserInDB: UserDocument = (await usersRepository.findByLogin(
+        userDtos[1].login,
+      )) as UserDocument;
       expect(foundRegUserInDB?.emailConfirmation?.confirmationCode).toBe(
         codes.resendReg,
       );
@@ -382,9 +382,9 @@ describe('<<AUTH>> ENDPOINTS TESTING!!!(e2e)', () => {
         .send({ email: userDtos[0].email })
         .expect(204);
       //aditional in DB
-      const foundRegUserInDB: UserDocument = (await UserModel.findOne({
-        email: userDtos[0].email,
-      }).lean()) as UserDocument;
+      const foundRegUserInDB: UserDocument = (await usersRepository.findByEmail(
+        userDtos[0].email,
+      )) as UserDocument;
       expect(foundRegUserInDB?.passConfirmation?.confirmationCode).toBe(
         codes.recoveryPass1,
       );
@@ -401,9 +401,8 @@ describe('<<AUTH>> ENDPOINTS TESTING!!!(e2e)', () => {
         .send({ email: userDtos[2].email })
         .expect(204);
       //aditional in DB
-      const foundRegUserInDB2: UserDocument = (await UserModel.findOne({
-        email: userDtos[2].email,
-      }).lean()) as UserDocument;
+      const foundRegUserInDB2: UserDocument =
+        (await usersRepository.findByEmail(userDtos[2].email)) as UserDocument;
       expect(foundRegUserInDB2?.passConfirmation?.confirmationCode).toBe(
         codes.recoveryPass2,
       );
@@ -455,9 +454,9 @@ describe('<<AUTH>> ENDPOINTS TESTING!!!(e2e)', () => {
         .expect(204);
 
       //проверка нового хеша в бд на совместимость с новым паролем
-      const foundUserInDB: UserDocument = (await UserModel.findOne({
-        login: userDtos[0].login,
-      }).lean()) as UserDocument;
+      const foundUserInDB: UserDocument = (await usersRepository.findByLogin(
+        userDtos[0].login,
+      )) as UserDocument;
       expect(
         await cryptoService.checkHash(newPassword, foundUserInDB?.passwordHash),
       ).toBeTruthy();

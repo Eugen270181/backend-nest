@@ -30,7 +30,7 @@ export class AuthValidationService {
       return null;
     }
 
-    return userDocument._id.toString();
+    return userDocument.id!;
   }
   /**
    * Используется в Local Strategy validate() методе
@@ -57,7 +57,7 @@ export class AuthValidationService {
       return null;
     }
 
-    return { userId: userDocument._id.toString() };
+    return { userId: userDocument.id! };
   }
 
   /** ✅ НОВЫЙ: валидация RT + сессия */

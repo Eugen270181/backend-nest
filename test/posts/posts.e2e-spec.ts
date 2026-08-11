@@ -1,5 +1,6 @@
 import { App } from 'supertest/types';
 import { Connection } from 'mongoose';
+import { DataSource } from 'typeorm';
 import { getConnectionToken } from '@nestjs/mongoose';
 import { dropDbCollections } from '../dropDbCollections';
 import {
@@ -34,6 +35,7 @@ import { initTestApp } from '../init-test-app';
 describe('<<POSTS>> ENDPOINTS TESTING!!!(e2e)', () => {
   let app: INestApplication;
   let connection: Connection;
+  let dataSource: DataSource;
   let server: App;
   let userAccountsConfig: UserAccountsConfig;
   let creds: AuthCredentials;
@@ -42,12 +44,13 @@ describe('<<POSTS>> ENDPOINTS TESTING!!!(e2e)', () => {
     app = await initTestApp(false);
     server = app.getHttpServer();
     connection = app.get<Connection>(getConnectionToken());
+    dataSource = app.get(DataSource);
     userAccountsConfig = app.get<UserAccountsConfig>(UserAccountsConfig);
     creds = {
       login: userAccountsConfig.saLogin,
       password: userAccountsConfig.saPass,
     };
-    await dropDbCollections(connection);
+    await dropDbCollections(connection, dataSource);
   });
 
   afterAll((done) => {

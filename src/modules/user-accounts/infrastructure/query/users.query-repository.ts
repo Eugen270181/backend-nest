@@ -1,78 +1,79 @@
-import { InjectModel } from '@nestjs/mongoose';
-import { User, UserDocument, UserModelType } from '../../domain/user.entity';
+import { Injectable } from '@nestjs/common';
+import { DataSource } from 'typeorm';
 import { UserViewDto } from '../../api/view-dto/user.view-dto';
 import { PaginatedViewDto } from '../../../../core/dto/base.paginated.view-dto';
 import { GetUsersQueryParams } from '../../api/input-dto/get-users-query-params.input-dto';
-import { Error as MongooseError, FilterQuery } from 'mongoose';
-import { Injectable } from '@nestjs/common';
 import { CoreConfig } from '../../../../core/core.config';
-import { escapeRegex } from '../../../../core/constants/router-paths';
+import { SortDirection } from '../../../../core/dto/base.query-params.input-dto';
+
+//белый список сортировок: имя колонки НЕЛЬЗЯ передать как параметр $1,
+//поэтому подставляем только значения из этого словаря (camelCase -> snake_case)
+const SORT_COLUMNS: Record<string, string> = {
+  createdAt: 'created_at',
+  login: 'login',
+  email: 'email',
+};
 
 @Injectable()
 export class UsersQueryRepository {
   constructor(
     private coreConfig: CoreConfig,
-    @InjectModel(User.name)
-    private readonly UserModel: UserModelType,
+    private readonly dataSource: DataSource,
   ) {
     if (this.coreConfig.IOC_LOG) console.log('UsersQueryRepository created');
   }
 
-  private async findById(id: string): Promise<UserDocument | null> {
-    try {
-      return this.UserModel.findOne({ _id: id });
-    } catch (e) {
-      if (e instanceof MongooseError.CastError) return null; // невалидный id → «не найдено»
-      throw e; // обрыв коннекта и пр. → 500
-    }
-  }
-
   async getById(id: string): Promise<UserViewDto | null> {
-    const userDocument = await this.findById(id);
-
-    if (!userDocument) return null;
-
-    return UserViewDto.mapToView(userDocument);
+    try {
+      const rows = await this.dataSource.query(
+        'SELECT * FROM users WHERE id = $1 AND deleted_at IS NULL LIMIT 1',
+        [id],
+      );
+      return rows.length ? UserViewDto.mapRowToView(rows[0]) : null;
+    } catch (e) {
+      //невалидный uuid -> «не найдено» (аналог CastError в Mongo)
+      if ((e as { code?: string })?.code === '22P02') return null;
+      throw e;
+    }
   }
 
   async getAll(
     query: GetUsersQueryParams,
   ): Promise<PaginatedViewDto<UserViewDto[]>> {
-    const filter: FilterQuery<User> = {
-      deletedAt: null,
-    };
+    const conditions: string[] = ['deleted_at IS NULL'];
+    const params: unknown[] = [];
+    const search: string[] = [];
 
     if (query.searchLoginTerm) {
-      filter.$or = filter.$or || [];
-      filter.$or.push({
-        login: { $regex: escapeRegex(query.searchLoginTerm), $options: 'i' },
-      });
+      params.push(`%${query.searchLoginTerm}%`);
+      search.push(`login ILIKE $${params.length}`);
     }
-
     if (query.searchEmailTerm) {
-      filter.$or = filter.$or || [];
-      filter.$or.push({
-        email: { $regex: escapeRegex(query.searchEmailTerm), $options: 'i' },
-      });
+      params.push(`%${query.searchEmailTerm}%`);
+      search.push(`email ILIKE $${params.length}`);
     }
+    if (search.length) conditions.push(`(${search.join(' OR ')})`);
 
-    return this.getUsers(filter, query);
-  }
+    const sortColumn = SORT_COLUMNS[query.sortBy] ?? 'created_at';
+    const sortDirection =
+      query.sortDirection === SortDirection.Asc ? 'ASC' : 'DESC';
 
-  private async getUsers(
-    filter: FilterQuery<User>,
-    query: GetUsersQueryParams,
-  ): Promise<PaginatedViewDto<UserViewDto[]>> {
-    const [users, totalCount] = await Promise.all([
-      this.UserModel.find(filter)
-        .sort({ [query.sortBy]: query.sortDirection })
-        .skip(query.calculateSkip())
-        .limit(query.pageSize)
-        .lean(),
-      this.UserModel.countDocuments(filter),
-    ]);
+    params.push(query.pageSize, query.calculateSkip());
 
-    const items = users.map((el: UserDocument) => UserViewDto.mapToView(el));
+    //один запрос вместо двух: COUNT(*) OVER() считает общее количество
+    //ПО ФИЛЬТРУ ещё до LIMIT/OFFSET (замена прежнего Promise.all с countDocuments)
+    const rows = await this.dataSource.query(
+      `SELECT *, COUNT(*) OVER() AS total_count
+       FROM users
+       WHERE ${conditions.join(' AND ')}
+       ORDER BY ${sortColumn} ${sortDirection}
+       LIMIT $${params.length - 1} OFFSET $${params.length}`,
+      params,
+    );
+
+    //pg возвращает COUNT строкой -> Number()
+    const totalCount = rows.length ? Number(rows[0].total_count) : 0;
+    const items = rows.map((row: any) => UserViewDto.mapRowToView(row));
 
     return PaginatedViewDto.mapToView<UserViewDto[]>({
       items,
