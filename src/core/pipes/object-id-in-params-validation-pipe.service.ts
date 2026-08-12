@@ -1,15 +1,22 @@
 import { isValidObjectId } from 'mongoose';
+import { isUUID } from 'class-validator';
 import { DomainException } from '../exceptions/domain-exceptions';
 import { ArgumentMetadata, Injectable, PipeTransform } from '@nestjs/common';
 import { DomainExceptionCode } from '../exceptions/domain-exception-codes';
 
 // Вынесем конфигурацию по умолчанию в отдельный объект
 const DEFAULT_CONFIG = {
-  objectIdParams: ['id', 'userId', 'blogId', 'postId', 'commentId'],
+  // Гибридный период миграции на Postgres:
+  // 'id' и 'userId' могут указывать и на Mongo-сущность (ObjectId),
+  // и на Postgres-сущность (UUID) - принимаем оба формата.
+  // Несуществующий id корректного формата даст 404 из репозитория.
+  objectIdOrUuidParams: ['id', 'userId'],
+  objectIdParams: ['blogId', 'postId', 'commentId'],
   numericParams: ['version', 'page', 'limit'],
 };
 
 interface ParamValidationConfig {
+  objectIdOrUuidParams?: string[];
   objectIdParams?: string[];
   numericParams?: string[];
 }
@@ -20,6 +27,8 @@ export class ObjectIdInParamsValidationPipe implements PipeTransform {
 
   constructor(config?: ParamValidationConfig) {
     this.config = {
+      objectIdOrUuidParams:
+        config?.objectIdOrUuidParams || DEFAULT_CONFIG.objectIdOrUuidParams,
       objectIdParams: config?.objectIdParams || DEFAULT_CONFIG.objectIdParams,
       numericParams: config?.numericParams || DEFAULT_CONFIG.numericParams,
     };
@@ -33,6 +42,18 @@ export class ObjectIdInParamsValidationPipe implements PipeTransform {
     const paramName = metadata.data;
 
     //console.log(paramName);
+
+    // Проверка ObjectId-или-UUID параметров (гибридный период Mongo + Postgres)
+    if (this.isObjectIdOrUuidParam(paramName)) {
+      if (!isValidObjectId(value) && !isUUID(value)) {
+        const message = `Invalid id for parameter '${paramName}': ${value}`;
+        throw new DomainException({
+          code: DomainExceptionCode.BadRequest,
+          message,
+          errorsMessages: [{ message, field: `${paramName}` }],
+        });
+      }
+    }
 
     // Проверка ObjectId параметров
     if (this.isObjectIdParam(paramName)) {
@@ -59,6 +80,10 @@ export class ObjectIdInParamsValidationPipe implements PipeTransform {
     }
 
     return value;
+  }
+
+  private isObjectIdOrUuidParam(paramName: string): boolean {
+    return this.config.objectIdOrUuidParams?.includes(paramName) ?? false;
   }
 
   private isObjectIdParam(paramName: string): boolean {
