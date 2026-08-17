@@ -1,51 +1,46 @@
 import { Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import {
-  Session,
-  SessionDocument,
-  SessionModelType,
-} from '../../domain/session.entity';
+import { DataSource } from 'typeorm';
 import { SessionViewDto } from '../../api/view-dto/session-view.dto';
-import { FilterQuery } from 'mongoose';
 import { CoreConfig } from '../../../../core/core.config';
 
 @Injectable()
 export class SessionsQueryRepository {
   constructor(
     private coreConfig: CoreConfig,
-    @InjectModel(Session.name) private readonly SessionModel: SessionModelType,
+    private readonly dataSource: DataSource,
   ) {
     if (this.coreConfig.IOC_LOG) console.log('SessionsQueryRepository created');
   }
 
-  private async findById(deviceId: string): Promise<SessionDocument | null> {
-    return this.SessionModel.findOne({ deviceId });
-  }
-
-  async getById(id: string): Promise<SessionViewDto | null> {
-    const sessionDocument = await this.findById(id);
-
-    if (!sessionDocument) return null;
-
-    return SessionViewDto.mapToView(sessionDocument);
-  }
-
-  private async getSessions(
-    filter: FilterQuery<Session>,
-  ): Promise<SessionViewDto[]> {
-    const sessions: SessionDocument[] =
-      await this.SessionModel.find(filter).lean();
-
-    return sessions.map((el: SessionDocument) => SessionViewDto.mapToView(el));
+  async getById(deviceId: string): Promise<SessionViewDto | null> {
+    try {
+      const rows = await this.dataSource.query(
+        'SELECT * FROM sessions WHERE device_id = $1 LIMIT 1',
+        [deviceId],
+      );
+      return rows.length ? SessionViewDto.mapRowToView(rows[0]) : null;
+    } catch (e) {
+      //невалидный uuid -> «не найдено» (аналог CastError в Mongo)
+      if ((e as { code?: string })?.code === '22P02') return null;
+      throw e;
+    }
   }
 
   async getActiveSessions(userId?: string): Promise<SessionViewDto[]> {
-    const dateNow = new Date();
+    //активная сессия = refresh-токен ещё не протух (замена $gt: dateNow)
+    const conditions: string[] = ['exp_date > now()'];
+    const params: unknown[] = [];
 
-    const filter: FilterQuery<Session> = {
-      expDate: { $gt: dateNow },
-      ...(userId && { userId }),
-    };
-    return this.getSessions(filter);
+    if (userId) {
+      params.push(userId);
+      conditions.push(`user_id = $${params.length}`);
+    }
+
+    const rows = await this.dataSource.query(
+      `SELECT * FROM sessions WHERE ${conditions.join(' AND ')}`,
+      params,
+    );
+
+    return rows.map((row: any) => SessionViewDto.mapRowToView(row));
   }
 }

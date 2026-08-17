@@ -36,7 +36,8 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email_unique
     ON users (email) WHERE deleted_at IS NULL;
 
 ---------------------------------------------------------------------------------
--- sessions: задел на следующий шаг (сессии пока остаются в Mongo)
+-- sessions: PK device_id генерируется приложением (uuid v4) при логине,
+-- поэтому save() в репозитории — UPSERT по device_id
 CREATE TABLE IF NOT EXISTS sessions (
     device_id        UUID PRIMARY KEY,
     user_id          UUID NOT NULL REFERENCES users (id) ON DELETE CASCADE,

@@ -12,12 +12,16 @@ const DEFAULT_CONFIG = {
   // Несуществующий id корректного формата даст 404 из репозитория.
   objectIdOrUuidParams: ['id', 'userId'],
   objectIdParams: ['blogId', 'postId', 'commentId'],
+  // deviceId генерируется приложением как uuid v4 и в Mongo-времена
+  // не был ObjectId, поэтому здесь строго UUID
+  uuidParams: ['deviceId'],
   numericParams: ['version', 'page', 'limit'],
 };
 
 interface ParamValidationConfig {
   objectIdOrUuidParams?: string[];
   objectIdParams?: string[];
+  uuidParams?: string[];
   numericParams?: string[];
 }
 
@@ -30,6 +34,7 @@ export class ObjectIdInParamsValidationPipe implements PipeTransform {
       objectIdOrUuidParams:
         config?.objectIdOrUuidParams || DEFAULT_CONFIG.objectIdOrUuidParams,
       objectIdParams: config?.objectIdParams || DEFAULT_CONFIG.objectIdParams,
+      uuidParams: config?.uuidParams || DEFAULT_CONFIG.uuidParams,
       numericParams: config?.numericParams || DEFAULT_CONFIG.numericParams,
     };
   }
@@ -67,6 +72,18 @@ export class ObjectIdInParamsValidationPipe implements PipeTransform {
       }
     }
 
+    // Проверка UUID параметров
+    if (this.isUuidParam(paramName)) {
+      if (!isUUID(value)) {
+        const message = `Invalid UUID for parameter '${paramName}': ${value}`;
+        throw new DomainException({
+          code: DomainExceptionCode.BadRequest,
+          message,
+          errorsMessages: [{ message, field: `${paramName}` }],
+        });
+      }
+    }
+
     // Проверка числовых параметров
     if (this.isNumericParam(paramName)) {
       if (isNaN(Number(value)) || !Number.isInteger(Number(value))) {
@@ -88,6 +105,10 @@ export class ObjectIdInParamsValidationPipe implements PipeTransform {
 
   private isObjectIdParam(paramName: string): boolean {
     return this.config.objectIdParams?.includes(paramName) ?? false;
+  }
+
+  private isUuidParam(paramName: string): boolean {
+    return this.config.uuidParams?.includes(paramName) ?? false;
   }
 
   private isNumericParam(paramName: string): boolean {

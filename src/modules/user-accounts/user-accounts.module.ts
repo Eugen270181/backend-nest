@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 import { CqrsModule } from '@nestjs/cqrs';
-import { MongooseModule } from '@nestjs/mongoose';
 import { UsersController } from './api/users.controller';
 import { AuthController } from './api/auth.controller';
 import { UsersRepository } from './infrastructure/users.repository';
@@ -41,7 +40,6 @@ import {
 import { GenerateTokensUseCase } from './application/usecases/generate-tokens.usecase';
 import { CreateSessionUseCase } from './application/usecases/sessions/create-session.usecase';
 import { SessionsRepository } from './infrastructure/sessions.repository';
-import { Session, SessionSchema } from './domain/session.entity';
 import { RefreshTokensUseCase } from './application/usecases/refresh-tokens.usecase';
 import { DeleteUserSessionByIdUseCase } from './application/usecases/sessions/delete-user-session-by-id-use.case';
 import { GetSessionDocumentQueryHandler } from './application/queries/get-session-document.query';
@@ -109,10 +107,6 @@ const commandHandlers = [
         ttl: 10000,
         limit: 5,
       },
-    ]),
-    //User переехал в Postgres; Session пока остаётся в Mongo (следующий шаг)
-    MongooseModule.forFeature([
-      { name: Session.name, schema: SessionSchema },
     ]),
     NotificationsModule,
     AdaptersModule,

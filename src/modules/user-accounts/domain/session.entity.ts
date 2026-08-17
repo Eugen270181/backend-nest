@@ -1,32 +1,17 @@
 import { CreateSessionDomainDto } from './dto/create-session.domain.dto';
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { UpdateSessionDomainDto } from './dto/update-session.domain.dto';
-import { HydratedDocument, Model } from 'mongoose';
 
-//ВАЖНО: сессии пока остаются в Mongo, поэтому декораторы должны быть активны,
-//иначе SchemaFactory создаст пустую схему и Mongo не сохранит ни одного поля.
-//Перевод сессий на Postgres — следующий шаг после проверки юзеров.
-@Schema()
+//Доменная сущность без ORM-декораторов: хранение теперь в Postgres (raw SQL),
+//всю работу с таблицей sessions делает SessionsRepository
 export class Session {
-  @Prop({ type: String, required: true })
+  //PK: uuid генерируется приложением при логине (в отличие от users.id,
+  //который выдаёт база) — поэтому deviceId известен ещё до INSERT
   deviceId: string;
-
-  @Prop({ type: String, required: true })
   userId: string;
-
-  @Prop({ type: String, required: true })
   ip: string;
-
-  @Prop({ type: String, required: true })
   title: string;
-
-  @Prop({ type: String, required: true })
   tokenVersion: string;
-
-  @Prop({ type: Date, required: true })
   lastActiveDate: Date;
-
-  @Prop({ type: Date, required: true })
   expDate: Date;
 
   static createSessionDocument(sessionDto: CreateSessionDomainDto) {
@@ -42,6 +27,7 @@ export class Session {
 
     return sessionDocument as SessionDocument;
   }
+
   updateSession(updateDto: UpdateSessionDomainDto) {
     this.tokenVersion = updateDto.tokenVersion;
     this.expDate = updateDto.expDate;
@@ -49,13 +35,6 @@ export class Session {
   }
 }
 
-export const SessionSchema = SchemaFactory.createForClass(Session);
-
-//регистрирует методы сущности в схеме
-SessionSchema.loadClass(Session);
-
-//Типизация документа
-export type SessionDocument = HydratedDocument<Session>;
-
-//Типизация модели + статические методы
-export type SessionModelType = Model<SessionDocument> & typeof Session;
+//АЛИАС: раньше SessionDocument = HydratedDocument<Session>, теперь это просто Session.
+//Благодаря этому use-case'ы и сервисы, импортирующие SessionDocument, не меняются.
+export type SessionDocument = Session;
