@@ -7,11 +7,14 @@ import { CoreConfig } from '../../../../core/core.config';
 import { SortDirection } from '../../../../core/dto/base.query-params.input-dto';
 
 //белый список сортировок: имя колонки НЕЛЬЗЯ передать как параметр $1,
-//поэтому подставляем только значения из этого словаря (camelCase -> snake_case)
+//поэтому подставляем только значения из этого словаря (camelCase -> snake_case).
+//COLLATE "C" для текстовых колонок = побайтовая сортировка как в Mongo
+//(заглавные буквы раньше строчных: 'loSer' < 'log01'), иначе Postgres
+//с локалью сортирует без учёта регистра и тесты инкубатора падают
 const SORT_COLUMNS: Record<string, string> = {
   createdAt: 'created_at',
-  login: 'login',
-  email: 'email',
+  login: 'login COLLATE "C"',
+  email: 'email COLLATE "C"',
 };
 
 @Injectable()

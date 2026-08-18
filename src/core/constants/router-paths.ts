@@ -1,6 +1,6 @@
 export const routerPaths = {
   common: '/',
-  users: '/users',
+  users: '/sa/users',
   blogs: '/blogs',
   posts: '/posts',
   comments: '/comments',
