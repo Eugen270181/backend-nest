@@ -28,7 +28,7 @@ import { CoreConfig } from '../../../core/core.config';
 
 @UseGuards(BasicAuthGuard)
 @ApiBasicAuth('basicAuth')
-@Controller('users')
+@Controller('sa/users')
 @SkipThrottle()
 export class UsersController {
   constructor(

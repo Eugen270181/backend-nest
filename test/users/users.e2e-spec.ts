@@ -53,7 +53,7 @@ describe('<<USERS>> ENDPOINTS TESTING!!!(e2e)', () => {
     done();
   });
 
-  describe(`POST -> "/users":`, () => {
+  describe(`POST -> "/sa/users":`, () => {
     it('STATUS 401: shouldn`t create user without basic admin creds', async () => {
       await request(server)
         .post(fullPathTo.users)
@@ -93,7 +93,7 @@ describe('<<USERS>> ENDPOINTS TESTING!!!(e2e)', () => {
     });
 
     it('STATUS 400: should not create not unique user', async () => {
-      const resPost = await request(server)
+      await request(server)
         .post(fullPathTo.users)
         .auth(creds.login, creds.password)
         .send(userDtos[0])

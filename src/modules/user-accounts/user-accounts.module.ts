@@ -1,10 +1,13 @@
 import { Module } from '@nestjs/common';
 import { CqrsModule } from '@nestjs/cqrs';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { JwtModule, JwtService } from '@nestjs/jwt';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+
 import { UsersController } from './api/users.controller';
 import { AuthController } from './api/auth.controller';
 import { UsersRepository } from './infrastructure/users.repository';
 import { UsersQueryRepository } from './infrastructure/query/users.query-repository';
-import { JwtModule, JwtService } from '@nestjs/jwt';
 import { CryptoService } from './application/services/crypto.service';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { AuthQueryRepository } from './infrastructure/query/auth.query-repository';
@@ -14,7 +17,6 @@ import { BasicStrategy } from './guards/basic/basic.strategy';
 import { AdaptersModule } from '../../core/adapters/adapters.module';
 import { JwtAuthGuard } from './guards/bearer/jwt-auth.guard';
 import { BasicAuthGuard } from './guards/basic/basic-auth.guard';
-import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { CreateUserUseCase } from './application/usecases/admins/create-user.usecase';
 import { UserValidationService } from './application/services/user-validation.service';
 import { DeleteUserUseCase } from './application/usecases/admins/delete-user.usecase';
@@ -49,6 +51,7 @@ import { SessionsQueryRepository } from './infrastructure/query/sessions.query-r
 import { LogoutUserUseCase } from './application/usecases/logout-user.usecase';
 import { UserAccountsConfig } from './user-accounts.config';
 import { CoreConfig } from '../../core/core.config';
+import { join } from 'path';
 
 const services = [AuthValidationService, UserValidationService, CryptoService];
 const configs = [UserAccountsConfig];
@@ -102,6 +105,9 @@ const commandHandlers = [
     //или использовать useFactory и регистрацию через токены для JwtService,
     //для создания нескольких экземпляров в IoC с разными настройками (пример в следующих занятиях)
     JwtModule.register({}),
+    ServeStaticModule.forRoot({
+      rootPath: join(__dirname, '..', 'public'), // папка с favicon.ico
+    }),
     ThrottlerModule.forRoot([
       {
         ttl: 10000,

@@ -1,6 +1,6 @@
 import { DynamicModule } from '@nestjs/common';
 import { AppModule } from './app.module';
-import { configValidationUtility } from './setup/config-validation.utility';
+import { configValidationUtility } from './config-validation.utility';
 
 // export async function initAppModule(): Promise<DynamicModule> {
 //   // из-за того, что нам нужно донастроить динамический AppModule, мы не можем сразу создавать приложение,

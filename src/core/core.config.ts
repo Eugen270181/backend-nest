@@ -7,7 +7,7 @@ import {
   IsNumber,
   IsOptional,
 } from 'class-validator';
-import { configValidationUtility } from '../setup/config-validation.utility';
+import { configValidationUtility } from '../config-validation.utility';
 
 export enum Environments {
   DEVELOPMENT = 'development',
@@ -75,10 +75,17 @@ export class CoreConfig {
     message: 'Set Env variable ACCESS_TOKEN_SECRET, dangerous for security!',
   })
   accessTokenSecret!: string;
+
   @IsNotEmpty({
     message: 'Set Env variable REFRESH_TOKEN_SECRET, dangerous for security!',
   })
   refreshTokenSecret!: string;
+
+  @IsNotEmpty({
+    message:
+      'Set Env variable NGROK_AUTH_TOKEN_SECRET, dangerous for security!',
+  })
+  ngrokAuthTokenSecret!: string;
 
   constructor(private configService: ConfigService<any, true>) {
     this.port = Number(this.configService.get('PORT'));
@@ -88,6 +95,9 @@ export class CoreConfig {
 
     this.accessTokenSecret = this.configService.get('ACCESS_TOKEN_SECRET');
     this.refreshTokenSecret = this.configService.get('REFRESH_TOKEN_SECRET');
+    this.ngrokAuthTokenSecret = this.configService.get(
+      'NGROK_AUTH_TOKEN_SECRET',
+    );
 
     this.isSwaggerEnabled =
       configValidationUtility.convertToBoolean(
