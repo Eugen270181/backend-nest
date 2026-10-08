@@ -4,9 +4,9 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 export function swaggerSetup(app: INestApplication, isSwaggerEnabled: boolean) {
   if (isSwaggerEnabled) {
     const config = new DocumentBuilder()
-      .setTitle('BLOGGER API')
+      .setTitle('BLOGGER API!')
       .addBearerAuth()
-      .setVersion('1.0')
+      .setVersion('1.1')
       .addBearerAuth()
       .addBasicAuth(
         {
@@ -20,6 +20,7 @@ export function swaggerSetup(app: INestApplication, isSwaggerEnabled: boolean) {
     const document = SwaggerModule.createDocument(app, config);
     SwaggerModule.setup(`docs`, app, document, {
       customSiteTitle: 'Blogger Swagger:',
+      customfavIcon: '/favicon.png',
     });
   }
 }

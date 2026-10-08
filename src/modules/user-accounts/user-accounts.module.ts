@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 import { CqrsModule } from '@nestjs/cqrs';
-import { ServeStaticModule } from '@nestjs/serve-static';
 import { JwtModule, JwtService } from '@nestjs/jwt';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 
@@ -51,7 +50,6 @@ import { SessionsQueryRepository } from './infrastructure/query/sessions.query-r
 import { LogoutUserUseCase } from './application/usecases/logout-user.usecase';
 import { UserAccountsConfig } from './user-accounts.config';
 import { CoreConfig } from '../../core/core.config';
-import { join } from 'path';
 
 const services = [AuthValidationService, UserValidationService, CryptoService];
 const configs = [UserAccountsConfig];
@@ -105,9 +103,6 @@ const commandHandlers = [
     //или использовать useFactory и регистрацию через токены для JwtService,
     //для создания нескольких экземпляров в IoC с разными настройками (пример в следующих занятиях)
     JwtModule.register({}),
-    ServeStaticModule.forRoot({
-      rootPath: join(__dirname, '..', 'public'), // папка с favicon.ico
-    }),
     ThrottlerModule.forRoot([
       {
         ttl: 10000,

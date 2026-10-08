@@ -28,7 +28,7 @@ import { join } from 'path';
       }),
       inject: [CoreConfig],
     }),
-
+    // 2. Подключение к PostGresDB
     TypeOrmModule.forRootAsync({
       inject: [CoreConfig],
       useFactory: (coreConfig: CoreConfig) => ({
@@ -63,7 +63,6 @@ import { join } from 'path';
         return dataSource;
       },
     }),
-
     configModule,
     CoreModule,
     UserAccountsModule,
