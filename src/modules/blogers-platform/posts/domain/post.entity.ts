@@ -1,88 +1,48 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { HydratedDocument, Model } from 'mongoose';
 import { CreatePostDomainDto } from './dto/create-post.domain.dto';
 import { UpdatePostDomainDto } from './dto/update-post.domain.dto';
 
-@Schema({ timestamps: true })
+//Доменная сущность без ORM-декораторов: хранение теперь в Postgres (raw SQL),
+//всю работу с таблицей posts делает PostsRepository.
+//blogName в сущности нет: имя блога достаём JOIN-ом из blogs при чтении (view).
+//Лайки пока не в SQL - во view они отдаются заглушкой (см. ExtendedLikesInfo).
 export class Post {
-  @Prop({ type: String, required: true })
+  //генерируется базой (gen_random_uuid) - до первого INSERT его ещё нет
+  id: string | null = null;
+
+  blogId: string;
   title: string;
-
-  @Prop({ type: String, required: true })
   shortDescription: string;
-
-  @Prop({ type: String, required: true })
   content: string;
 
-  @Prop({ type: String, required: true })
-  blogId: string;
-
-  @Prop({ type: String, required: true })
-  blogName: string;
-
-  @Prop({ type: Number, required: true, default: 0 })
-  likesCount: number;
-
-  @Prop({ type: Number, required: true, default: 0 })
-  dislikesCount: number;
-
-  @Prop({ type: Date, nullable: true, default: null })
-  deletedAt: Date | null;
-
+  //заполняются базой (DEFAULT now()), репозиторий пишет их обратно в объект
   createdAt: Date;
   updatedAt: Date;
+  deletedAt: Date | null = null;
 
-  static createPost(dto: CreatePostDomainDto): PostDocument {
-    const postDocument = new this();
+  static createPost(dto: CreatePostDomainDto): Post {
+    const post = new this();
 
-    postDocument.title = dto.title;
-    postDocument.shortDescription = dto.shortDescription;
-    postDocument.content = dto.content;
-    postDocument.blogId = dto.blogId;
-    postDocument.blogName = dto.blogName;
+    post.blogId = dto.blogId;
+    post.title = dto.title;
+    post.shortDescription = dto.shortDescription;
+    post.content = dto.content;
 
-    return postDocument as PostDocument;
+    return post;
   }
 
   update(dto: UpdatePostDomainDto) {
     this.title = dto.title;
     this.shortDescription = dto.shortDescription;
     this.content = dto.content;
-    this.blogId = dto.blogId;
-    this.blogName = dto.blogName;
   }
 
   makeDeleted() {
     if (this.deletedAt !== null) {
-      throw new Error('Blog Entity already deleted');
+      throw new Error('Post Entity already deleted');
     }
     this.deletedAt = new Date();
   }
-
-  incrementLikes() {
-    this.likesCount++;
-  }
-
-  decrementLikes() {
-    if (this.likesCount > 0) this.likesCount--;
-  }
-
-  incrementDislikes() {
-    this.dislikesCount++;
-  }
-
-  decrementDislikes() {
-    if (this.dislikesCount > 0) this.dislikesCount--;
-  }
 }
 
-export const PostSchema = SchemaFactory.createForClass(Post);
-
-//регистрирует методы сущности в схеме
-PostSchema.loadClass(Post);
-
-//Типизация документа
-export type PostDocument = HydratedDocument<Post>;
-
-//Типизация модели + статические методы
-export type PostModelType = Model<PostDocument> & typeof Post;
+//АЛИАС: раньше PostDocument = HydratedDocument<Post>, теперь это просто Post.
+export type PostDocument = Post;

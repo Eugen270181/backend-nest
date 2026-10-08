@@ -1,47 +1,110 @@
 import { Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
+import { DataSource } from 'typeorm';
 import { PaginatedViewDto } from '../../../../../core/dto/base.paginated.view-dto';
-import { Error as MongooseError, FilterQuery } from 'mongoose';
-import { Post, PostDocument, PostModelType } from '../../domain/post.entity';
 import { PostViewDto } from '../../api/view-dto/post.view-dto';
 import { GetPostsQueryParams } from '../../../blogs/api/input-dto/get-posts-query-params.input-dto';
 import { CoreConfig } from '../../../../../core/core.config';
+import { SortDirection } from '../../../../../core/dto/base.query-params.input-dto';
+
+//белый список сортировок (camelCase -> колонка с алиасом таблицы).
+//Ключи = значения enum PostsSortBy. COLLATE "C" - побайтовый порядок как в Mongo.
+const SORT_COLUMNS: Record<string, string> = {
+  createdAt: 'p.created_at',
+  title: 'p.title COLLATE "C"',
+  shortDescription: 'p.short_description COLLATE "C"',
+  blogName: 'b.name COLLATE "C"',
+  updatedAt: 'p.updated_at',
+};
+
+//blog_name берём из blogs (в posts его нет);
+//INNER JOIN с неудалённым блогом: посты мягко удалённого блога не показываем
+const FROM_POSTS = `
+  FROM posts p
+  JOIN blogs b ON b.id = p.blog_id AND b.deleted_at IS NULL`;
 
 @Injectable()
 export class PostsQueryRepository {
   constructor(
     private coreConfig: CoreConfig,
-    @InjectModel(Post.name)
-    private readonly PostModel: PostModelType,
+    private readonly dataSource: DataSource,
   ) {
     if (this.coreConfig.IOC_LOG) console.log('PostsQueryRepository created');
   }
 
-  private async findById(id: string): Promise<PostDocument | null> {
+  async getById(id: string): Promise<PostViewDto | null> {
     try {
-      return this.PostModel.findOne({
-        _id: id,
-        deletedAt: null,
-      });
+      const rows = await this.dataSource.query(
+        `SELECT p.*, b.name AS blog_name
+         ${FROM_POSTS}
+         WHERE p.id = $1 AND p.deleted_at IS NULL
+         LIMIT 1`,
+        [id],
+      );
+      return rows.length ? PostViewDto.mapRowToView(rows[0]) : null;
     } catch (e) {
-      if (e instanceof MongooseError.CastError) return null; // невалидный id → «не найдено»
-      throw e; // обрыв коннекта и пр. → 500
+      //невалидный uuid -> «не найдено» (аналог CastError в Mongo)
+      if ((e as { code?: string })?.code === '22P02') return null;
+      throw e;
     }
   }
-  private async getPosts(
-    filter: FilterQuery<Post>,
+
+  async getBlogPosts(
+    query: GetPostsQueryParams,
+    blogId: string,
+  ): Promise<PaginatedViewDto<PostViewDto[]>> {
+    return this.getPosts(query, blogId);
+  }
+
+  async getAll(
     query: GetPostsQueryParams,
   ): Promise<PaginatedViewDto<PostViewDto[]>> {
-    const [posts, totalCount] = await Promise.all([
-      this.PostModel.find(filter)
-        .sort({ [query.sortBy]: query.sortDirection })
-        .skip(query.calculateSkip())
-        .limit(query.pageSize)
-        .lean(),
-      this.PostModel.countDocuments(filter),
-    ]);
+    return this.getPosts(query);
+  }
 
-    const items = posts.map((el: PostDocument) => PostViewDto.mapToView(el));
+  //общий метод: blogId передан -> посты одного блога, иначе все посты
+  private async getPosts(
+    query: GetPostsQueryParams,
+    blogId?: string,
+  ): Promise<PaginatedViewDto<PostViewDto[]>> {
+    const conditions: string[] = ['p.deleted_at IS NULL'];
+    const params: unknown[] = [];
+
+    if (blogId) {
+      params.push(blogId);
+      conditions.push(`p.blog_id = $${params.length}`);
+    }
+    const where = conditions.join(' AND ');
+
+    const sortColumn = SORT_COLUMNS[query.sortBy] ?? 'p.created_at';
+    const sortDirection =
+      query.sortDirection === SortDirection.Asc ? 'ASC' : 'DESC';
+
+    const filterParamsCount = params.length;
+    params.push(query.pageSize, query.calculateSkip());
+
+    //COUNT(*) OVER() считает общее количество ПО ФИЛЬТРУ ещё до LIMIT/OFFSET
+    const rows = await this.dataSource.query(
+      `SELECT p.*, b.name AS blog_name, COUNT(*) OVER() AS total_count
+       ${FROM_POSTS}
+       WHERE ${where}
+       ORDER BY ${sortColumn} ${sortDirection}, p.created_at, p.id
+       LIMIT $${filterParamsCount + 1} OFFSET $${filterParamsCount + 2}`,
+      params,
+    );
+
+    //pg возвращает COUNT строкой -> Number()
+    let totalCount = rows.length ? Number(rows[0].total_count) : 0;
+
+    //страница за пределами данных: строк нет, значит нет и total_count -> считаем отдельно
+    if (!rows.length && query.calculateSkip() > 0) {
+      const countRows = await this.dataSource.query(
+        `SELECT COUNT(*) AS total_count ${FROM_POSTS} WHERE ${where}`,
+        params.slice(0, filterParamsCount),
+      );
+      totalCount = Number(countRows[0].total_count);
+    }
+
+    const items = rows.map((row: any) => PostViewDto.mapRowToView(row));
 
     return PaginatedViewDto.mapToView<PostViewDto[]>({
       items,
@@ -49,26 +112,5 @@ export class PostsQueryRepository {
       page: query.pageNumber,
       pageSize: query.pageSize,
     });
-  }
-  ///////////////////////////////////////////////////////////////////////////////
-  async getById(id: string): Promise<PostViewDto | null> {
-    const postDocument: PostDocument | null = await this.findById(id);
-
-    if (!postDocument) return null;
-
-    return PostViewDto.mapToView(postDocument);
-  }
-
-  async getBlogPosts(
-    query: GetPostsQueryParams,
-    blogId: string,
-  ): Promise<PaginatedViewDto<PostViewDto[]>> {
-    return this.getPosts({ deletedAt: null, blogId }, query);
-  }
-
-  async getAll(
-    query: GetPostsQueryParams,
-  ): Promise<PaginatedViewDto<PostViewDto[]>> {
-    return this.getPosts({ deletedAt: null }, query);
   }
 }

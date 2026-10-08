@@ -3,8 +3,7 @@ import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { CreateBlogDto } from '../dto/blog.dto';
 import { CreateBlogDomainDto } from '../../domain/dto/create-blog.domain.dto';
 import { BlogsRepository } from '../../infrastructure/blogs.repository';
-import { InjectModel } from '@nestjs/mongoose';
-import { Blog, BlogModelType } from '../../domain/blog.entity';
+import { Blog } from '../../domain/blog.entity';
 import { CoreConfig } from '../../../../../core/core.config';
 
 export class CreateBlogCommand {
@@ -17,8 +16,6 @@ export class CreateBlogUseCase
 {
   constructor(
     private coreConfig: CoreConfig,
-    @InjectModel(Blog.name)
-    private BlogModel: BlogModelType,
     private readonly blogsRepository: BlogsRepository,
   ) {
     if (this.coreConfig.IOC_LOG) console.log('CreateBlogUseCase created');
@@ -30,10 +27,11 @@ export class CreateBlogUseCase
       description: dto.description,
       websiteUrl: dto.websiteUrl,
     };
-    const blogDocument = this.BlogModel.createBlog(createBlogDomainDto);
+    const blogDocument = Blog.createBlog(createBlogDomainDto);
 
     await this.blogsRepository.save(blogDocument);
 
-    return blogDocument._id.toString();
+    //id сгенерировала база и вернула через RETURNING в save()
+    return blogDocument.id!;
   }
 }

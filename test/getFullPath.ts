@@ -9,6 +9,7 @@ export const fullPathTo = {
   auth: getFullPath(routerPaths.auth),
   users: getFullPath(routerPaths.users),
   blogs: getFullPath(routerPaths.blogs),
+  saBlogs: getFullPath(routerPaths.saBlogs),
   posts: getFullPath(routerPaths.posts),
   comments: getFullPath(routerPaths.comments),
   security: getFullPath(routerPaths.security),

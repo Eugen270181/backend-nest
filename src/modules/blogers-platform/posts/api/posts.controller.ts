@@ -1,11 +1,9 @@
 import { GetPostsQueryParams } from '../../blogs/api/input-dto/get-posts-query-params.input-dto';
 import { PostViewDto } from './view-dto/post.view-dto';
 import { PaginatedViewDto } from '../../../../core/dto/base.paginated.view-dto';
-import { CreatePostInputDto } from './input-dto/create-post.input-dto';
 import {
   Body,
   Controller,
-  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -15,11 +13,8 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { UpdatePostInputDto } from './input-dto/update-post.input-dto';
 import { GetCommentsQueryParams } from './input-dto/get-comments-query-params.input-dto';
 import { CommentViewDto } from '../../comments/api/view-dto/comment.view-dto';
-import { UpdatePostDto } from '../application/dto/post.dto';
-import { BasicAuthGuard } from '../../../user-accounts/guards/basic/basic-auth.guard';
 import { CreateCommentInputDto } from '../../comments/api/input-dto/create-comment.input-dto';
 import { CreateCommentDto } from '../../comments/application/dto/comment.dto';
 import { ApiBearerAuth } from '@nestjs/swagger';
@@ -32,11 +27,8 @@ import { LikePostInputDto } from './input-dto/like-post.input-dto';
 import { LikePostDto } from '../../likes/application/dto/like-post.dto';
 import { JwtOptionalAuthGuard } from '../../../user-accounts/guards/bearer/jwt-optional-auth.guard';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
-import { CreatePostCommand } from '../application/usecases/create-post.usecase';
 import { GetPostQuery } from '../application/queries/get-post.query';
 import { GetAllPostsQuery } from '../application/queries/get-all-posts.query';
-import { UpdatePostCommand } from '../application/usecases/update-post.usecase';
-import { DeletePostCommand } from '../application/usecases/delete-post.usecase';
 import { UpdatePostLikeCommand } from '../application/usecases/update-post-like.usecase';
 import { GetPostDocumentQuery } from '../application/queries/get-post-document.query';
 import { CreateCommentCommand } from '../../comments/application/usecases/create-comment.usecase';
@@ -44,6 +36,8 @@ import { GetCommentQuery } from '../../comments/application/queries/get-comment.
 import { GetPostCommentsQuery } from '../../comments/application/queries/get-post-comments.query';
 import { CoreConfig } from '../../../../core/core.config';
 
+//Публичный API постов: только чтение.
+//Создание/изменение/удаление постов - в SA API: BlogsSaController (/sa/blogs/:blogId/posts)
 @Controller('posts')
 export class PostsController {
   constructor(
@@ -54,66 +48,25 @@ export class PostsController {
     if (this.coreConfig.IOC_LOG) console.log('Posts Controller created');
   }
 
-  @UseGuards(JwtOptionalAuthGuard)
   @Get(':postId')
-  async getById(
-    @Param('postId') postId: string,
-    @OptionalUserId() userId?: string,
-  ): Promise<PostViewDto> {
+  async getById(@Param('postId') postId: string): Promise<PostViewDto> {
     return this.queryBus.execute<GetPostQuery, PostViewDto>(
-      new GetPostQuery(postId, userId),
+      new GetPostQuery(postId),
     );
   }
 
-  @UseGuards(JwtOptionalAuthGuard)
   @Get()
   async getAll(
     @Query() query: GetPostsQueryParams,
-    @OptionalUserId() userId?: string,
   ): Promise<PaginatedViewDto<PostViewDto[]>> {
     return this.queryBus.execute<
       GetAllPostsQuery,
       PaginatedViewDto<PostViewDto[]>
-    >(new GetAllPostsQuery(query, userId));
+    >(new GetAllPostsQuery(query));
   }
 
-  @UseGuards(BasicAuthGuard)
-  @Post()
-  async createPost(
-    @Body() createPostInputDto: CreatePostInputDto,
-  ): Promise<PostViewDto> {
-    const postId = await this.commandBus.execute<CreatePostCommand, string>(
-      new CreatePostCommand(createPostInputDto),
-    );
-    return this.queryBus.execute<GetPostQuery, PostViewDto>(
-      new GetPostQuery(postId, undefined, true),
-    );
-    //return this.postsQueryService.getPostViewDtoOrFail(postId, undefined, true);
-  }
-
-  @UseGuards(BasicAuthGuard)
-  @Put(':postId')
-  @HttpCode(HttpStatus.NO_CONTENT)
-  async updatePost(
-    @Param('postId') postId: string,
-    @Body() updatePostInputDto: UpdatePostInputDto,
-  ) {
-    const updatePostDto: UpdatePostDto = { ...updatePostInputDto, postId };
-
-    await this.commandBus.execute<UpdatePostCommand>(
-      new UpdatePostCommand(updatePostDto),
-    );
-  }
-
-  @UseGuards(BasicAuthGuard)
-  @Delete(':postId')
-  @HttpCode(HttpStatus.NO_CONTENT)
-  async deletePost(@Param('postId') postId: string) {
-    await this.commandBus.execute<DeletePostCommand>(
-      new DeletePostCommand(postId),
-    );
-  }
   ///////////////////////////////////////////////////////////////////
+  // Комментарии пока живут в Mongo и от поста требуют только его существование
   // ✅ GET комментарии поста — OptionalUserId из middleware
   @UseGuards(JwtOptionalAuthGuard)
   @Get(':postId/comments')
@@ -125,8 +78,6 @@ export class PostsController {
     await this.queryBus.execute<GetPostDocumentQuery>(
       new GetPostDocumentQuery(postId),
     );
-    //todo!!!!
-    //return this.commentsQueryService.getPostComments(query, postId, userId);
     return this.queryBus.execute<
       GetPostCommentsQuery,
       PaginatedViewDto<CommentViewDto[]>
@@ -157,8 +108,10 @@ export class PostsController {
     );
   }
   //////////////////////////////////////////////////////////////////////////////
-  // ✅ PUT лайк поста UserId из JwtAuthGuard
+  // ЗАГЛУШКА: лайки постов пока не в SQL. Эндпоинт остаётся в API (Swagger),
+  // валидирует тело, проверяет что пост есть (404) и отвечает 204, ничего не сохраняя
   @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   @HttpCode(HttpStatus.NO_CONTENT)
   @Put(':postId/like-status')
   async putLikeStatusById(

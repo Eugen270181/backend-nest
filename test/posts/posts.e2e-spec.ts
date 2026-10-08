@@ -62,19 +62,19 @@ describe('<<POSTS>> ENDPOINTS TESTING!!!(e2e)', () => {
     shortDescription: createString(101),
     content: createString(1001),
   });
-  const noValidPostDto = { ...noValidBlogPostDto, blogId: '1' };
 
   let postDtos: PostDto[];
   let blogPostDto: BlogPostDto;
   let blogs: BlogViewDto[];
   let posts: PostViewDto[];
 
-  describe(`POST -> "/posts":`, () => {
-    it(`POST -> "/posts": Can't create post with no cred data: STATUS 401;`, async () => {
-      //запрос на создание нового поста c невалидными данными
+  describe(`POST -> "/sa/blogs/:blogId/posts" (base creation):`, () => {
+    it(`STATUS 401: Can't create post with no cred data`, async () => {
+      blogs = await createBlogs(server, creds, 2);
+
       await request(server)
-        .post(fullPathTo.posts)
-        .send(noValidPostDto)
+        .post(`${fullPathTo.saBlogs}/${blogs[0].id}/posts`)
+        .send(noValidBlogPostDto)
         .expect(401);
 
       //запрос на получение постов, проверка на ошибочное создание поста в БД
@@ -82,30 +82,22 @@ describe('<<POSTS>> ENDPOINTS TESTING!!!(e2e)', () => {
       expect(postCounter).toEqual(0);
     });
 
-    it(`POST -> "/posts": Can't create post with not valid data: STATUS 400; Should return errors if passed body is incorrect;`, async () => {
-      //запрос на создание нового поста c невалидными данными
+    it(`STATUS 400: Can't create post with not valid data; Should return errors if passed body is incorrect;`, async () => {
       const resPost = await request(server)
-        .post(fullPathTo.posts)
+        .post(`${fullPathTo.saBlogs}/${blogs[0].id}/posts`)
         .auth(creds.login, creds.password)
-        .send(noValidPostDto)
+        .send(noValidBlogPostDto)
         .expect(400);
       const resPostBody: ErrorResponseBody = resPost.body;
       //проверка тела ответа на ошибки валидации входных данных по созданию поста
-      const expectedErrorsFields = [
-        'title',
-        'shortDescription',
-        'content',
-        'blogId',
-      ];
+      const expectedErrorsFields = ['title', 'shortDescription', 'content'];
       validateErrorsObject(resPostBody, expectedErrorsFields);
-      //запрос на получение постов, проверка на ошибочное создание поста в БД
       const postCounter = await getPostsQty(server);
       expect(postCounter).toEqual(0);
     });
 
-    it('STATUS 201: should create user', async () => {
-      blogs = await createBlogs(server, creds, 2);
-      //2. Создание 2-ух постов(предвар.создание дтошек)
+    it('STATUS 201: should create posts', async () => {
+      //2 поста первого блога (предвар.создание дтошек)
       postDtos = testingDtosCreator.createPostDtos(2, blogs[0].id);
       posts = await createPosts(server, creds, postDtos);
 
@@ -128,12 +120,12 @@ describe('<<POSTS>> ENDPOINTS TESTING!!!(e2e)', () => {
     });
   });
 
-  describe(`POST -> "/blogs/:id/posts":`, () => {
+  describe(`POST -> "/sa/blogs/:blogId/posts" (second blog):`, () => {
     it(`POST -> "/blogs/:id/posts": Can't create post with no cred data: STATUS 401;`, async () => {
       //запрос на создание нового поста c невалидными данными
       await request(server)
-        .post(`${fullPathTo.blogs}/${blogs[1].id}/posts`)
-        .send(noValidPostDto)
+        .post(`${fullPathTo.saBlogs}/${blogs[1].id}/posts`)
+        .send(noValidBlogPostDto)
         .expect(401);
 
       //запрос на получение постов, проверка на ошибочное создание поста в БД
@@ -144,7 +136,7 @@ describe('<<POSTS>> ENDPOINTS TESTING!!!(e2e)', () => {
     it(`POST -> "/blogs/:id/posts": Can't create post with not valid data: STATUS 400; Should return errors if passed body is incorrect;`, async () => {
       //запрос на создание нового поста c невалидными данными
       const resPost = await request(server)
-        .post(`${fullPathTo.blogs}/${blogs[1].id}/posts`)
+        .post(`${fullPathTo.saBlogs}/${blogs[1].id}/posts`)
         .auth(creds.login, creds.password)
         .send(noValidBlogPostDto)
         .expect(400);
@@ -190,7 +182,7 @@ describe('<<POSTS>> ENDPOINTS TESTING!!!(e2e)', () => {
 
     it(`STATUS 404: Can't found with id`, async () => {
       await request(server)
-        .post(`${fullPathTo.blogs}/${validObjectIdString}/posts`)
+        .post(`${fullPathTo.saBlogs}/${validObjectIdString}/posts`)
         .auth(creds.login, creds.password)
         .send(blogPostDto)
         .expect(404);
@@ -249,12 +241,16 @@ describe('<<POSTS>> ENDPOINTS TESTING!!!(e2e)', () => {
     });
   });
 
-  describe(`PUT -> "/posts/:id":`, () => {
+  describe(`PUT -> "/sa/blogs/:blogId/posts/:postId":`, () => {
+    //blogId в теле больше нет: берётся из url, пост блог не меняет
+    const updateDto = testingDtosCreator.createBlogPostDto({});
+    const postUrl = (blogId: string, postId: string) =>
+      `${fullPathTo.saBlogs}/${blogId}/posts/${postId}`;
+
     it(`STATUS 401: Can't update with no cred data`, async () => {
-      //запрос на обонвление без кредов
       await request(server)
-        .put(`${fullPathTo.posts}/${posts[2].id}`)
-        .send(noValidPostDto)
+        .put(postUrl(blogs[1].id, posts[2].id))
+        .send(updateDto)
         .expect(401);
 
       const foundPost = await getPostById(server, posts[2].id);
@@ -262,91 +258,130 @@ describe('<<POSTS>> ENDPOINTS TESTING!!!(e2e)', () => {
     });
 
     it(`STATUS 400: Can't update with no valid data`, async () => {
-      //запрос на обонвление по неверному/несуществующему id
       const resPut = await request(server)
-        .put(`${fullPathTo.posts}/${posts[2].id}`)
+        .put(postUrl(blogs[1].id, posts[2].id))
         .auth(creds.login, creds.password)
-        .send(noValidPostDto)
+        .send(noValidBlogPostDto)
         .expect(400);
       const resPutBody: ErrorResponseBody = resPut.body;
-      //проверка тела ответа на ошибки валидации входных данных по созданию поста
-      const expectedErrorsFields = [
-        'title',
-        'shortDescription',
-        'content',
-        'blogId',
-      ];
+      const expectedErrorsFields = ['title', 'shortDescription', 'content'];
       validateErrorsObject(resPutBody, expectedErrorsFields);
-      //запрос на получение постов, проверка на ошибочное создание поста в БД
-      //запрос на получение созданного блога по Id - проверка создания в БД нового блога
+
       const foundPost = await getPostById(server, posts[2].id);
       expect(foundPost).toEqual(posts[2]);
     });
 
-    it(`STATUS 404: Can't found with id`, async () => {
-      //запрос на обонвление по неверному/несуществующему id
+    it(`STATUS 404: Can't found post with id`, async () => {
       await request(server)
-        .put(`${fullPathTo.posts}/${validObjectIdString}`)
+        .put(postUrl(blogs[1].id, validObjectIdString))
         .auth(creds.login, creds.password)
-        .send(postDtos[1])
+        .send(updateDto)
         .expect(404);
     });
 
-    it(`STATUS 204: Updated Post; no content`, async () => {
-      //запрос на обонвление существующего по id
+    it(`STATUS 404: Can't found blog with id`, async () => {
       await request(server)
-        .put(`${fullPathTo.posts}/${posts[2].id}`)
+        .put(postUrl(validObjectIdString, posts[2].id))
         .auth(creds.login, creds.password)
-        .send(postDtos[1])
+        .send(updateDto)
+        .expect(404);
+    });
+
+    it(`STATUS 404: post belongs to another blog`, async () => {
+      await request(server)
+        .put(postUrl(blogs[0].id, posts[2].id))
+        .auth(creds.login, creds.password)
+        .send(updateDto)
+        .expect(404);
+
+      const foundPost = await getPostById(server, posts[2].id);
+      expect(foundPost).toEqual(posts[2]);
+    });
+
+    it(`STATUS 204: Updated Post; no content`, async () => {
+      await request(server)
+        .put(postUrl(blogs[1].id, posts[2].id))
+        .auth(creds.login, creds.password)
+        .send(updateDto)
         .expect(204);
-      //запрос на получение обновленного поста по Id - проверка операции обновления нового блога в БД
+
+      //пост обновился, а блог остался прежним
       const updatedPost = await getPostById(server, posts[2].id);
-      const expectedPost = {
-        ...posts[2],
-        ...postDtos[1],
-        blogName: posts[1].blogName,
-      };
-      expect(updatedPost).toEqual(expectedPost);
-      //после обновления нового поста нового блога на старый блог - blogId в postDtos - сохранен, blogName - firstBlogName
-      //проверяем что количество постов первого блога - стало три, а количество постов во втором блоге - 0
-      const firstBlogPostsQty = await getBlogPostsQty(server, blogs[0].id);
-      const secondBlogPostsQty = await getBlogPostsQty(server, blogs[1].id);
-      expect(firstBlogPostsQty).toBe(3);
-      expect(secondBlogPostsQty).toBe(0);
+      expect(updatedPost).toEqual({ ...posts[2], ...updateDto });
+      expect(await getBlogPostsQty(server, blogs[0].id)).toBe(2);
+      expect(await getBlogPostsQty(server, blogs[1].id)).toBe(1);
     });
   });
 
-  describe(`DELETE -> "/posts/:id"`, () => {
+  describe(`DELETE -> "/sa/blogs/:blogId/posts/:postId"`, () => {
+    const postUrl = (blogId: string, postId: string) =>
+      `${fullPathTo.saBlogs}/${blogId}/posts/${postId}`;
+
     it(`STATUS 401: No cred data`, async () => {
-      //запрос на удаление поста по неверному/несуществующему id
       await request(server)
-        .delete(`${fullPathTo.posts}/${validObjectIdString}`)
+        .delete(postUrl(blogs[1].id, posts[2].id))
         .expect(401);
-      //запрос на получение постов, проверка на ошибочное удаление поста в БД
       const postCounter = await getPostsQty(server);
       expect(postCounter).toEqual(3);
     });
 
     it(`STATUS 404: Can't found with id`, async () => {
-      //запрос на удаление поста по неверному/несуществующему id
       await request(server)
-        .delete(`${fullPathTo.posts}/${validObjectIdString}`)
+        .delete(postUrl(blogs[1].id, validObjectIdString))
         .auth(creds.login, creds.password)
         .expect(404);
-      //запрос на получение постов, проверка на ошибочное удаление поста в БД
+      await request(server)
+        .delete(postUrl(validObjectIdString, posts[2].id))
+        .auth(creds.login, creds.password)
+        .expect(404);
+      //пост другого блога
+      await request(server)
+        .delete(postUrl(blogs[0].id, posts[2].id))
+        .auth(creds.login, creds.password)
+        .expect(404);
       const postCounter = await getPostsQty(server);
       expect(postCounter).toEqual(3);
     });
 
     it(`STATUS 204: Delete updated post; no content;`, async () => {
-      //запрос на удаление существующего поста по id
       await request(server)
-        .delete(`${fullPathTo.posts}/${posts[2].id}`)
+        .delete(postUrl(blogs[1].id, posts[2].id))
         .auth(creds.login, creds.password)
         .expect(204);
-      //запрос на получение постов, проверка на ошибочное удаление поста в БД
       const postCounter = await getPostsQty(server);
       expect(postCounter).toEqual(2);
+    });
+  });
+
+  describe(`blogName / soft delete of blog (JOIN with blogs)`, () => {
+    it(`blogName in posts follows blog rename`, async () => {
+      await request(server)
+        .put(`${fullPathTo.saBlogs}/${blogs[0].id}`)
+        .auth(creds.login, creds.password)
+        .send({
+          name: 'renamed',
+          description: blogs[0].description,
+          websiteUrl: blogs[0].websiteUrl,
+        })
+        .expect(204);
+
+      const foundPost = await getPostById(server, posts[0].id);
+      expect(foundPost.blogName).toBe('renamed');
+    });
+
+    it(`posts of deleted blog are hidden everywhere`, async () => {
+      await request(server)
+        .delete(`${fullPathTo.saBlogs}/${blogs[0].id}`)
+        .auth(creds.login, creds.password)
+        .expect(204);
+
+      expect(await getPostsQty(server)).toBe(0);
+      await request(server)
+        .get(`${fullPathTo.posts}/${posts[0].id}`)
+        .expect(404);
+      await request(server)
+        .get(`${fullPathTo.blogs}/${blogs[0].id}/posts`)
+        .expect(404);
     });
   });
 });

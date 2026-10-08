@@ -1,36 +1,30 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { CreateBlogDomainDto } from './dto/create-blog.domain.dto';
-import { HydratedDocument, Model } from 'mongoose';
 import { UpdateBlogDomainDto } from './dto/update-blog.domain.dto';
 
-@Schema({ timestamps: true })
+//Доменная сущность без ORM-декораторов: хранение теперь в Postgres (raw SQL),
+//всю работу с таблицей blogs делает BlogsRepository
 export class Blog {
-  @Prop({ type: String, required: true })
+  //генерируется базой (gen_random_uuid) - до первого INSERT его ещё нет
+  id: string | null = null;
+
   name: string;
-
-  @Prop({ type: String, required: true })
   description: string;
-
-  @Prop({ type: String, required: true })
   websiteUrl: string;
+  isMembership: boolean = false;
 
-  @Prop({ type: Boolean, required: true, default: false })
-  isMembership: boolean;
-
-  @Prop({ type: Date, nullable: true, default: null })
-  deletedAt: Date | null;
-
+  //заполняются базой (DEFAULT now()), репозиторий пишет их обратно в объект
   createdAt: Date;
   updatedAt: Date;
+  deletedAt: Date | null = null;
 
-  static createBlog(dto: CreateBlogDomainDto): BlogDocument {
+  static createBlog(dto: CreateBlogDomainDto): Blog {
     const blog = new this();
 
     blog.name = dto.name;
     blog.description = dto.description;
     blog.websiteUrl = dto.websiteUrl;
 
-    return blog as BlogDocument;
+    return blog;
   }
 
   makeDeleted() {
@@ -47,13 +41,6 @@ export class Blog {
   }
 }
 
-export const BlogSchema = SchemaFactory.createForClass(Blog);
-
-//регистрирует методы сущности в схеме
-BlogSchema.loadClass(Blog);
-
-//Типизация документа
-export type BlogDocument = HydratedDocument<Blog>;
-
-//Типизация модели + статические методы
-export type BlogModelType = Model<BlogDocument> & typeof Blog;
+//АЛИАС: раньше BlogDocument = HydratedDocument<Blog>, теперь это просто Blog.
+//Благодаря этому use-case'ы и query-handler'ы, импортирующие BlogDocument, не меняются.
+export type BlogDocument = Blog;

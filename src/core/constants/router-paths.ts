@@ -2,6 +2,7 @@ export const routerPaths = {
   common: '/',
   users: '/sa/users',
   blogs: '/blogs',
+  saBlogs: '/sa/blogs',
   posts: '/posts',
   comments: '/comments',
   testing: '/testing',
@@ -23,3 +24,7 @@ export const routerPaths = {
 
 export const escapeRegex = (s: string) =>
   s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+//экранирование спецсимволов для ILIKE: % и _ (и сам \) в поисковой строке
+//должны искаться как обычные символы, иначе searchNameTerm=% вернёт всё подряд
+export const escapeLike = (s: string) => s.replace(/[\\%_]/g, '\\$&');

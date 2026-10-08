@@ -1,74 +1,91 @@
 import { Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
+import { DataSource } from 'typeorm';
 import { PaginatedViewDto } from '../../../../../core/dto/base.paginated.view-dto';
-import { Error as MongooseError, FilterQuery } from 'mongoose';
-import { Blog, BlogDocument, BlogModelType } from '../../domain/blog.entity';
 import { BlogViewDto } from '../../api/view-dto/blog.view-dto';
 import { GetBlogsQueryParams } from '../../api/input-dto/get-blogs-query-params.input-dto';
 import { CoreConfig } from '../../../../../core/core.config';
-import { escapeRegex } from '../../../../../core/constants/router-paths';
+import { escapeLike } from '../../../../../core/constants/router-paths';
+import { SortDirection } from '../../../../../core/dto/base.query-params.input-dto';
+
+//белый список сортировок: имя колонки НЕЛЬЗЯ передать как параметр $1,
+//поэтому подставляем только значения из этого словаря (camelCase -> snake_case).
+//Ключи = значения enum BlogsSortBy.
+//COLLATE "C" для текстовых колонок = побайтовая сортировка как в Mongo
+//(заглавные буквы раньше строчных), иначе Postgres с локалью сортирует без учёта регистра
+const SORT_COLUMNS: Record<string, string> = {
+  createdAt: 'created_at',
+  name: 'name COLLATE "C"',
+  description: 'description COLLATE "C"',
+  websiteUrl: 'website_url COLLATE "C"',
+  isMembership: 'is_membership',
+};
 
 @Injectable()
 export class BlogsQueryRepository {
   constructor(
     private coreConfig: CoreConfig,
-    @InjectModel(Blog.name)
-    private readonly BlogModel: BlogModelType,
+    private readonly dataSource: DataSource,
   ) {
     if (this.coreConfig.IOC_LOG) console.log('BlogsQueryRepository created');
   }
 
-  async findById(id: string): Promise<BlogDocument | null> {
-    try {
-      return this.BlogModel.findOne({
-        _id: id,
-        deletedAt: null,
-      });
-    } catch (e) {
-      if (e instanceof MongooseError.CastError) return null; // невалидный id → «не найдено»
-      throw e; // обрыв коннекта и пр. → 500
-    }
-  }
-
   async getById(id: string): Promise<BlogViewDto | null> {
-    const blogDocument = await this.findById(id);
-
-    if (!blogDocument) return null;
-
-    return BlogViewDto.mapToView(blogDocument);
+    try {
+      const rows = await this.dataSource.query(
+        'SELECT * FROM blogs WHERE id = $1 AND deleted_at IS NULL LIMIT 1',
+        [id],
+      );
+      return rows.length ? BlogViewDto.mapRowToView(rows[0]) : null;
+    } catch (e) {
+      //невалидный uuid -> «не найдено» (аналог CastError в Mongo)
+      if ((e as { code?: string })?.code === '22P02') return null;
+      throw e;
+    }
   }
 
   async getAll(
     query: GetBlogsQueryParams,
   ): Promise<PaginatedViewDto<BlogViewDto[]>> {
-    const filter: FilterQuery<Blog> = {
-      deletedAt: null,
-    };
+    const conditions: string[] = ['deleted_at IS NULL'];
+    const params: unknown[] = [];
 
     if (query.searchNameTerm) {
-      filter.$or = filter.$or || [];
-      filter.$or.push({
-        name: { $regex: escapeRegex(query.searchNameTerm), $options: 'i' },
-      });
+      params.push(`%${escapeLike(query.searchNameTerm)}%`);
+      conditions.push(`name ILIKE $${params.length}`);
+    }
+    const where = conditions.join(' AND ');
+
+    const sortColumn = SORT_COLUMNS[query.sortBy] ?? 'created_at';
+    const sortDirection =
+      query.sortDirection === SortDirection.Asc ? 'ASC' : 'DESC';
+
+    const filterParamsCount = params.length;
+    params.push(query.pageSize, query.calculateSkip());
+
+    //COUNT(*) OVER() считает общее количество ПО ФИЛЬТРУ ещё до LIMIT/OFFSET
+    const rows = await this.dataSource.query(
+      `SELECT *, COUNT(*) OVER() AS total_count
+       FROM blogs
+       WHERE ${where}
+       ORDER BY ${sortColumn} ${sortDirection}, created_at, id
+       LIMIT $${filterParamsCount + 1} OFFSET $${filterParamsCount + 2}`,
+      params,
+    );
+
+    //pg возвращает COUNT строкой -> Number()
+    let totalCount = rows.length ? Number(rows[0].total_count) : 0;
+
+    //запросили страницу за пределами данных: строк нет, а значит и total_count нет,
+    //поэтому totalCount считаем отдельным запросом
+    if (!rows.length && query.calculateSkip() > 0) {
+      const countRows = await this.dataSource.query(
+        `SELECT COUNT(*) AS total_count FROM blogs WHERE ${where}`,
+        params.slice(0, filterParamsCount),
+      );
+      totalCount = Number(countRows[0].total_count);
     }
 
-    return this.getBlogs(filter, query);
-  }
-
-  private async getBlogs(
-    filter: FilterQuery<Blog>,
-    query: GetBlogsQueryParams,
-  ): Promise<PaginatedViewDto<BlogViewDto[]>> {
-    const [blogs, totalCount] = await Promise.all([
-      this.BlogModel.find(filter)
-        .sort({ [query.sortBy]: query.sortDirection })
-        .skip(query.calculateSkip())
-        .limit(query.pageSize)
-        .lean(),
-      this.BlogModel.countDocuments(filter),
-    ]);
-
-    const items = blogs.map((el: BlogDocument) => BlogViewDto.mapToView(el));
+    const items = rows.map((row: any) => BlogViewDto.mapRowToView(row));
 
     return PaginatedViewDto.mapToView<BlogViewDto[]>({
       items,
