@@ -14,7 +14,7 @@ export const createBlog = async (
   const dto = blogDto ?? testingDtosCreator.createBlogDto({});
 
   const resp = await request(server)
-    .post(fullPathTo.blogs)
+    .post(fullPathTo.saBlogs)
     .auth(creds.login, creds.password)
     .send(dto)
     .expect(201);
@@ -55,7 +55,7 @@ export const createBlogs = async (
 
   for (let i = 0; i < count; i++) {
     const resp = await request(server)
-      .post(fullPathTo.blogs)
+      .post(fullPathTo.saBlogs)
       .auth(creds.login, creds.password)
       .send(blogDtos[i])
       .expect(201);

@@ -15,9 +15,11 @@ export const dropDbCollections = async (
     );
   }
 
-  //users и sessions теперь живут в Postgres: CASCADE чистит sessions вместе с users
+  //users, sessions, blogs и posts живут в Postgres: CASCADE чистит sessions вместе с users
   if (dataSource) {
-    deletePromises.push(dataSource.query('TRUNCATE TABLE users CASCADE'));
+    deletePromises.push(
+      dataSource.query('TRUNCATE TABLE users, blogs, posts CASCADE'),
+    );
   }
 
   await Promise.all(deletePromises);

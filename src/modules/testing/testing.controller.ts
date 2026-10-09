@@ -22,8 +22,10 @@ export class TestingController {
     const promises: Promise<unknown>[] = collections.map((collection) =>
       this.databaseConnection.collection(collection.name).deleteMany({}),
     );
-    //TRUNCATE быстрее DELETE и через CASCADE сразу чистит зависимые таблицы (sessions)
-    promises.push(this.dataSource.query('TRUNCATE TABLE users CASCADE'));
+    //TRUNCATE быстрее DELETE; CASCADE чистит зависимые таблицы (sessions -> users, posts -> blogs)
+    promises.push(
+      this.dataSource.query('TRUNCATE TABLE users, blogs, posts CASCADE'),
+    );
 
     await Promise.all(promises);
 

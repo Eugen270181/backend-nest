@@ -15,10 +15,12 @@ export const createPost = async (
   creds: AuthCredentials,
   dto: PostDto,
 ): Promise<PostViewDto> => {
+  //посты создаются только через SA API: blogId идёт в url, а не в тело
+  const { blogId, ...blogPostDto } = dto;
   const resp = await request(server)
-    .post(fullPathTo.posts)
+    .post(`${fullPathTo.saBlogs}/${blogId}/posts`)
     .auth(creds.login, creds.password)
-    .send(dto)
+    .send(blogPostDto)
     .expect(201);
 
   return resp.body as PostViewDto;
@@ -48,7 +50,7 @@ export const createBlogPost = async (
   const dto = blogPostDto ?? testingDtosCreator.createBlogPostDto({});
 
   const resp = await request(server)
-    .post(`${fullPathTo.blogs}/${blogId}/posts`)
+    .post(`${fullPathTo.saBlogs}/${blogId}/posts`)
     .auth(creds.login, creds.password)
     .send(dto)
     .expect(201);

@@ -1,6 +1,8 @@
+//значения enum = ключи белого списка SORT_COLUMNS в PostsQueryRepository
 export enum PostsSortBy {
   CreatedAt = 'createdAt',
-  Title = 'Title',
-  ShortDescription = 'ShortDescription',
-  UpdateAt = 'UpdateAt',
+  Title = 'title',
+  ShortDescription = 'shortDescription',
+  BlogName = 'blogName',
+  UpdatedAt = 'updatedAt',
 }

@@ -1,5 +1,3 @@
-import { BlogDocument } from '../../domain/blog.entity';
-
 export class BlogViewDto {
   id: string;
   name: string;
@@ -8,15 +6,16 @@ export class BlogViewDto {
   isMembership: boolean;
   createdAt: string;
 
-  static mapToView(blog: BlogDocument): BlogViewDto {
+  //маппер принимает строку таблицы blogs (snake_case)
+  static mapRowToView(row: any): BlogViewDto {
     const dto = new BlogViewDto();
 
-    dto.id = blog._id.toString();
-    dto.name = blog.name;
-    dto.description = blog.description;
-    dto.websiteUrl = blog.websiteUrl;
-    dto.createdAt = blog.createdAt.toISOString();
-    dto.isMembership = blog.isMembership;
+    dto.id = row.id;
+    dto.name = row.name;
+    dto.description = row.description;
+    dto.websiteUrl = row.website_url;
+    dto.createdAt = row.created_at.toISOString();
+    dto.isMembership = row.is_membership;
 
     return dto;
   }

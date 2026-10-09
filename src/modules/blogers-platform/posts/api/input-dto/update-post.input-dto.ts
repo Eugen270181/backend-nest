@@ -1,6 +1,6 @@
 import { IsStringWithTrim } from '../../../../../core/decorators/validation/is-string-with-trim';
-import { IsMongoId } from 'class-validator';
 
+//blogId в теле больше нет: он берётся из url (PUT /sa/blogs/:blogId/posts/:postId)
 export class UpdatePostInputDto {
   @IsStringWithTrim({ maxLength: 30 })
   title: string;
@@ -10,7 +10,4 @@ export class UpdatePostInputDto {
 
   @IsStringWithTrim({ maxLength: 1000 })
   content: string;
-
-  @IsMongoId()
-  blogId: string;
 }

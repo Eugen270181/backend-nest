@@ -51,30 +51,43 @@ CREATE TABLE IF NOT EXISTS sessions (
 CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions (user_id);
 ---------------------------------------------------------------------------------
 
+---------------------------------------------------------------------------------
+-- blogs: мягкое удаление через deleted_at (как у users)
 CREATE TABLE IF NOT EXISTS blogs (
     id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name          VARCHAR(15)  NOT NULL,
+    name          VARCHAR(15)  NOT NULL, -- max длину проверяет dto-валидация
     description   VARCHAR(500) NOT NULL,
     website_url   VARCHAR(100) NOT NULL,
     is_membership BOOLEAN      NOT NULL DEFAULT FALSE,
     created_at    TIMESTAMPTZ  NOT NULL DEFAULT now(),
     updated_at    TIMESTAMPTZ  NOT NULL DEFAULT now(),
-    deleted_at    TIMESTAMPTZ  -- Для Soft Delete, как в пользователях
-    );
+    deleted_at    TIMESTAMPTZ
+);
 
--- Таблица постов
+---------------------------------------------------------------------------------
+-- posts: blogName в таблице НЕ хранится (в Mongo было денормализовано) -
+-- имя блога берём JOIN-ом из blogs, поэтому после переименования блога
+-- во всех его постах сразу актуальное blogName.
+-- Лайки/дизлайки пока не в SQL: во view они отдаются заглушкой (0 / None / []).
+-- FK без ON DELETE CASCADE: блоги удаляются мягко (deleted_at), каскад не нужен.
 CREATE TABLE IF NOT EXISTS posts (
     id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    blog_id           UUID         NOT NULL REFERENCES blogs(id) ON DELETE CASCADE,
-    blog_name         VARCHAR(15)  NOT NULL, -- Денормализация, как у тебя в Mongo
-    title             VARCHAR(30)  NOT NULL,
-    short_description VARCHAR(100) NOT NULL,
+    blog_id           UUID          NOT NULL REFERENCES blogs (id),
+    title             VARCHAR(30)   NOT NULL,
+    short_description VARCHAR(100)  NOT NULL,
     content           VARCHAR(1000) NOT NULL,
-    likes_count       INT          NOT NULL DEFAULT 0,
-    dislikes_count    INT          NOT NULL DEFAULT 0,
-    created_at        TIMESTAMPTZ  NOT NULL DEFAULT now(),
-    updated_at        TIMESTAMPTZ  NOT NULL DEFAULT now(),
+    created_at        TIMESTAMPTZ   NOT NULL DEFAULT now(),
+    updated_at        TIMESTAMPTZ   NOT NULL DEFAULT now(),
     deleted_at        TIMESTAMPTZ
-    );
+);
 
-CREATE INDEX IF NOT EXISTS idx_posts_blog_id ON posts (blog_id);
+-- если таблица posts уже была создана ранней версией схемы (с blog_name и счётчиками
+-- лайков) - приводим её к актуальному виду. Для чистой базы это no-op.
+ALTER TABLE posts DROP COLUMN IF EXISTS blog_name;
+ALTER TABLE posts DROP COLUMN IF EXISTS likes_count;
+ALTER TABLE posts DROP COLUMN IF EXISTS dislikes_count;
+
+DROP INDEX IF EXISTS idx_posts_blog_id;
+-- посты блога: фильтр по blog_id + сортировка по createdAt, только неудалённые
+CREATE INDEX IF NOT EXISTS idx_posts_blog_id_created_at
+    ON posts (blog_id, created_at DESC) WHERE deleted_at IS NULL;

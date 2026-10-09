@@ -17,6 +17,7 @@ import {
   getBlogs,
   getBlogsQty,
 } from './util/createGetBlogs';
+import { PaginatedViewDto } from '../../src/core/dto/base.paginated.view-dto';
 import { fullPathTo } from '../getFullPath';
 import { ErrorResponseBody } from '../../src/core/exceptions/error-responce-body.type';
 import { validateErrorsObject } from '../validateErrorsObject';
@@ -58,10 +59,10 @@ describe('<<BLOGS>> ENDPOINTS TESTING!!!(e2e)', () => {
   let blogDtos: BlogDto[];
   const blogs: BlogViewDto[] = [];
 
-  describe(`POST -> "/blogs":`, () => {
+  describe(`POST -> "/sa/blogs":`, () => {
     it('STATUS 401: shouldn`t create blog with no cred data', async () => {
       await request(server)
-        .post(fullPathTo.blogs)
+        .post(fullPathTo.saBlogs)
         .send(noValidBlogDto)
         .expect(401);
 
@@ -71,7 +72,7 @@ describe('<<BLOGS>> ENDPOINTS TESTING!!!(e2e)', () => {
 
     it('STATUS 400: shouldn`t create blog with no valid data', async () => {
       const resPost = await request(server)
-        .post(fullPathTo.blogs)
+        .post(fullPathTo.saBlogs)
         .auth(creds.login, creds.password)
         .send(noValidBlogDto)
         .expect(400);
@@ -122,10 +123,10 @@ describe('<<BLOGS>> ENDPOINTS TESTING!!!(e2e)', () => {
     });
   });
 
-  describe(`PUT -> "/blogs/:id"`, () => {
+  describe(`PUT -> "/sa/blogs/:id"`, () => {
     it('STATUS 401: shouldn`t update blog with no cred data', async () => {
       await request(server)
-        .put(`${fullPathTo.blogs}/${validObjectIdString}`)
+        .put(`${fullPathTo.saBlogs}/${validObjectIdString}`)
         .send(blogDtos[1])
         .expect(401);
 
@@ -137,7 +138,7 @@ describe('<<BLOGS>> ENDPOINTS TESTING!!!(e2e)', () => {
     it(`STATUS 404: Can't found with id. Used additional methods: GET -> /blogs/:id`, async () => {
       //запрос на обонвление блога по неверному/несуществующему id
       await request(server)
-        .put(`${fullPathTo.blogs}/${validObjectIdString}`)
+        .put(`${fullPathTo.saBlogs}/${validObjectIdString}`)
         .auth(creds.login, creds.password)
         .send(blogDtos[1])
         .expect(404);
@@ -149,7 +150,7 @@ describe('<<BLOGS>> ENDPOINTS TESTING!!!(e2e)', () => {
     it(`STATUS 400: Can't update blog with not valid data; Should return errors if passed body is incorrect;`, async () => {
       //запрос на обонвление существующего блога по id с невалидными данными
       const resPut = await request(server)
-        .put(`${fullPathTo.blogs}/${blogs[0].id}`)
+        .put(`${fullPathTo.saBlogs}/${blogs[0].id}`)
         .auth(creds.login, creds.password)
         .send(noValidBlogDto)
         .expect(400);
@@ -165,7 +166,7 @@ describe('<<BLOGS>> ENDPOINTS TESTING!!!(e2e)', () => {
     it(`STATUS 204: Updated new blog; no content;`, async () => {
       //запрос на обонвление существующего блога по id
       await request(server)
-        .put(`${fullPathTo.blogs}/${blogs[0].id}`)
+        .put(`${fullPathTo.saBlogs}/${blogs[0].id}`)
         .auth(creds.login, creds.password)
         .send(blogDtos[1])
         .expect(204);
@@ -176,10 +177,10 @@ describe('<<BLOGS>> ENDPOINTS TESTING!!!(e2e)', () => {
     });
   });
 
-  describe(`DELETE -> "/blogs/:id"`, () => {
+  describe(`DELETE -> "/sa/blogs/:id"`, () => {
     it('STATUS 401: shouldn`t delete blog with no cred data', async () => {
       await request(server)
-        .delete(`${fullPathTo.blogs}/${validObjectIdString}`)
+        .delete(`${fullPathTo.saBlogs}/${validObjectIdString}`)
         .expect(401);
       //запрос на получение блогов, проверка на ошибочное удаление блога в БД
       const blogCounter = await getBlogsQty(server);
@@ -189,7 +190,7 @@ describe('<<BLOGS>> ENDPOINTS TESTING!!!(e2e)', () => {
     it(`STATUS 404: Can't found with id. Used additional methods: GET -> /blogs`, async () => {
       //запрос на удаление блога по неверному/несуществующему id
       await request(server)
-        .delete(`${fullPathTo.blogs}/${validObjectIdString}`)
+        .delete(`${fullPathTo.saBlogs}/${validObjectIdString}`)
         .auth(creds.login, creds.password)
         .expect(404);
       //запрос на получение блогов, проверка на ошибочное удаление блога в БД
@@ -200,12 +201,77 @@ describe('<<BLOGS>> ENDPOINTS TESTING!!!(e2e)', () => {
     it(`STATUS 204: Delete updated blog; no content; used additional methods: GET -> /blogs`, async () => {
       //запрос на удаление существующего блога по id
       await request(server)
-        .delete(`${fullPathTo.blogs}/${blogs[0].id}`)
+        .delete(`${fullPathTo.saBlogs}/${blogs[0].id}`)
         .auth(creds.login, creds.password)
         .expect(204);
       //запрос на получение блогов, проверка на удаление блога в БД
       const blogCounter = await getBlogsQty(server);
       expect(blogCounter).toEqual(0);
+    });
+  });
+  describe(`GET -> "/sa/blogs" и поиск/сортировка/пагинация`, () => {
+    beforeAll(async () => {
+      await dropDbCollections(connection, dataSource);
+      for (const name of ['alpha', 'Bravo', '100%_real', 'charlie']) {
+        await createBlog(server, creds, {
+          ...testingDtosCreator.createBlogDto({}),
+          name,
+        });
+      }
+    });
+
+    it('STATUS 401: no cred data', async () => {
+      await request(server).get(fullPathTo.saBlogs).expect(401);
+    });
+
+    it('STATUS 200: SA получает все блоги', async () => {
+      const resp = await request(server)
+        .get(fullPathTo.saBlogs)
+        .auth(creds.login, creds.password)
+        .expect(200);
+      const body = resp.body as PaginatedViewDto<BlogViewDto[]>;
+      expect(body.totalCount).toBe(4);
+      expect(body.items).toHaveLength(4);
+    });
+
+    it('searchNameTerm: спецсимволы LIKE (%, _) экранируются', async () => {
+      const resp = await request(server)
+        .get(fullPathTo.blogs)
+        .query({ searchNameTerm: '%' })
+        .expect(200);
+      const body = resp.body as PaginatedViewDto<BlogViewDto[]>;
+      expect(body.totalCount).toBe(1);
+      expect(body.items[0].name).toBe('100%_real');
+    });
+
+    it('searchNameTerm: регистронезависимый', async () => {
+      const resp = await request(server)
+        .get(fullPathTo.blogs)
+        .query({ searchNameTerm: 'BRAVO' })
+        .expect(200);
+      expect((resp.body as PaginatedViewDto<BlogViewDto[]>).totalCount).toBe(1);
+    });
+
+    it('sortBy=name asc: байтовый порядок как в Mongo (заглавные раньше строчных)', async () => {
+      const resp = await request(server)
+        .get(fullPathTo.blogs)
+        .query({ sortBy: 'name', sortDirection: 'asc' })
+        .expect(200);
+      const names = (resp.body as PaginatedViewDto<BlogViewDto[]>).items.map(
+        (b) => b.name,
+      );
+      expect(names).toEqual(['100%_real', 'Bravo', 'alpha', 'charlie']);
+    });
+
+    it('страница за пределами данных: пустой items, но верный totalCount', async () => {
+      const resp = await request(server)
+        .get(fullPathTo.blogs)
+        .query({ pageNumber: 10, pageSize: 2 })
+        .expect(200);
+      const body = resp.body as PaginatedViewDto<BlogViewDto[]>;
+      expect(body.items).toEqual([]);
+      expect(body.totalCount).toBe(4);
+      expect(body.pagesCount).toBe(2);
     });
   });
 });

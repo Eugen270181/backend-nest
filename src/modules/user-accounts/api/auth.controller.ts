@@ -10,7 +10,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { Response, Request } from 'express';
-import { SkipThrottle, ThrottlerGuard } from '@nestjs/throttler';
+import { SkipThrottle } from '@nestjs/throttler';
 import { LocalAuthGuard } from '../guards/local/local-auth.guard';
 import { ApiBearerAuth, ApiBody } from '@nestjs/swagger';
 import {
@@ -38,7 +38,9 @@ import { RefreshTokensCommand } from '../application/usecases/refresh-tokens.use
 import { LogoutUserCommand } from '../application/usecases/logout-user.usecase';
 import { CoreConfig } from '../../../core/core.config';
 
-@UseGuards(ThrottlerGuard)
+//IP-restriction (rate limit 5 запросов / 10 сек) ОТКЛЮЧЁН по условию задания.
+//Чтобы включить обратно - раскомментировать строку ниже (ThrottlerModule настроен в UserAccountsModule)
+//@UseGuards(ThrottlerGuard) // + import { ThrottlerGuard } from '@nestjs/throttler'
 //@Throttle({ default: { limit: 5, ttl: 10000 } })
 @Controller('auth')
 export class AuthController {

@@ -6,6 +6,8 @@ import { GetBlogDocumentQuery } from '../../../blogs/application/queries/get-blo
 import { BlogDocument } from '../../../blogs/domain/blog.entity';
 import { UpdatePostDomainDto } from '../../domain/dto/update-post.domain.dto';
 import { GetPostDocumentQuery } from '../queries/get-post-document.query';
+import { DomainException } from '../../../../../core/exceptions/domain-exceptions';
+import { DomainExceptionCode } from '../../../../../core/exceptions/domain-exception-codes';
 
 export class UpdatePostCommand {
   constructor(public readonly dto: UpdatePostDto) {}
@@ -19,22 +21,28 @@ export class UpdatePostUseCase implements ICommandHandler<UpdatePostCommand> {
   ) {}
 
   async execute({ dto }: UpdatePostCommand) {
+    // 1. Блог из url должен существовать (404)
+    await this.queryBus.execute<GetBlogDocumentQuery, BlogDocument>(
+      new GetBlogDocumentQuery(dto.blogId),
+    );
+
+    // 2. Пост должен существовать и принадлежать именно этому блогу (иначе 404)
     const postDocument = await this.queryBus.execute<
       GetPostDocumentQuery,
       PostDocument
     >(new GetPostDocumentQuery(dto.postId));
 
-    const blogDocument = await this.queryBus.execute<
-      GetBlogDocumentQuery,
-      BlogDocument
-    >(new GetBlogDocumentQuery(dto.blogId));
+    if (postDocument.blogId !== dto.blogId) {
+      throw new DomainException({
+        code: DomainExceptionCode.NotFound,
+        message: `Post ${dto.postId} not found in blog ${dto.blogId}`,
+      });
+    }
 
     const updatePostDomainDto: UpdatePostDomainDto = {
       title: dto.title,
       shortDescription: dto.shortDescription,
       content: dto.content,
-      blogId: dto.blogId,
-      blogName: blogDocument.name,
     };
     postDocument.update(updatePostDomainDto);
 
