@@ -1,7 +1,6 @@
 import { IQueryHandler, QueryBus, QueryHandler } from '@nestjs/cqrs';
 import { CommentsQueryRepository } from '../../infrastructure/query/comments.query-repository';
 import { CommentViewDto } from '../../api/view-dto/comment.view-dto';
-import { CommentEnrichmentService } from '../services/comment-enrichment.service';
 import { GetCommentsQueryParams } from '../../../posts/api/input-dto/get-comments-query-params.input-dto';
 import { PaginatedViewDto } from '../../../../../core/dto/base.paginated.view-dto';
 import { GetPostDocumentQuery } from '../../../posts/application/queries/get-post-document.query';
@@ -24,7 +23,6 @@ export class GetPostCommentsQueryHandler
   constructor(
     private coreConfig: CoreConfig,
     private commentsQueryRepository: CommentsQueryRepository,
-    private commentsEnrichmentService: CommentEnrichmentService,
     private queryBus: QueryBus,
   ) {
     if (this.coreConfig.IOC_LOG)
@@ -36,20 +34,10 @@ export class GetPostCommentsQueryHandler
       new GetPostDocumentQuery(postId),
     ); // ✅ Добавьте проверку поста
 
-    const paginated = await this.commentsQueryRepository.getPostComments(
+    return this.commentsQueryRepository.getPostComments(
       query,
       postId,
+      userId ?? null,
     );
-
-    if (!userId) return paginated;
-
-    // ✅ Переиспользуем метод параллельно
-    paginated.items = await Promise.all(
-      paginated.items.map((comment) =>
-        this.commentsEnrichmentService.enrich(comment, userId),
-      ),
-    );
-
-    return paginated;
   }
 }

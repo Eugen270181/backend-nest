@@ -24,7 +24,9 @@ export class TestingController {
     );
     //TRUNCATE быстрее DELETE; CASCADE чистит зависимые таблицы (sessions -> users, posts -> blogs)
     promises.push(
-      this.dataSource.query('TRUNCATE TABLE users, blogs, posts CASCADE'),
+      this.dataSource.query(
+        'TRUNCATE TABLE users, blogs, posts, comments, comment_likes, post_likes CASCADE',
+      ),
     );
 
     await Promise.all(promises);

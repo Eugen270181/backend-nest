@@ -6,13 +6,12 @@ import { DomainExceptionCode } from '../exceptions/domain-exception-codes';
 
 // Вынесем конфигурацию по умолчанию в отдельный объект
 const DEFAULT_CONFIG = {
-  // Гибридный период миграции на Postgres:
-  // 'id', 'userId', 'blogId', 'postId' - сущности уже в Postgres (UUID), но принимаем
+  // Все сущности уже в Postgres (UUID), но на период миграции принимаем
   // и ObjectId-подобную строку: для репозитория это просто «не найдено» (22P02 -> null),
   // т.е. 404, а не 400. Мусор вроде '1' по-прежнему даёт 400.
-  objectIdOrUuidParams: ['id', 'userId', 'blogId', 'postId'],
-  // commentId пока в Mongo (комментарии ещё не переведены на SQL)
-  objectIdParams: ['commentId'],
+  objectIdOrUuidParams: ['id', 'userId', 'blogId', 'postId', 'commentId'],
+  // ObjectId-параметров в приложении больше нет (Mongo не используется для данных)
+  objectIdParams: [] as string[],
   // deviceId генерируется приложением как uuid v4 и в Mongo-времена
   // не был ObjectId, поэтому здесь строго UUID
   uuidParams: ['deviceId'],

@@ -26,7 +26,7 @@ export class UpdateCommentUseCase
       CommentDocument
     >(new GetCommentDocumentQuery(dto.commentId)); //404
 
-    if (commentDocument.commentatorInfo.userId !== dto.userId) {
+    if (commentDocument.userId !== dto.userId) {
       //403
       throw new DomainException({
         code: DomainExceptionCode.Forbidden,

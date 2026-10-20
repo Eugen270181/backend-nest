@@ -1,46 +1,39 @@
-import { InjectModel } from '@nestjs/mongoose';
-
 import { Injectable } from '@nestjs/common';
-import {
-  LikePost,
-  LikePostDocument,
-  LikePostModelType,
-} from '../domain/like-post.entity';
-import { LikeStatus } from '../../../../core/dto/enum/like-status.enum';
+import { DataSource } from 'typeorm';
 import { CoreConfig } from '../../../../core/core.config';
+import { LikeStatus } from '../../../../core/dto/enum/like-status.enum';
 
 @Injectable()
 export class LikesPostsRepository {
   constructor(
     private coreConfig: CoreConfig,
-    @InjectModel(LikePost.name)
-    private readonly LikePostModel: LikePostModelType,
+    private readonly dataSource: DataSource,
   ) {
     if (this.coreConfig.IOC_LOG) console.log('LikesPostsRepository created');
   }
 
-  async save(likePostDocument: LikePostDocument): Promise<void> {
-    await likePostDocument.save();
-  }
-
-  async findLikePostByAuthorIdAndPostId(
-    authorId: string,
+  //Выставляет реакцию пользователя на пост.
+  //None -> строка удаляется; Like/Dislike -> UPSERT по PK (post_id, user_id).
+  //WHERE в DO UPDATE: если статус не изменился, строка не трогается (updated_at сохраняется).
+  async setStatus(
     postId: string,
-  ): Promise<LikePostDocument | null> {
-    return this.LikePostModel.findOne({ authorId, postId });
-  }
-
-  async getNewestLikes(
-    postId: string,
-    limit: number = 3,
-  ): Promise<LikePostDocument[]> {
-    return this.LikePostModel.find({
-      postId,
-      likeStatus: LikeStatus.Like, // ✅ Только лайки
-      deletedAt: null,
-    })
-      .sort({ createdAt: -1 }) // ✅ Новые первыми
-      .limit(limit)
-      .lean();
+    userId: string,
+    status: LikeStatus,
+  ): Promise<void> {
+    if (status === LikeStatus.None) {
+      await this.dataSource.query(
+        `DELETE FROM post_likes WHERE post_id = $1 AND user_id = $2`,
+        [postId, userId],
+      );
+      return;
+    }
+    await this.dataSource.query(
+      `INSERT INTO post_likes (post_id, user_id, status)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (post_id, user_id)
+       DO UPDATE SET status = EXCLUDED.status, updated_at = now()
+       WHERE post_likes.status <> EXCLUDED.status`,
+      [postId, userId, status],
+    );
   }
 }

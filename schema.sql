@@ -91,3 +91,50 @@ DROP INDEX IF EXISTS idx_posts_blog_id;
 -- посты блога: фильтр по blog_id + сортировка по createdAt, только неудалённые
 CREATE INDEX IF NOT EXISTS idx_posts_blog_id_created_at
     ON posts (blog_id, created_at DESC) WHERE deleted_at IS NULL;
+
+---------------------------------------------------------------------------------
+-- comments: мягкое удаление через deleted_at.
+-- userLogin в таблице НЕ хранится - берём JOIN-ом из users (как blogName у постов).
+-- Счётчиков лайков тоже нет: likesCount/dislikesCount считаются из comment_likes,
+-- поэтому рассинхронизироваться им не с чем.
+-- Удаление пользователя (DELETE FROM users) каскадно удаляет его комментарии и лайки.
+CREATE TABLE IF NOT EXISTS comments (
+    id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    post_id    UUID         NOT NULL REFERENCES posts (id) ON DELETE CASCADE,
+    user_id    UUID         NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+    content    VARCHAR(300) NOT NULL, -- min/max проверяет dto-валидация
+    created_at TIMESTAMPTZ  NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ  NOT NULL DEFAULT now(),
+    deleted_at TIMESTAMPTZ
+);
+
+-- комментарии поста: фильтр по post_id + сортировка по createdAt, только неудалённые
+CREATE INDEX IF NOT EXISTS idx_comments_post_id_created_at
+    ON comments (post_id, created_at DESC) WHERE deleted_at IS NULL;
+
+---------------------------------------------------------------------------------
+-- Лайки: одна строка = текущая реакция пользователя. PK (объект, пользователь)
+-- гарантирует «один пользователь - одна реакция».
+-- Статус None в таблице не хранится: сброс реакции = DELETE строки.
+-- updated_at = момент последней смены статуса (по нему строится newestLikes).
+CREATE TABLE IF NOT EXISTS comment_likes (
+    comment_id UUID        NOT NULL REFERENCES comments (id) ON DELETE CASCADE,
+    user_id    UUID        NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+    status     VARCHAR(7)  NOT NULL CHECK (status IN ('Like', 'Dislike')),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (comment_id, user_id)
+);
+
+CREATE TABLE IF NOT EXISTS post_likes (
+    post_id    UUID        NOT NULL REFERENCES posts (id) ON DELETE CASCADE,
+    user_id    UUID        NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+    status     VARCHAR(7)  NOT NULL CHECK (status IN ('Like', 'Dislike')),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (post_id, user_id)
+);
+
+-- newestLikes: последние лайки поста (status = 'Like') по времени
+CREATE INDEX IF NOT EXISTS idx_post_likes_post_id_status_updated_at
+    ON post_likes (post_id, status, updated_at DESC);

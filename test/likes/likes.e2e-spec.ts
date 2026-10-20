@@ -1,7 +1,7 @@
 import { Connection } from 'mongoose';
 import { DataSource } from 'typeorm';
 import { App } from 'supertest/types';
-import { getConnectionToken, getModelToken } from '@nestjs/mongoose';
+import { getConnectionToken } from '@nestjs/mongoose';
 import { dropDbCollections } from '../dropDbCollections';
 import {
   LikeStatus,
@@ -28,11 +28,6 @@ import {
   createPostComments,
   getCommentById,
 } from '../comments/util/createGetComments';
-import { LikePostModelType } from '../../src/modules/blogers-platform/likes/domain/like-post.entity';
-import {
-  LikeComment,
-  LikeCommentModelType,
-} from '../../src/modules/blogers-platform/likes/domain/like-comment.entity';
 import { UserAccountsConfig } from '../../src/modules/user-accounts/user-accounts.config';
 import { INestApplication } from '@nestjs/common';
 import { initTestApp } from '../init-test-app';
@@ -44,8 +39,6 @@ describe('<<LIKES>> ENDPOINTS TESTING!!!(e2e)', () => {
   let server: App;
   let userAccountsConfig: UserAccountsConfig;
   let creds: AuthCredentials;
-  let likePostModel!: LikePostModelType;
-  let likeCommentModel: LikeCommentModelType;
 
   beforeAll(async () => {
     app = await initTestApp(false);
@@ -58,12 +51,6 @@ describe('<<LIKES>> ENDPOINTS TESTING!!!(e2e)', () => {
       password: userAccountsConfig.saPass,
     };
 
-    //лайки постов временно отключены (заглушка), модель LikePost не регистрируется в модуле
-    //TODO: вернуть вместе с переводом лайков на SQL
-    likeCommentModel = app.get<LikeCommentModelType>(
-      getModelToken(LikeComment.name),
-    );
-
     await dropDbCollections(connection, dataSource);
   });
 
@@ -71,6 +58,20 @@ describe('<<LIKES>> ENDPOINTS TESTING!!!(e2e)', () => {
     if (connection) await connection.close(); // закрываем соединение с БД
     await app.close();
   });
+
+  //реакция пользователя прямо из таблицы лайков (None хранится как отсутствие строки)
+  const getLikeStatusFromDb = async (
+    table: 'post_likes' | 'comment_likes',
+    column: 'post_id' | 'comment_id',
+    targetId: string,
+    userId: string,
+  ): Promise<LikeStatus> => {
+    const rows: { status: LikeStatus }[] = await dataSource.query(
+      `SELECT status FROM ${table} WHERE ${column} = $1 AND user_id = $2`,
+      [targetId, userId],
+    );
+    return rows.length ? rows[0].status : LikeStatus.None;
+  };
 
   const noneLikeDto = { likeStatus: LikeStatus.None };
   const likeDto = { likeStatus: LikeStatus.Like };
@@ -80,7 +81,7 @@ describe('<<LIKES>> ENDPOINTS TESTING!!!(e2e)', () => {
   let users: UserViewDto[], tokens: TokenDto[];
 
   /////////////////////////////////////POSTS_LIKES////////////////////////////
-  describe.skip(`PUT -> "posts/:id/like-status":`, () => {
+  describe(`PUT -> "posts/:id/like-status":`, () => {
     it(`PUT -> "posts/:id/like-status": Ok. STATUS 204`, async () => {
       // 0. Создание 4 пользователей суперадмином, их авторизация и получение токенов
       users = await createUsersBySa(server, creds, 4);
@@ -98,12 +99,14 @@ describe('<<LIKES>> ENDPOINTS TESTING!!!(e2e)', () => {
       await createPostLike(server, tokens[0].accessToken, posts[0].id, likeDto);
 
       // 4. Проверка создания через БД лайка поста
-      const foundPostLikeInDB = await likePostModel
-        .findOne({ authorId: users[0].id, postId: posts[0].id })
-        .lean();
+      const foundPostLikeInDB = await getLikeStatusFromDb(
+        'post_likes',
+        'post_id',
+        posts[0].id,
+        users[0].id,
+      );
 
-      expect(foundPostLikeInDB).toBeDefined();
-      expect(foundPostLikeInDB!.likeStatus).toBe(LikeStatus.Like);
+      expect(foundPostLikeInDB).toBe(LikeStatus.Like);
 
       // 5. Получить замапленый пост по айди с авториз.данными и без первого пользователя
       const post1WithAuth = await getPostById(
@@ -151,7 +154,7 @@ describe('<<LIKES>> ENDPOINTS TESTING!!!(e2e)', () => {
     });
   });
 
-  describe.skip(`LIKE_POSTS_TESTING_SCENARIOS`, () => {
+  describe(`LIKE_POSTS_TESTING_SCENARIOS`, () => {
     it(`changeLikePostInDb`, async () => {
       // Меняем лайк на дизлайк
       await createPostLike(
@@ -160,17 +163,23 @@ describe('<<LIKES>> ENDPOINTS TESTING!!!(e2e)', () => {
         posts[0].id,
         dislikeDto,
       );
-      let foundPostLikeInDB = await likePostModel
-        .findOne({ authorId: users[0].id, postId: posts[0].id })
-        .lean();
-      expect(foundPostLikeInDB!.likeStatus).toBe(LikeStatus.Dislike);
+      let foundPostLikeInDB = await getLikeStatusFromDb(
+        'post_likes',
+        'post_id',
+        posts[0].id,
+        users[0].id,
+      );
+      expect(foundPostLikeInDB).toBe(LikeStatus.Dislike);
 
       // Меняем дизлайк на лайк
       await createPostLike(server, tokens[0].accessToken, posts[0].id, likeDto);
-      foundPostLikeInDB = await likePostModel
-        .findOne({ authorId: users[0].id, postId: posts[0].id })
-        .lean();
-      expect(foundPostLikeInDB!.likeStatus).toBe(LikeStatus.Like);
+      foundPostLikeInDB = await getLikeStatusFromDb(
+        'post_likes',
+        'post_id',
+        posts[0].id,
+        users[0].id,
+      );
+      expect(foundPostLikeInDB).toBe(LikeStatus.Like);
 
       // Меняем лайк на None
       await createPostLike(
@@ -179,10 +188,13 @@ describe('<<LIKES>> ENDPOINTS TESTING!!!(e2e)', () => {
         posts[0].id,
         noneLikeDto,
       );
-      foundPostLikeInDB = await likePostModel
-        .findOne({ authorId: users[0].id, postId: posts[0].id })
-        .lean();
-      expect(foundPostLikeInDB!.likeStatus).toBe(LikeStatus.None);
+      foundPostLikeInDB = await getLikeStatusFromDb(
+        'post_likes',
+        'post_id',
+        posts[0].id,
+        users[0].id,
+      );
+      expect(foundPostLikeInDB).toBe(LikeStatus.None);
 
       const post1WithAuth = await getPostById(
         server,
@@ -248,15 +260,6 @@ describe('<<LIKES>> ENDPOINTS TESTING!!!(e2e)', () => {
 
   /////////////////////////////////////COMMENTS_LIKES////////////////////////////
   describe(`PUT -> "comments/:id/like-status":`, () => {
-    //подготовка данных (раньше выполнялась в тестах лайков постов, которые сейчас пропущены)
-    beforeAll(async () => {
-      users = await createUsersBySa(server, creds, 4);
-      tokens = await getArrTokensWithUsersLogin(server, users);
-      const blog = await createBlog(server, creds);
-      const postDtos = testingDtosCreator.createPostDtos(2, blog.id);
-      posts = await createPosts(server, creds, postDtos);
-    });
-
     it(`PUT -> "comments/:id/like-status": Ok. STATUS 204`, async () => {
       // 2. Создание 2-ух комментов к первому посту
       const commentDtos = testingDtosCreator.createCommentDtos(2);
@@ -277,12 +280,14 @@ describe('<<LIKES>> ENDPOINTS TESTING!!!(e2e)', () => {
       );
 
       // 4. Проверка создания через БД лайка комментария
-      const foundCommentLikeInDB = await likeCommentModel
-        .findOne({ authorId: users[0].id, commentId: comments[0].id })
-        .lean();
+      const foundCommentLikeInDB = await getLikeStatusFromDb(
+        'comment_likes',
+        'comment_id',
+        comments[0].id,
+        users[0].id,
+      );
 
-      expect(foundCommentLikeInDB).toBeDefined();
-      expect(foundCommentLikeInDB!.likeStatus).toBe(LikeStatus.Like);
+      expect(foundCommentLikeInDB).toBe(LikeStatus.Like);
 
       // 5. Получить замапленый коммент по айди с авториз.данными и без первого пользователя
       const comment1WithAuth = await getCommentById(
@@ -330,10 +335,13 @@ describe('<<LIKES>> ENDPOINTS TESTING!!!(e2e)', () => {
         comments[0].id,
         dislikeDto,
       );
-      let foundCommentLikeInDB = await likeCommentModel
-        .findOne({ authorId: users[0].id, commentId: comments[0].id })
-        .lean();
-      expect(foundCommentLikeInDB!.likeStatus).toBe(LikeStatus.Dislike);
+      let foundCommentLikeInDB = await getLikeStatusFromDb(
+        'comment_likes',
+        'comment_id',
+        comments[0].id,
+        users[0].id,
+      );
+      expect(foundCommentLikeInDB).toBe(LikeStatus.Dislike);
 
       // Меняем дизлайк на лайк
       await createCommentLike(
@@ -342,10 +350,13 @@ describe('<<LIKES>> ENDPOINTS TESTING!!!(e2e)', () => {
         comments[0].id,
         likeDto,
       );
-      foundCommentLikeInDB = await likeCommentModel
-        .findOne({ authorId: users[0].id, commentId: comments[0].id })
-        .lean();
-      expect(foundCommentLikeInDB!.likeStatus).toBe(LikeStatus.Like);
+      foundCommentLikeInDB = await getLikeStatusFromDb(
+        'comment_likes',
+        'comment_id',
+        comments[0].id,
+        users[0].id,
+      );
+      expect(foundCommentLikeInDB).toBe(LikeStatus.Like);
 
       // Меняем лайк на None
       await createCommentLike(
@@ -354,10 +365,13 @@ describe('<<LIKES>> ENDPOINTS TESTING!!!(e2e)', () => {
         comments[0].id,
         noneLikeDto,
       );
-      foundCommentLikeInDB = await likeCommentModel
-        .findOne({ authorId: users[0].id, commentId: comments[0].id })
-        .lean();
-      expect(foundCommentLikeInDB!.likeStatus).toBe(LikeStatus.None);
+      foundCommentLikeInDB = await getLikeStatusFromDb(
+        'comment_likes',
+        'comment_id',
+        comments[0].id,
+        users[0].id,
+      );
+      expect(foundCommentLikeInDB).toBe(LikeStatus.None);
 
       const comment1WithAuth = await getCommentById(
         server,

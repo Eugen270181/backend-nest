@@ -1,4 +1,7 @@
-import { Controller, Get, Param, Query } from '@nestjs/common';
+import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
+import { JwtOptionalAuthGuard } from '../../../user-accounts/guards/bearer/jwt-optional-auth.guard';
+import { OptionalUserId } from '../../../user-accounts/guards/decorators/param/extract-user-from-request.decorator';
+
 import { BlogViewDto } from './view-dto/blog.view-dto';
 import { GetBlogsQueryParams } from './input-dto/get-blogs-query-params.input-dto';
 import { PaginatedViewDto } from '../../../../core/dto/base.paginated.view-dto';
@@ -38,14 +41,17 @@ export class BlogsController {
     >(new GetAllBlogsQuery(query));
   }
 
+  //опциональный токен: нужен для myStatus в лайках постов (аноним -> None)
+  @UseGuards(JwtOptionalAuthGuard)
   @Get(':blogId/posts')
   async getBlogPosts(
     @Param('blogId') blogId: string,
     @Query() query: GetPostsQueryParams,
+    @OptionalUserId() userId?: string,
   ): Promise<PaginatedViewDto<PostViewDto[]>> {
     return this.queryBus.execute<
       GetBlogPostsQuery,
       PaginatedViewDto<PostViewDto[]>
-    >(new GetBlogPostsQuery(blogId, query));
+    >(new GetBlogPostsQuery(blogId, query, userId));
   }
 }

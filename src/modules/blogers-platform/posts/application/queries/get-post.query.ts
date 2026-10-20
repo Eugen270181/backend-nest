@@ -8,6 +8,7 @@ import { CoreConfig } from '../../../../../core/core.config';
 export class GetPostQuery {
   constructor(
     public readonly postId: string,
+    public readonly userId?: string,
     public readonly justCreated: boolean = false,
   ) {}
 }
@@ -23,8 +24,11 @@ export class GetPostQueryHandler
     if (this.coreConfig.IOC_LOG) console.log('GetPostQueryHandler created');
   }
 
-  async execute({ postId, justCreated }: GetPostQuery) {
-    const postViewDto = await this.postsQueryRepository.getById(postId);
+  async execute({ postId, userId, justCreated }: GetPostQuery) {
+    const postViewDto = await this.postsQueryRepository.getById(
+      postId,
+      userId ?? null,
+    );
 
     if (!postViewDto) {
       if (!justCreated) {
