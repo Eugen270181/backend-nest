@@ -6,6 +6,7 @@ import {
   IsNotEmpty,
   IsNumber,
   IsOptional,
+  IsString,
 } from 'class-validator';
 import { configValidationUtility } from '../config-validation.utility';
 
@@ -71,6 +72,11 @@ export class CoreConfig {
   })
   IOC_LOG?: boolean;
 
+  @IsString({
+    message: 'Set Env variable GEMINI_API_KEY_1, for AI use!',
+  })
+  geminiApiKey1!: string;
+
   @IsNotEmpty({
     message: 'Set Env variable ACCESS_TOKEN_SECRET, dangerous for security!',
   })
@@ -81,12 +87,6 @@ export class CoreConfig {
   })
   refreshTokenSecret!: string;
 
-  @IsNotEmpty({
-    message:
-      'Set Env variable NGROK_AUTH_TOKEN_SECRET, dangerous for security!',
-  })
-  ngrokAuthTokenSecret!: string;
-
   constructor(private configService: ConfigService<any, true>) {
     this.port = Number(this.configService.get('PORT'));
     this.mongoURI = this.configService.get('MONGO_URI');
@@ -95,9 +95,10 @@ export class CoreConfig {
 
     this.accessTokenSecret = this.configService.get('ACCESS_TOKEN_SECRET');
     this.refreshTokenSecret = this.configService.get('REFRESH_TOKEN_SECRET');
-    this.ngrokAuthTokenSecret = this.configService.get(
-      'NGROK_AUTH_TOKEN_SECRET',
-    );
+    // Добавлено нижнее подчеркивание перед единицей: GEMINI_API_KEY_1
+    const geminiKey = this.configService.get('GEMINI_API_KEY_1');
+    this.geminiApiKey1 =
+      geminiKey && geminiKey !== 'undefined' ? String(geminiKey) : '';
 
     this.isSwaggerEnabled =
       configValidationUtility.convertToBoolean(

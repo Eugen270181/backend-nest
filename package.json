@@ -13,6 +13,7 @@
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
+    "ngrok": "ngrok http 5005",
     "test": "cross-env NODE_ENV=testing jest",
     "test:watch": "cross-env jest --watch",
     "test:cov": "cross-env jest --coverage",
@@ -28,6 +29,7 @@
     "test:e2e:sessions": "cross-env NODE_ENV=testing jest --config ./test/jest-e2e.json --runInBand --testPathPattern=sessions.e2e-spec.ts"
   },
   "dependencies": {
+    "@google/genai": "^2.30.0",
     "@nestjs-modules/mailer": "^2.0.2",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.3",
