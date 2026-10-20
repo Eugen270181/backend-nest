@@ -18,7 +18,9 @@ export const dropDbCollections = async (
   //users, sessions, blogs и posts живут в Postgres: CASCADE чистит sessions вместе с users
   if (dataSource) {
     deletePromises.push(
-      dataSource.query('TRUNCATE TABLE users, blogs, posts CASCADE'),
+      dataSource.query(
+        'TRUNCATE TABLE users, blogs, posts, comments, comment_likes, post_likes CASCADE',
+      ),
     );
   }
 

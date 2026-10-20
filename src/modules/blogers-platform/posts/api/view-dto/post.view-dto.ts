@@ -1,14 +1,11 @@
 import { LikeStatus } from '../../../../../core/dto/enum/like-status.enum';
 
 export class LikeDetailView {
-  addedAt: Date;
-  userId: string | null;
-  login: string | null;
+  addedAt: string;
+  userId: string;
+  login: string;
 }
 
-//ЗАГЛУШКА: лайки пока не переведены в SQL, поэтому структура ответа сохраняется,
-//а значения всегда дефолтные: 0 лайков, 0 дизлайков, myStatus None, newestLikes [].
-//Когда появятся таблицы лайков - здесь будет маппинг из них.
 export class ExtendedLikesInfo {
   likesCount: number = 0;
   dislikesCount: number = 0;
@@ -26,8 +23,8 @@ export class PostViewDto {
   createdAt: string;
   extendedLikesInfo: ExtendedLikesInfo;
 
-  //маппер принимает строку запроса posts JOIN blogs (snake_case);
-  //blog_name приходит из b.name AS blog_name
+  //маппер принимает строку запроса posts JOIN blogs (snake_case) с посчитанными лайками:
+  //blog_name = b.name, likes_count/dislikes_count/my_status/newest_likes считает SQL
   static mapRowToView(row: any): PostViewDto {
     const dto = new PostViewDto();
 
@@ -39,7 +36,17 @@ export class PostViewDto {
     dto.blogName = row.blog_name;
     dto.createdAt = row.created_at.toISOString();
 
-    dto.extendedLikesInfo = new ExtendedLikesInfo();
+    const likes = new ExtendedLikesInfo();
+    likes.likesCount = Number(row.likes_count); //COUNT в pg приходит строкой
+    likes.dislikesCount = Number(row.dislikes_count);
+    likes.myStatus = row.my_status as LikeStatus;
+    //newest_likes - json-массив (до 3 штук, новые первыми); дату приводим к ISO
+    likes.newestLikes = (row.newest_likes ?? []).map((l: any) => ({
+      addedAt: new Date(l.addedAt).toISOString(),
+      userId: l.userId,
+      login: l.login,
+    }));
+    dto.extendedLikesInfo = likes;
 
     return dto;
   }

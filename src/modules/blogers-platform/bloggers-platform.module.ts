@@ -3,20 +3,15 @@ import { BlogsRepository } from './blogs/infrastructure/blogs.repository';
 import { BlogsController } from './blogs/api/blogs.controller';
 import { BlogsSaController } from './blogs/api/blogs-sa.controller';
 import { BlogsQueryRepository } from './blogs/infrastructure/query/blogs.query-repository';
-import { MongooseModule } from '@nestjs/mongoose';
 import { UserAccountsModule } from '../user-accounts/user-accounts.module';
 import { PostsController } from './posts/api/posts.controller';
 import { PostsRepository } from './posts/infrastructure/posts.repository';
 import { PostsQueryRepository } from './posts/infrastructure/query/posts.query-repository';
-import { Comment, CommentSchema } from './comments/domain/comment.entity';
 import { CommentsRepository } from './comments/infrastructure/comments.repository';
 import { CommentsQueryRepository } from './comments/infrastructure/query/comments.query-repository';
 import { CommentsController } from './comments/api/comments.controller';
 
-import {
-  LikeComment,
-  LikeCommentSchema,
-} from './likes/domain/like-comment.entity';
+import { LikesPostsRepository } from './likes/infrastructure/likes-posts.repository';
 import { LikesCommentsRepository } from './likes/infrastructure/likes-comments.repository';
 import { CqrsModule } from '@nestjs/cqrs';
 import { CreateBlogUseCase } from './blogs/application/usecases/create-blog.usecase';
@@ -35,12 +30,10 @@ import { GetBlogPostsQueryHandler } from './posts/application/queries/get-blog-p
 import { UpdatePostLikeUseCase } from './posts/application/usecases/update-post-like.usecase';
 
 import { GetCommentDocumentQueryHandler } from './comments/application/queries/get-comment-document.query';
-import { UpdateLikeCommentUseCase } from './likes/application/usecases/update-like-comment.usecase';
 import { GetCommentQueryHandler } from './comments/application/queries/get-comment.query';
 import { CreateCommentUseCase } from './comments/application/usecases/create-comment.usecase';
 import { UpdateCommentUseCase } from './comments/application/usecases/update-comment.usecase';
 import { DeleteCommentUseCase } from './comments/application/usecases/delete-comment.usecase';
-import { CommentEnrichmentService } from './comments/application/services/comment-enrichment.service';
 import { UpdateCommentLikeUseCase } from './comments/application/usecases/update-comment-like.usecase';
 import { GetPostCommentsQueryHandler } from './comments/application/queries/get-post-comments.query';
 
@@ -56,7 +49,6 @@ const commandHandlers = [
   UpdateCommentUseCase,
   UpdateCommentLikeUseCase,
   DeleteCommentUseCase,
-  UpdateLikeCommentUseCase,
 ];
 const queryHandlers = [
   GetBlogQueryHandler,
@@ -70,20 +62,10 @@ const queryHandlers = [
   GetPostCommentsQueryHandler,
   GetCommentDocumentQueryHandler,
 ];
-const services = [CommentEnrichmentService];
 
 //тут регистрируем провайдеры всех сущностей блоггерской платформы (blogs, posts, comments, etc...)
 @Module({
-  imports: [
-    CqrsModule,
-    //блоги и посты теперь в Postgres (raw SQL, DataSource в репозиториях);
-    //в Mongo пока остались только комментарии и лайки комментариев
-    MongooseModule.forFeature([
-      { name: Comment.name, schema: CommentSchema },
-      { name: LikeComment.name, schema: LikeCommentSchema },
-    ]),
-    UserAccountsModule,
-  ],
+  imports: [CqrsModule, UserAccountsModule],
   controllers: [
     BlogsController,
     BlogsSaController,
@@ -93,7 +75,6 @@ const services = [CommentEnrichmentService];
   providers: [
     ...commandHandlers,
     ...queryHandlers,
-    ...services,
     BlogsRepository,
     BlogsQueryRepository,
     PostsRepository,
@@ -101,6 +82,7 @@ const services = [CommentEnrichmentService];
     CommentsRepository,
     CommentsQueryRepository,
     LikesCommentsRepository,
+    LikesPostsRepository,
   ],
 })
 export class BloggersPlatformModule {}

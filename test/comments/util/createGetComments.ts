@@ -29,7 +29,12 @@ export const createPostComments = async (
   const comments: CommentViewDto[] = [];
 
   for (let i = 0; i < dtos.length; i++) {
-    const comment = await createPostComment(server, accessToken, postId, dtos[i]);
+    const comment = await createPostComment(
+      server,
+      accessToken,
+      postId,
+      dtos[i],
+    );
     comments.push(comment);
   }
 

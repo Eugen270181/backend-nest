@@ -18,6 +18,27 @@ const SORT_COLUMNS: Record<string, string> = {
 
 //blog_name берём из blogs (в posts его нет);
 //INNER JOIN с неудалённым блогом: посты мягко удалённого блога не показываем
+//Колонки поста + имя блога + лайки, посчитанные на лету.
+//$1 - id текущего пользователя (или NULL для анонима): my_status = его реакция или 'None'.
+//newest_likes - 3 последних лайка (json), новые первыми.
+const SELECT_POST = `
+  SELECT p.*, b.name AS blog_name,
+    (SELECT COUNT(*) FROM post_likes l
+      WHERE l.post_id = p.id AND l.status = 'Like') AS likes_count,
+    (SELECT COUNT(*) FROM post_likes l
+      WHERE l.post_id = p.id AND l.status = 'Dislike') AS dislikes_count,
+    COALESCE((SELECT l.status FROM post_likes l
+      WHERE l.post_id = p.id AND l.user_id = $1::uuid), 'None') AS my_status,
+    (SELECT COALESCE(json_agg(json_build_object(
+              'addedAt', t.added_at, 'userId', t.user_id, 'login', t.login
+            ) ORDER BY t.added_at DESC), '[]'::json)
+       FROM (SELECT l.updated_at AS added_at, l.user_id, u.login
+               FROM post_likes l
+               JOIN users u ON u.id = l.user_id
+              WHERE l.post_id = p.id AND l.status = 'Like'
+              ORDER BY l.updated_at DESC
+              LIMIT 3) t) AS newest_likes`;
+
 const FROM_POSTS = `
   FROM posts p
   JOIN blogs b ON b.id = p.blog_id AND b.deleted_at IS NULL`;
@@ -31,14 +52,17 @@ export class PostsQueryRepository {
     if (this.coreConfig.IOC_LOG) console.log('PostsQueryRepository created');
   }
 
-  async getById(id: string): Promise<PostViewDto | null> {
+  async getById(
+    id: string,
+    userId: string | null = null,
+  ): Promise<PostViewDto | null> {
     try {
       const rows = await this.dataSource.query(
-        `SELECT p.*, b.name AS blog_name
+        `${SELECT_POST}
          ${FROM_POSTS}
-         WHERE p.id = $1 AND p.deleted_at IS NULL
+         WHERE p.id = $2 AND p.deleted_at IS NULL
          LIMIT 1`,
-        [id],
+        [userId, id],
       );
       return rows.length ? PostViewDto.mapRowToView(rows[0]) : null;
     } catch (e) {
@@ -51,23 +75,26 @@ export class PostsQueryRepository {
   async getBlogPosts(
     query: GetPostsQueryParams,
     blogId: string,
+    userId: string | null = null,
   ): Promise<PaginatedViewDto<PostViewDto[]>> {
-    return this.getPosts(query, blogId);
+    return this.getPosts(query, blogId, userId);
   }
 
   async getAll(
     query: GetPostsQueryParams,
+    userId: string | null = null,
   ): Promise<PaginatedViewDto<PostViewDto[]>> {
-    return this.getPosts(query);
+    return this.getPosts(query, undefined, userId);
   }
 
   //общий метод: blogId передан -> посты одного блога, иначе все посты
   private async getPosts(
     query: GetPostsQueryParams,
     blogId?: string,
+    userId: string | null = null,
   ): Promise<PaginatedViewDto<PostViewDto[]>> {
     const conditions: string[] = ['p.deleted_at IS NULL'];
-    const params: unknown[] = [];
+    const params: unknown[] = [userId]; //$1 всегда userId (нужен для my_status)
 
     if (blogId) {
       params.push(blogId);
@@ -84,7 +111,7 @@ export class PostsQueryRepository {
 
     //COUNT(*) OVER() считает общее количество ПО ФИЛЬТРУ ещё до LIMIT/OFFSET
     const rows = await this.dataSource.query(
-      `SELECT p.*, b.name AS blog_name, COUNT(*) OVER() AS total_count
+      `${SELECT_POST}, COUNT(*) OVER() AS total_count
        ${FROM_POSTS}
        WHERE ${where}
        ORDER BY ${sortColumn} ${sortDirection}, p.created_at, p.id
@@ -98,8 +125,9 @@ export class PostsQueryRepository {
     //страница за пределами данных: строк нет, значит нет и total_count -> считаем отдельно
     if (!rows.length && query.calculateSkip() > 0) {
       const countRows = await this.dataSource.query(
-        `SELECT COUNT(*) AS total_count ${FROM_POSTS} WHERE ${where}`,
-        params.slice(0, filterParamsCount),
+        `SELECT COUNT(*) AS total_count ${FROM_POSTS}
+         WHERE p.deleted_at IS NULL ${blogId ? 'AND p.blog_id = $1' : ''}`,
+        blogId ? [blogId] : [],
       );
       totalCount = Number(countRows[0].total_count);
     }

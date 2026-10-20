@@ -6,7 +6,10 @@ import { PostViewDto } from '../../api/view-dto/post.view-dto';
 import { CoreConfig } from '../../../../../core/core.config';
 
 export class GetAllPostsQuery {
-  constructor(public readonly query: GetPostsQueryParams) {}
+  constructor(
+    public readonly query: GetPostsQueryParams,
+    public readonly userId?: string,
+  ) {}
 }
 
 @QueryHandler(GetAllPostsQuery)
@@ -22,8 +25,8 @@ export class GetAllPostsQueryHandler
 
   async execute({
     query,
+    userId,
   }: GetAllPostsQuery): Promise<PaginatedViewDto<PostViewDto[]>> {
-    //лайки пока заглушка (см. ExtendedLikesInfo), обогащать пост нечем
-    return this.postsQueryRepository.getAll(query);
+    return this.postsQueryRepository.getAll(query, userId ?? null);
   }
 }

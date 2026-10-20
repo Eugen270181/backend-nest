@@ -48,25 +48,31 @@ export class PostsController {
     if (this.coreConfig.IOC_LOG) console.log('Posts Controller created');
   }
 
+  //опциональный токен: нужен для myStatus в лайках постов (аноним -> None)
+  @UseGuards(JwtOptionalAuthGuard)
   @Get(':postId')
-  async getById(@Param('postId') postId: string): Promise<PostViewDto> {
+  async getById(
+    @Param('postId') postId: string,
+    @OptionalUserId() userId?: string,
+  ): Promise<PostViewDto> {
     return this.queryBus.execute<GetPostQuery, PostViewDto>(
-      new GetPostQuery(postId),
+      new GetPostQuery(postId, userId),
     );
   }
 
+  @UseGuards(JwtOptionalAuthGuard)
   @Get()
   async getAll(
     @Query() query: GetPostsQueryParams,
+    @OptionalUserId() userId?: string,
   ): Promise<PaginatedViewDto<PostViewDto[]>> {
     return this.queryBus.execute<
       GetAllPostsQuery,
       PaginatedViewDto<PostViewDto[]>
-    >(new GetAllPostsQuery(query));
+    >(new GetAllPostsQuery(query, userId));
   }
 
   ///////////////////////////////////////////////////////////////////
-  // Комментарии пока живут в Mongo и от поста требуют только его существование
   // ✅ GET комментарии поста — OptionalUserId из middleware
   @UseGuards(JwtOptionalAuthGuard)
   @Get(':postId/comments')
@@ -108,8 +114,6 @@ export class PostsController {
     );
   }
   //////////////////////////////////////////////////////////////////////////////
-  // ЗАГЛУШКА: лайки постов пока не в SQL. Эндпоинт остаётся в API (Swagger),
-  // валидирует тело, проверяет что пост есть (404) и отвечает 204, ничего не сохраняя
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @HttpCode(HttpStatus.NO_CONTENT)

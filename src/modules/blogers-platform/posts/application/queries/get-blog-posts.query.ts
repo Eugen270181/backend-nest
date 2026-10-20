@@ -11,6 +11,7 @@ export class GetBlogPostsQuery {
   constructor(
     public readonly blogId: string,
     public readonly query: GetPostsQueryParams,
+    public readonly userId?: string,
   ) {}
 }
 
@@ -30,12 +31,16 @@ export class GetBlogPostsQueryHandler
   async execute({
     blogId,
     query,
+    userId,
   }: GetBlogPostsQuery): Promise<PaginatedViewDto<PostViewDto[]>> {
     // 0. Проверяем наличие блога по айди (404, если блога нет)
     await this.queryBus.execute<GetBlogDocumentQuery, BlogDocument>(
       new GetBlogDocumentQuery(blogId),
     );
-    // 1. Лайки пока заглушка, поэтому отдаём список из репозитория как есть
-    return this.postsQueryRepository.getBlogPosts(query, blogId);
+    return this.postsQueryRepository.getBlogPosts(
+      query,
+      blogId,
+      userId ?? null,
+    );
   }
 }

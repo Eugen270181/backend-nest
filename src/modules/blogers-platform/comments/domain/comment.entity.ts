@@ -1,46 +1,30 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { HydratedDocument, Model } from 'mongoose';
-import {
-  CommentatorInfo,
-  CommentatorInfoSchema,
-} from './commentator-info.schema';
 import { CreateCommentDomainDto } from './dto/create-comment.domain.dto';
 import { UpdateCommentDomainDto } from './dto/update-comment.domain.dto';
 
-@Schema({ timestamps: true })
+//Доменная сущность без ORM-декораторов: хранение в Postgres (raw SQL),
+//всю работу с таблицей comments делает CommentsRepository.
+//userLogin и лайки в сущности нет: логин берётся JOIN-ом из users, лайки считаются из comment_likes.
 export class Comment {
-  @Prop({ type: String, required: true })
+  //генерируется базой (gen_random_uuid) - до первого INSERT его ещё нет
+  id: string | null = null;
+
+  postId: string;
+  userId: string;
   content: string;
 
-  @Prop({ type: String, required: true })
-  postId: string;
-
-  @Prop({ type: CommentatorInfoSchema, required: true })
-  commentatorInfo: CommentatorInfo;
-
-  @Prop({ type: Number, required: true, default: 0 })
-  likesCount: number;
-
-  @Prop({ type: Number, required: true, default: 0 })
-  dislikesCount: number;
-
-  @Prop({ type: Date, nullable: true, default: null })
-  deletedAt: Date | null;
-
+  //заполняются базой (DEFAULT now()), репозиторий пишет их обратно в объект
   createdAt: Date;
   updatedAt: Date;
+  deletedAt: Date | null = null;
 
-  static createComment(dto: CreateCommentDomainDto): CommentDocument {
-    const commentDocument = new this();
+  static createComment(dto: CreateCommentDomainDto): Comment {
+    const comment = new this();
 
-    commentDocument.content = dto.content;
-    commentDocument.postId = dto.postId;
-    commentDocument.commentatorInfo = {
-      userId: dto.userId,
-      userLogin: dto.userLogin,
-    };
+    comment.postId = dto.postId;
+    comment.userId = dto.userId;
+    comment.content = dto.content;
 
-    return commentDocument as CommentDocument;
+    return comment;
   }
 
   update(dto: UpdateCommentDomainDto) {
@@ -49,35 +33,11 @@ export class Comment {
 
   makeDeleted() {
     if (this.deletedAt !== null) {
-      throw new Error('Blog Entity already deleted');
+      throw new Error('Comment Entity already deleted');
     }
     this.deletedAt = new Date();
   }
-
-  incrementLikes() {
-    this.likesCount++;
-  }
-
-  decrementLikes() {
-    if (this.likesCount > 0) this.likesCount--;
-  }
-
-  incrementDislikes() {
-    this.dislikesCount++;
-  }
-
-  decrementDislikes() {
-    if (this.dislikesCount > 0) this.dislikesCount--;
-  }
 }
 
-export const CommentSchema = SchemaFactory.createForClass(Comment);
-
-//регистрирует методы сущности в схеме
-CommentSchema.loadClass(Comment);
-
-//Типизация документа
-export type CommentDocument = HydratedDocument<Comment>;
-
-//Типизация модели + статические методы
-export type CommentModelType = Model<CommentDocument> & typeof Comment;
+//алиас, чтобы остальной код (usecases/queries) читался как раньше
+export type CommentDocument = Comment;

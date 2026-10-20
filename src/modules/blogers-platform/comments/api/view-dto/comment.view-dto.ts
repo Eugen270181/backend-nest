@@ -1,22 +1,16 @@
 import { LikeStatus } from '../../../../../core/dto/enum/like-status.enum';
-import { CommentatorInfo } from '../../domain/commentator-info.schema';
-import { CommentDocument } from '../../domain/comment.entity';
+
+export class CommentatorInfo {
+  userId: string;
+  userLogin: string;
+}
 
 export class LikesInfo {
   likesCount: number = 0;
   dislikesCount: number = 0;
   myStatus: LikeStatus = LikeStatus.None;
-
-  static createFromComment(comment: CommentDocument): LikesInfo {
-    const likesInfo = new LikesInfo();
-
-    likesInfo.likesCount = comment.likesCount || 0;
-    likesInfo.dislikesCount = comment.dislikesCount || 0;
-
-    return likesInfo;
-  }
 }
-//TODO!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 export class CommentViewDto {
   id: string;
   content: string;
@@ -24,20 +18,20 @@ export class CommentViewDto {
   createdAt: string;
   likesInfo: LikesInfo;
 
-  static mapToView(comment: CommentDocument): CommentViewDto {
+  //маппер принимает строку запроса comments JOIN users (snake_case) с посчитанными лайками
+  static mapRowToView(row: any): CommentViewDto {
     const dto = new CommentViewDto();
 
-    dto.id = comment._id.toString();
-    dto.content = comment.content;
-    dto.commentatorInfo = comment.commentatorInfo;
-    dto.createdAt = comment.createdAt.toISOString();
+    dto.id = row.id;
+    dto.content = row.content;
+    dto.commentatorInfo = { userId: row.user_id, userLogin: row.user_login };
+    dto.createdAt = row.created_at.toISOString();
 
-    dto.likesInfo = LikesInfo.createFromComment(comment);
+    dto.likesInfo = new LikesInfo();
+    dto.likesInfo.likesCount = Number(row.likes_count); //COUNT в pg приходит строкой
+    dto.likesInfo.dislikesCount = Number(row.dislikes_count);
+    dto.likesInfo.myStatus = row.my_status as LikeStatus;
 
     return dto;
-  }
-
-  setMyLikeStatus(status: LikeStatus): void {
-    this.likesInfo.myStatus = status;
   }
 }

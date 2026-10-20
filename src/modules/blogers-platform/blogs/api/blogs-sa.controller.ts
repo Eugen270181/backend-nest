@@ -129,7 +129,7 @@ export class BlogsSaController {
     );
 
     return this.queryBus.execute<GetPostQuery, PostViewDto>(
-      new GetPostQuery(postId, true),
+      new GetPostQuery(postId, undefined, true),
     );
   }
 

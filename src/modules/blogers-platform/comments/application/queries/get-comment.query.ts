@@ -3,7 +3,6 @@ import { DomainException } from '../../../../../core/exceptions/domain-exception
 import { DomainExceptionCode } from '../../../../../core/exceptions/domain-exception-codes';
 import { CommentsQueryRepository } from '../../infrastructure/query/comments.query-repository';
 import { CommentViewDto } from '../../api/view-dto/comment.view-dto';
-import { CommentEnrichmentService } from '../services/comment-enrichment.service';
 import { CoreConfig } from '../../../../../core/core.config';
 
 export class GetCommentQuery {
@@ -21,14 +20,15 @@ export class GetCommentQueryHandler
   constructor(
     private coreConfig: CoreConfig,
     private commentsQueryRepository: CommentsQueryRepository,
-    private commentsEnrichmentService: CommentEnrichmentService,
   ) {
-    if (this.coreConfig.IOC_LOG) console.log('GetPostQueryHandler created');
+    if (this.coreConfig.IOC_LOG) console.log('GetCommentQueryHandler created');
   }
 
   async execute({ commentId, userId, justCreated }: GetCommentQuery) {
-    const commentViewDto =
-      await this.commentsQueryRepository.getById(commentId);
+    const commentViewDto = await this.commentsQueryRepository.getById(
+      commentId,
+      userId ?? null,
+    );
 
     if (!commentViewDto) {
       if (!justCreated) {
@@ -43,6 +43,6 @@ export class GetCommentQueryHandler
       }
     }
 
-    return this.commentsEnrichmentService.enrich(commentViewDto, userId);
+    return commentViewDto;
   }
 }

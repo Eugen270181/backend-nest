@@ -27,7 +27,7 @@ export class DeleteCommentUseCase
       CommentDocument
     >(new GetCommentDocumentQuery(commentId)); //404
 
-    if (commentDocument.commentatorInfo.userId !== userId) {
+    if (commentDocument.userId !== userId) {
       //403
       throw new DomainException({
         code: DomainExceptionCode.Forbidden,
