@@ -15,13 +15,8 @@ export class SendSmsWhenUserRegisteredEventHandler
       console.log('SendSmsWhenUserRegisteredEventHandler created');
   }
 
-  handle(event: SendUserEmailCodeEvent) {
-    // Ошибки в EventHandlers не могут быть пойманы фильтрами исключений:
-    // необходимо обрабатывать вручную
-    try {
-      console.log('send sms with code', event.confirmationCode);
-    } catch (e) {
-      console.error('send sms', e);
-    }
+  handle(_event: SendUserEmailCodeEvent) {
+    // SMS transport is not configured in this project.
+    // Do not log one-time codes here or in any other event handler.
   }
 }

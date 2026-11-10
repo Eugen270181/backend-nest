@@ -7,12 +7,16 @@ import { configureTrustProxy } from './configure-trust-proxy';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
 
-export function appSetup(app: INestApplication, isSwaggerEnabled: boolean) {
+export function appSetup(
+  app: INestApplication,
+  isSwaggerEnabled: boolean,
+  trustProxyHops = 0,
+) {
   (app as NestExpressApplication).useStaticAssets(
     join(process.cwd(), 'public'),
   );
 
-  configureTrustProxy(app);
+  configureTrustProxy(app, trustProxyHops);
 
   app.use(cookieParser());
 

@@ -168,6 +168,7 @@ const commandHandlers = [
     BasicStrategy,
     JwtStrategy,
     JwtModule,
+    ThrottlerGuard,
   ],
 })
 export class UserAccountsModule {}

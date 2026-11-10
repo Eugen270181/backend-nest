@@ -1,9 +1,10 @@
-import { Connection } from 'mongoose';
 import { DataSource } from 'typeorm';
 import { App } from 'supertest/types';
 import { UserViewDto } from '../../src/modules/user-accounts/api/view-dto/user.view-dto';
 import { LoginDto, passTestsDefault, TokensDto } from '../testingDtosCreator';
-import { getConnectionToken } from '@nestjs/mongoose';
+// MongoDB e2e setup retained as disabled reference:
+// import { Connection } from 'mongoose';
+// import { getConnectionToken } from '@nestjs/mongoose';
 import { dropDbCollections } from '../dropDbCollections';
 import {
   getArrTokensWithUserLogins,
@@ -21,7 +22,6 @@ import { INestApplication } from '@nestjs/common';
 
 describe('<<SECURITY>> ENDPOINTS TESTING!!!(e2e)', () => {
   let app: INestApplication;
-  let connection: Connection;
   let dataSource: DataSource;
   let server: App;
   let userAccountsConfig: UserAccountsConfig;
@@ -36,14 +36,15 @@ describe('<<SECURITY>> ENDPOINTS TESTING!!!(e2e)', () => {
   beforeAll(async () => {
     app = await initTestApp(false);
     server = app.getHttpServer();
-    connection = app.get<Connection>(getConnectionToken());
+    // connection = app.get<Connection>(getConnectionToken()); // MongoDB connection disabled.
     dataSource = app.get(DataSource);
     userAccountsConfig = app.get<UserAccountsConfig>(UserAccountsConfig);
     creds = {
       login: userAccountsConfig.saLogin,
       password: userAccountsConfig.saPass,
     };
-    await dropDbCollections(connection, dataSource);
+    await dropDbCollections(dataSource);
+    // await dropDbCollections(connection, dataSource); // Mongo collections cleanup disabled.
   });
 
   afterAll(async () => {

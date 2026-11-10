@@ -51,7 +51,7 @@ export class UsersRepository {
     params: unknown[],
   ): Promise<UserDocument | null> {
     const rows = await this.dataSource.query(
-      `SELECT * FROM users WHERE ${where} LIMIT 1`,
+      `SELECT * FROM users WHERE ${where} AND deleted_at IS NULL LIMIT 1`,
       params,
     );
     return rows.length ? this.mapToUser(rows[0]) : null;
@@ -107,9 +107,45 @@ export class UsersRepository {
     }
   }
 
+  /**
+   * Password reset is one atomic security operation:
+   * update the hash, consume the recovery code and revoke every device session.
+   * Access tokens are session-bound, so deleting these rows invalidates them too.
+   */
+  async updatePasswordAndRevokeSessions(
+    user: UserDocument,
+    recoveryCode: string,
+  ): Promise<boolean> {
+    if (!user.id) {
+      throw new Error('Cannot reset password for a user without an id.');
+    }
+
+    return this.dataSource.transaction(async (manager) => {
+      const [updatedUsers] = await manager.query(
+        `UPDATE users
+         SET password_hash = $2,
+             pass_confirmation_code = NULL,
+             pass_expiration_date = NULL,
+             updated_at = now()
+         WHERE id = $1
+           AND deleted_at IS NULL
+           AND pass_confirmation_code = $3
+           AND pass_expiration_date > now()
+         RETURNING id`,
+        [user.id, user.passwordHash, recoveryCode],
+      );
+
+      // A concurrent request may already have consumed the code; report failure without changing sessions.
+      if (!updatedUsers.length) return false;
+
+      await manager.query('DELETE FROM sessions WHERE user_id = $1', [user.id]);
+      return true;
+    });
+  }
+
   async findById(id: string): Promise<UserDocument | null> {
     try {
-      return await this.findOne('id = $1 AND deleted_at IS NULL', [id]);
+      return await this.findOne('id = $1', [id]);
     } catch (e) {
       //22P02 = invalid_text_representation (невалидный uuid) — аналог CastError в Mongo
       if ((e as { code?: string })?.code === '22P02') return null;

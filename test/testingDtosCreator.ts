@@ -1,4 +1,5 @@
-import { Types } from 'mongoose';
+// import { Types } from 'mongoose'; // Legacy ObjectId test fixture, intentionally disabled.
+import { randomUUID } from 'crypto';
 
 export enum LikeStatus {
   None = 'None',
@@ -72,7 +73,8 @@ export const createString = (length: number) => {
 export const passTestsDefault = '123456789';
 export const loginTestsDefault = 'test_login';
 export const emailTestsDefault = 'test_@gmail.com';
-export const validObjectIdString = new Types.ObjectId().toString();
+export const validUuidString = randomUUID();
+// export const validObjectIdString = new Types.ObjectId().toString(); // Legacy Mongo fixture.
 /////////////////////////////////////////////
 /////////////////////////////////////////////
 export const testingDtosCreator = {

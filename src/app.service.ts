@@ -2,7 +2,9 @@ import {
   BadRequestException,
   Inject,
   Injectable,
+  Logger,
   Optional,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import { CoreConfig } from './core/core.config';
 import { GEMINI_AI_CLIENT } from './core/core.module';
@@ -10,6 +12,8 @@ import { GoogleGenAI } from '@google/genai';
 
 @Injectable()
 export class AppService {
+  private readonly logger = new Logger(AppService.name);
+
   constructor(
     private readonly coreConfig: CoreConfig,
     // @Optional() защищает, если провайдер вернул null (например в тестах без env)
@@ -21,6 +25,16 @@ export class AppService {
   }
 
   async generateAiContent(prompt?: string): Promise<string> {
+    // Bound anonymous input size before forwarding data to a paid external API.
+    if (
+      prompt !== undefined &&
+      (typeof prompt !== 'string' || prompt.length > 4000)
+    ) {
+      throw new BadRequestException(
+        'Prompt must be a string of at most 4000 characters.',
+      );
+    }
+
     // 1. Если prompt не передан в query-параметрах
     if (!prompt) {
       return 'Hello World!';
@@ -29,7 +43,7 @@ export class AppService {
     // 2. Если в тестовой среде или конфиге ключ отсутствует
     if (!this.ai) {
       throw new BadRequestException(
-        'Gemini AI features are disabled. Please configure GEMINI_API_KEY1 variable.',
+        'Gemini AI features are disabled. Please configure GEMINI_API_KEY_1.',
       );
     }
 
@@ -46,9 +60,13 @@ export class AppService {
 
       return response.text ?? 'No response text received from Gemini.';
     } catch (error) {
-      console.error('Gemini API Error:', error);
-      throw new BadRequestException(
-        `Failed to generate content from AI: ${error.message}`,
+      // Keep provider details on the server; do not echo internal errors to API clients.
+      this.logger.error(
+        'Gemini API request failed',
+        error instanceof Error ? error.stack : undefined,
+      );
+      throw new ServiceUnavailableException(
+        'AI service is temporarily unavailable.',
       );
     }
   }

@@ -11,15 +11,18 @@ async function bootstrap() {
 
   const coreConfig = app.get<CoreConfig>(CoreConfig);
 
-  appSetup(app, coreConfig.isSwaggerEnabled); //глобальные настройки приложения
+  appSetup(
+    app,
+    coreConfig.isSwaggerEnabled,
+    coreConfig.trustProxyHops,
+  ); // глобальные настройки приложения
 
   const port = coreConfig.port;
-  const aiKey = coreConfig.geminiApiKey1;
 
   await app.listen(port, () => {
     console.log('App starting listen port: ', port);
     console.log('NODE_ENV: ', coreConfig.node_env);
-    console.log('App starting with AIKEY: ', aiKey);
+    // Never print API keys or other secrets to process logs.
     console.log('includeTestingModule: ', coreConfig.includeTestingModule);
   });
 }

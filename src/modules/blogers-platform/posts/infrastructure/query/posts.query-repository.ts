@@ -23,21 +23,21 @@ const SORT_COLUMNS: Record<string, string> = {
 //newest_likes - 3 последних лайка (json), новые первыми.
 const SELECT_POST = `
   SELECT p.*, b.name AS blog_name,
-    (SELECT COUNT(*) FROM post_likes l
-      WHERE l.post_id = p.id AND l.status = 'Like') AS likes_count,
-    (SELECT COUNT(*) FROM post_likes l
-      WHERE l.post_id = p.id AND l.status = 'Dislike') AS dislikes_count,
-    COALESCE((SELECT l.status FROM post_likes l
-      WHERE l.post_id = p.id AND l.user_id = $1::uuid), 'None') AS my_status,
-    (SELECT COALESCE(json_agg(json_build_object(
-              'addedAt', t.added_at, 'userId', t.user_id, 'login', t.login
-            ) ORDER BY t.added_at DESC), '[]'::json)
-       FROM (SELECT l.updated_at AS added_at, l.user_id, u.login
-               FROM post_likes l
-               JOIN users u ON u.id = l.user_id
-              WHERE l.post_id = p.id AND l.status = 'Like'
-              ORDER BY l.updated_at DESC
-              LIMIT 3) t) AS newest_likes`;
+         (SELECT COUNT(*) FROM post_likes l
+          WHERE l.post_id = p.id AND l.status = 'Like') AS likes_count,
+         (SELECT COUNT(*) FROM post_likes l
+          WHERE l.post_id = p.id AND l.status = 'Dislike') AS dislikes_count,
+         COALESCE((SELECT l.status FROM post_likes l
+                   WHERE l.post_id = p.id AND l.user_id = $1::uuid), 'None') AS my_status,
+         (SELECT COALESCE(json_agg(json_build_object(
+           'addedAt', t.added_at, 'userId', t.user_id, 'login', t.login
+                                   ) ORDER BY t.added_at DESC), '[]'::json)
+          FROM (SELECT l.created_at AS added_at, l.user_id, u.login
+                FROM post_likes l
+                       JOIN users u ON u.id = l.user_id
+                WHERE l.post_id = p.id AND l.status = 'Like'
+                ORDER BY l.created_at DESC
+                  LIMIT 3) t) AS newest_likes`;
 
 const FROM_POSTS = `
   FROM posts p

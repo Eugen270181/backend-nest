@@ -4,6 +4,8 @@
 export class UserContextDto {
   userId: string;
   deviceId?: string;
+  // Present for refresh-authenticated requests; used for atomic token rotation.
+  tokenVersion?: string;
 }
 
 export type Nullable<T> = { [P in keyof T]: T[P] | null };

@@ -10,11 +10,12 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { Response, Request } from 'express';
-import { SkipThrottle } from '@nestjs/throttler';
+import { ThrottlerGuard } from '@nestjs/throttler';
 import { LocalAuthGuard } from '../guards/local/local-auth.guard';
 import { ApiBearerAuth, ApiBody } from '@nestjs/swagger';
 import {
   DeviceId,
+  TokenVersion,
   UserId,
 } from '../guards/decorators/param/extract-user-from-request.decorator';
 import { JwtAuthGuard } from '../guards/bearer/jwt-auth.guard';
@@ -38,10 +39,7 @@ import { RefreshTokensCommand } from '../application/usecases/refresh-tokens.use
 import { LogoutUserCommand } from '../application/usecases/logout-user.usecase';
 import { CoreConfig } from '../../../core/core.config';
 
-//IP-restriction (rate limit 5 запросов / 10 сек) ОТКЛЮЧЁН по условию задания.
-//Чтобы включить обратно - раскомментировать строку ниже (ThrottlerModule настроен в UserAccountsModule)
-//@UseGuards(ThrottlerGuard) // + import { ThrottlerGuard } from '@nestjs/throttler'
-//@Throttle({ default: { limit: 5, ttl: 10000 } })
+// Apply the configured per-route rate limit to registration, login and recovery operations.
 @Controller('auth')
 export class AuthController {
   constructor(
@@ -54,6 +52,7 @@ export class AuthController {
 
   @HttpCode(HttpStatus.NO_CONTENT)
   @Post('registration')
+  @UseGuards(ThrottlerGuard)
   registration(@Body() body: CreateUserInputDto): Promise<void> {
     return this.commandBus.execute<RegisterUserCommand, void>(
       new RegisterUserCommand(body),
@@ -62,6 +61,7 @@ export class AuthController {
 
   @HttpCode(HttpStatus.NO_CONTENT)
   @Post('registration-email-resending')
+  @UseGuards(ThrottlerGuard)
   regEmailResending(@Body() body: EmailInputDto): Promise<void> {
     return this.commandBus.execute<ResendRegistrationCodeUserCommand>(
       new ResendRegistrationCodeUserCommand(body),
@@ -70,6 +70,7 @@ export class AuthController {
 
   @HttpCode(HttpStatus.NO_CONTENT)
   @Post('registration-confirmation')
+  @UseGuards(ThrottlerGuard)
   regConfirm(@Body() body: ConfirmRegInputDto): Promise<void> {
     return this.commandBus.execute<ConfirmRegistrationCodeUserCommand>(
       new ConfirmRegistrationCodeUserCommand(body),
@@ -78,7 +79,7 @@ export class AuthController {
   //////////////////////////LOGIN_REGRESH_ABOUTME_LOGOUT//////////////
   @HttpCode(HttpStatus.OK)
   @Post('login')
-  @UseGuards(LocalAuthGuard)
+  @UseGuards(ThrottlerGuard, LocalAuthGuard)
   //swagger doc
   @ApiBody({
     schema: {
@@ -95,9 +96,9 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
     @Req() req: Request,
   ): Promise<TokenViewDto> {
-    const ip = ((req.headers['x-forwarded-for'] as string)
-      ?.split(',')[0]
-      ?.trim() || req.ip) as string;
+    // Express resolves req.ip using only the explicitly trusted proxy hops.
+    // Do not trust a client-supplied X-Forwarded-For header directly.
+    const ip = req.ip || 'unknown';
     const title =
       (req.headers['user-agent'] as string)?.slice(0, 100) || 'Unknown';
 
@@ -106,15 +107,15 @@ export class AuthController {
       TokensDto
     >(new LoginUserCommand(userId, ip, title));
 
-    res.cookie('refreshToken', tokensDto.refreshToken, {
-      httpOnly: true,
-      secure: true,
-    });
+    res.cookie(
+      'refreshToken',
+      tokensDto.refreshToken,
+      this.refreshCookieOptions(),
+    );
 
     return { accessToken: tokensDto.accessToken };
   }
 
-  @SkipThrottle()
   @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)
   @UseGuards(JwtRefreshAuthGuard)
@@ -122,33 +123,38 @@ export class AuthController {
   async refreshToken /*@Request() req: any*/(
     @UserId() userId: string,
     @DeviceId() deviceId: string,
+    @TokenVersion() tokenVersion: string,
     @Res({ passthrough: true }) res: Response,
   ) {
     const tokensDto = await this.commandBus.execute<
       RefreshTokensCommand,
       TokensDto
-    >(new RefreshTokensCommand(deviceId, userId));
+    >(new RefreshTokensCommand(deviceId, userId, tokenVersion));
 
-    res.cookie('refreshToken', tokensDto.refreshToken, {
-      httpOnly: true,
-      secure: true,
-    });
+    res.cookie(
+      'refreshToken',
+      tokensDto.refreshToken,
+      this.refreshCookieOptions(),
+    );
 
     return { accessToken: tokensDto.accessToken };
   } // @Res({ passthrough: true }) res: Response, // @UserId() userId: string,
 
-  @SkipThrottle()
   @ApiBearerAuth()
   @HttpCode(HttpStatus.NO_CONTENT)
   @UseGuards(JwtRefreshAuthGuard)
   @Post('logout')
-  async logout(@UserId() userId: string, @DeviceId() deviceId: string) {
+  async logout(
+    @UserId() userId: string,
+    @DeviceId() deviceId: string,
+    @Res({ passthrough: true }) res: Response,
+  ) {
     await this.commandBus.execute<LogoutUserCommand, boolean>(
       new LogoutUserCommand(deviceId, userId),
     );
+    res.clearCookie('refreshToken', this.refreshCookieOptions());
   }
 
-  @SkipThrottle()
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @Get('me')
@@ -158,6 +164,7 @@ export class AuthController {
   //////////////////////////USER_PASSWORD_ACTION/////////////////////
   @HttpCode(HttpStatus.NO_CONTENT)
   @Post('password-recovery')
+  @UseGuards(ThrottlerGuard)
   passRecovery(@Body() body: EmailInputDto): Promise<void> {
     return this.commandBus.execute<RecoveryPasswordUserCommand, void>(
       new RecoveryPasswordUserCommand(body),
@@ -166,9 +173,25 @@ export class AuthController {
 
   @HttpCode(HttpStatus.NO_CONTENT)
   @Post('new-password')
-  passConfirm(@Body() body: ConfirmPassInputDto): Promise<void> {
-    return this.commandBus.execute<ConfirmPasswordUserCommand, void>(
+  @UseGuards(ThrottlerGuard)
+  async passConfirm(
+    @Body() body: ConfirmPassInputDto,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<void> {
+    await this.commandBus.execute<ConfirmPasswordUserCommand, void>(
       new ConfirmPasswordUserCommand(body),
     );
+    // Clear any stale refresh cookie on the device initiating password recovery.
+    res.clearCookie('refreshToken', this.refreshCookieOptions());
+  }
+
+  private refreshCookieOptions() {
+    return {
+      httpOnly: true,
+      // HTTPS is mandatory in staging/production; keep local HTTP and e2e tests usable.
+      secure: ['staging', 'production'].includes(this.coreConfig.node_env),
+      sameSite: 'lax' as const,
+      path: '/',
+    };
   }
 }

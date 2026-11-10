@@ -38,7 +38,9 @@ export class GenerateTokensUseCase
     const tokenVersion = randomUUID(); // уникальна для этой пары токенов
 
     const [accessToken, refreshToken] = await Promise.all([
-      this.accessTokenService.signAsync({ userId }),
+      // Bind access tokens to the same device session and token version as refresh tokens.
+      // Removing/revoking a session will then invalidate both token types immediately.
+      this.accessTokenService.signAsync({ userId, deviceId, ver: tokenVersion }),
       this.refreshTokenService.signAsync({
         userId,
         deviceId,

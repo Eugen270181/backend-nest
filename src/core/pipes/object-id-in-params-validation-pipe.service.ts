@@ -1,26 +1,25 @@
-import { isValidObjectId } from 'mongoose';
-import { isUUID } from 'class-validator';
+// import { isValidObjectId } from 'mongoose'; // Legacy ObjectId support, intentionally disabled.
 import { DomainException } from '../exceptions/domain-exceptions';
-import { ArgumentMetadata, Injectable, PipeTransform } from '@nestjs/common';
+import {
+  ArgumentMetadata,
+  Injectable,
+  ParseUUIDPipe,
+  PipeTransform,
+} from '@nestjs/common';
 import { DomainExceptionCode } from '../exceptions/domain-exception-codes';
 
-// Вынесем конфигурацию по умолчанию в отдельный объект
+// Legacy pipe name is retained to make a future MongoDB rollback easier.
+// PostgreSQL UUID validation is the only active ID validation.
 const DEFAULT_CONFIG = {
-  // Все сущности уже в Postgres (UUID), но на период миграции принимаем
-  // и ObjectId-подобную строку: для репозитория это просто «не найдено» (22P02 -> null),
-  // т.е. 404, а не 400. Мусор вроде '1' по-прежнему даёт 400.
-  objectIdOrUuidParams: ['id', 'userId', 'blogId', 'postId', 'commentId'],
-  // ObjectId-параметров в приложении больше нет (Mongo не используется для данных)
-  objectIdParams: [] as string[],
-  // deviceId генерируется приложением как uuid v4 и в Mongo-времена
-  // не был ObjectId, поэтому здесь строго UUID
-  uuidParams: ['deviceId'],
+  // objectIdOrUuidParams: ['id', 'userId'], // Legacy hybrid Mongo/PostgreSQL validation.
+  // objectIdParams: ['blogId', 'postId', 'commentId'], // Legacy Mongo ObjectId validation.
+  uuidParams: ['id', 'userId', 'blogId', 'postId', 'commentId', 'deviceId'],
   numericParams: ['version', 'page', 'limit'],
 };
 
 interface ParamValidationConfig {
-  objectIdOrUuidParams?: string[];
-  objectIdParams?: string[];
+  // objectIdOrUuidParams?: string[];
+  // objectIdParams?: string[];
   uuidParams?: string[];
   numericParams?: string[];
 }
@@ -31,87 +30,55 @@ export class ObjectIdInParamsValidationPipe implements PipeTransform {
 
   constructor(config?: ParamValidationConfig) {
     this.config = {
-      objectIdOrUuidParams:
-        config?.objectIdOrUuidParams || DEFAULT_CONFIG.objectIdOrUuidParams,
-      objectIdParams: config?.objectIdParams || DEFAULT_CONFIG.objectIdParams,
-      uuidParams: config?.uuidParams || DEFAULT_CONFIG.uuidParams,
-      numericParams: config?.numericParams || DEFAULT_CONFIG.numericParams,
+      uuidParams: config?.uuidParams ?? DEFAULT_CONFIG.uuidParams,
+      numericParams: config?.numericParams ?? DEFAULT_CONFIG.numericParams,
     };
   }
 
-  transform(value: string, metadata: ArgumentMetadata): any {
-    // Проверяем только параметры
-    if (metadata.type !== 'param') return value;
-    if (!metadata.data) return value;
+  transform(
+    value: string,
+    metadata: ArgumentMetadata,
+  ): string | Promise<string> {
+    if (metadata.type !== 'param' || !metadata.data) return value;
 
     const paramName = metadata.data;
 
-    //console.log(paramName);
+    // Legacy MongoDB validation, intentionally disabled:
+    // if (this.config.objectIdOrUuidParams?.includes(paramName)) {
+    //   if (!isValidObjectId(value) && !isUUID(value)) {
+    //     throw new DomainException({ ... });
+    //   }
+    // }
+    // if (this.config.objectIdParams?.includes(paramName) && !isValidObjectId(value)) {
+    //   throw new DomainException({ ... });
+    // }
 
-    // Проверка ObjectId-или-UUID параметров (гибридный период Mongo + Postgres)
-    if (this.isObjectIdOrUuidParam(paramName)) {
-      if (!isValidObjectId(value) && !isUUID(value)) {
-        const message = `Invalid id for parameter '${paramName}': ${value}`;
-        throw new DomainException({
-          code: DomainExceptionCode.BadRequest,
-          message,
-          errorsMessages: [{ message, field: `${paramName}` }],
-        });
-      }
+    if (this.config.uuidParams?.includes(paramName)) {
+      return new ParseUUIDPipe({
+        version: '4',
+        exceptionFactory: () => {
+          const message = `Invalid UUID for parameter '${paramName}': ${value}`;
+          return new DomainException({
+            code: DomainExceptionCode.BadRequest,
+            message,
+            errorsMessages: [{ message, field: paramName }],
+          });
+        },
+      }).transform(value, metadata);
     }
 
-    // Проверка ObjectId параметров
-    if (this.isObjectIdParam(paramName)) {
-      if (!isValidObjectId(value)) {
-        const message = `Invalid ObjectId for parameter '${paramName}': ${value}`;
-        throw new DomainException({
-          code: DomainExceptionCode.BadRequest,
-          message,
-          errorsMessages: [{ message, field: `${paramName}` }],
-        });
-      }
-    }
-
-    // Проверка UUID параметров
-    if (this.isUuidParam(paramName)) {
-      if (!isUUID(value)) {
-        const message = `Invalid UUID for parameter '${paramName}': ${value}`;
-        throw new DomainException({
-          code: DomainExceptionCode.BadRequest,
-          message,
-          errorsMessages: [{ message, field: `${paramName}` }],
-        });
-      }
-    }
-
-    // Проверка числовых параметров
-    if (this.isNumericParam(paramName)) {
-      if (isNaN(Number(value)) || !Number.isInteger(Number(value))) {
-        const message = `Parameter '${paramName}' must be an integer: ${value}`;
-        throw new DomainException({
-          code: DomainExceptionCode.BadRequest,
-          message,
-          errorsMessages: [{ message, field: `${paramName}` }],
-        });
-      }
+    if (
+      this.config.numericParams?.includes(paramName) &&
+      (isNaN(Number(value)) || !Number.isInteger(Number(value)))
+    ) {
+      const message = `Parameter '${paramName}' must be an integer: ${value}`;
+      throw new DomainException({
+        code: DomainExceptionCode.BadRequest,
+        message,
+        errorsMessages: [{ message, field: paramName }],
+      });
     }
 
     return value;
-  }
-
-  private isObjectIdOrUuidParam(paramName: string): boolean {
-    return this.config.objectIdOrUuidParams?.includes(paramName) ?? false;
-  }
-
-  private isObjectIdParam(paramName: string): boolean {
-    return this.config.objectIdParams?.includes(paramName) ?? false;
-  }
-
-  private isUuidParam(paramName: string): boolean {
-    return this.config.uuidParams?.includes(paramName) ?? false;
-  }
-
-  private isNumericParam(paramName: string): boolean {
-    return this.config.numericParams?.includes(paramName) ?? false;
   }
 }

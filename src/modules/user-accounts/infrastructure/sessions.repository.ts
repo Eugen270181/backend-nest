@@ -53,6 +53,41 @@ export class SessionsRepository {
     );
   }
 
+  /**
+   * Atomically rotate a refresh token only if the exact old version is still active.
+   * A stale/concurrent refresh cannot overwrite a newer version or resurrect a deleted session.
+   */
+  async rotateSessionToken(
+    deviceId: string,
+    userId: string,
+    expectedTokenVersion: string,
+    newTokenVersion: string,
+    lastActiveDate: Date,
+    expDate: Date,
+  ): Promise<boolean> {
+    const [rows] = await this.dataSource.query(
+      `UPDATE sessions
+       SET token_version = $4,
+           last_active_date = $5,
+           exp_date = $6
+       WHERE device_id = $1
+         AND user_id = $2
+         AND token_version = $3
+         AND exp_date > now()
+       RETURNING device_id`,
+      [
+        deviceId,
+        userId,
+        expectedTokenVersion,
+        newTokenVersion,
+        lastActiveDate,
+        expDate,
+      ],
+    );
+
+    return rows.length > 0;
+  }
+
   async findSessionById(deviceId: string): Promise<SessionDocument | null> {
     try {
       const rows = await this.dataSource.query(
@@ -74,7 +109,7 @@ export class SessionsRepository {
   ): Promise<boolean> {
     //RETURNING device_id — чтобы узнать количество удалённых строк
     //(замена прежнего result.deletedCount)
-    const rows = await this.dataSource.query(
+    const [rows] = await this.dataSource.query(
       `DELETE FROM sessions
        WHERE device_id = $1 AND user_id = $2
        RETURNING device_id`,
@@ -87,7 +122,7 @@ export class SessionsRepository {
     deviceId: string,
     userId: string,
   ): Promise<boolean> {
-    const rows = await this.dataSource.query(
+    const [rows] = await this.dataSource.query(
       `DELETE FROM sessions
        WHERE user_id = $2 AND device_id <> $1
        RETURNING device_id`,

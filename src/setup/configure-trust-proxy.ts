@@ -1,6 +1,9 @@
 import { INestApplication, Logger } from '@nestjs/common';
 
-export function configureTrustProxy(app: INestApplication) {
+export function configureTrustProxy(
+  app: INestApplication,
+  trustProxyHops = 0,
+) {
   // Получаем httpAdapter через метод .getHttpAdapter() объекта app
   const httpAdapter = app.getHttpAdapter();
 
@@ -10,8 +13,12 @@ export function configureTrustProxy(app: INestApplication) {
   // Проверяем тип движка динамически по наличию методов
   if (instance && typeof instance.set === 'function') {
     // 1. Если под капотом Express
-    instance.set('trust proxy', true);
-    Logger.log('Proxy trust enabled for Express engine', 'ProxyConfig');
+    // Trust only the number of proxy hops explicitly configured by the operator.
+    instance.set('trust proxy', trustProxyHops);
+    Logger.log(
+      `Express trust proxy hops: ${trustProxyHops}`,
+      'ProxyConfig',
+    );
   } else if (
     instance &&
     instance.constructor &&
@@ -19,9 +26,12 @@ export function configureTrustProxy(app: INestApplication) {
   ) {
     // 2. Если под капотом Fastify
     if (instance.config) {
-      instance.config.trustProxy = true;
+      instance.config.trustProxy = trustProxyHops;
     }
-    Logger.log('Proxy trust enabled for Fastify engine', 'ProxyConfig');
+    Logger.log(
+      `Fastify trust proxy setting: ${trustProxyHops}`,
+      'ProxyConfig',
+    );
   } else {
     // На случай использования любого другого кастомного адаптера
     Logger.warn(

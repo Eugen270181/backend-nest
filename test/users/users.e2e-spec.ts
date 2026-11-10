@@ -1,9 +1,10 @@
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { UserViewDto } from '../../src/modules/user-accounts/api/view-dto/user.view-dto';
-import { Connection } from 'mongoose';
 import { DataSource } from 'typeorm';
-import { getConnectionToken } from '@nestjs/mongoose';
+// MongoDB e2e setup retained as disabled reference:
+// import { Connection } from 'mongoose';
+// import { getConnectionToken } from '@nestjs/mongoose';
 import { dropDbCollections } from '../dropDbCollections';
 import {
   AuthCredentials,
@@ -18,7 +19,7 @@ import { ErrorResponseBody } from '../../src/core/exceptions/error-responce-body
 import {
   testingDtosCreator,
   UserDto,
-  validObjectIdString,
+  validUuidString,
 } from '../testingDtosCreator';
 import { UserAccountsConfig } from '../../src/modules/user-accounts/user-accounts.config';
 import { INestApplication } from '@nestjs/common';
@@ -26,7 +27,6 @@ import { initTestApp } from '../init-test-app';
 
 describe('<<USERS>> ENDPOINTS TESTING!!!(e2e)', () => {
   let app: INestApplication;
-  let connection: Connection;
   let dataSource: DataSource;
   let server: App;
   let userAccountsConfig: UserAccountsConfig;
@@ -39,18 +39,19 @@ describe('<<USERS>> ENDPOINTS TESTING!!!(e2e)', () => {
   beforeAll(async () => {
     app = await initTestApp(false);
     server = app.getHttpServer();
-    connection = app.get<Connection>(getConnectionToken());
+    // connection = app.get<Connection>(getConnectionToken()); // MongoDB connection disabled.
     dataSource = app.get(DataSource);
     userAccountsConfig = app.get<UserAccountsConfig>(UserAccountsConfig);
     creds = {
       login: userAccountsConfig.saLogin,
       password: userAccountsConfig.saPass,
     };
-    await dropDbCollections(connection, dataSource);
+    await dropDbCollections(dataSource);
+    // await dropDbCollections(connection, dataSource); // Mongo collections cleanup disabled.
   });
 
-  afterAll((done) => {
-    done();
+  afterAll(async () => {
+    await app.close();
   });
 
   describe(`POST -> "/sa/users":`, () => {
@@ -131,7 +132,7 @@ describe('<<USERS>> ENDPOINTS TESTING!!!(e2e)', () => {
   describe(`DELETE -> "/users":`, () => {
     it('STATUS 401: shouldn`t del user without basic admin creds', async () => {
       await request(server)
-        .delete(`${fullPathTo.users}/${validObjectIdString}`)
+        .delete(`${fullPathTo.users}/${validUuidString}`)
         .expect(401);
 
       const userCounter = await getUsersQty(server, creds);
@@ -140,7 +141,7 @@ describe('<<USERS>> ENDPOINTS TESTING!!!(e2e)', () => {
 
     it('STATUS 404: shouldn`t delete user by id if specified user is not exists', async () => {
       await request(server)
-        .delete(`${fullPathTo.users}/${validObjectIdString}`)
+        .delete(`${fullPathTo.users}/${validUuidString}`)
         .auth(creds.login, creds.password)
         .expect(404);
 

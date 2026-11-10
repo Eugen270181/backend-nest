@@ -1,14 +1,15 @@
 import request from 'supertest';
 import { App } from 'supertest/types';
-import { Connection } from 'mongoose';
 import { DataSource } from 'typeorm';
-import { getConnectionToken } from '@nestjs/mongoose';
+// MongoDB e2e setup retained as disabled reference:
+// import { Connection } from 'mongoose';
+// import { getConnectionToken } from '@nestjs/mongoose';
 import { dropDbCollections } from '../dropDbCollections';
 import {
   BlogDto,
   createString,
   testingDtosCreator,
-  validObjectIdString,
+  validUuidString,
 } from '../testingDtosCreator';
 import { BlogViewDto } from '../../src/modules/blogers-platform/blogs/api/view-dto/blog.view-dto';
 import {
@@ -28,7 +29,6 @@ import { INestApplication } from '@nestjs/common';
 
 describe('<<BLOGS>> ENDPOINTS TESTING!!!(e2e)', () => {
   let app: INestApplication;
-  let connection: Connection;
   let dataSource: DataSource;
   let server: App;
   let userAccountsConfig: UserAccountsConfig;
@@ -37,18 +37,19 @@ describe('<<BLOGS>> ENDPOINTS TESTING!!!(e2e)', () => {
   beforeAll(async () => {
     app = await initTestApp(false);
     server = app.getHttpServer();
-    connection = app.get<Connection>(getConnectionToken());
+    // connection = app.get<Connection>(getConnectionToken()); // MongoDB connection disabled.
     dataSource = app.get(DataSource);
     userAccountsConfig = app.get<UserAccountsConfig>(UserAccountsConfig);
     creds = {
       login: userAccountsConfig.saLogin,
       password: userAccountsConfig.saPass,
     };
-    await dropDbCollections(connection, dataSource);
+    await dropDbCollections(dataSource);
+    // await dropDbCollections(connection, dataSource); // Mongo collections cleanup disabled.
   });
 
-  afterAll((done) => {
-    done();
+  afterAll(async () => {
+    await app.close();
   });
 
   const noValidBlogDto = {
@@ -118,7 +119,7 @@ describe('<<BLOGS>> ENDPOINTS TESTING!!!(e2e)', () => {
   describe(`GET -> "/blogs/:id":`, () => {
     it(`STATUS 404: Can't found with id`, async () => {
       await request(server)
-        .get(`${fullPathTo.blogs}/${validObjectIdString}`)
+        .get(`${fullPathTo.blogs}/${validUuidString}`)
         .expect(404);
     });
   });
@@ -126,7 +127,7 @@ describe('<<BLOGS>> ENDPOINTS TESTING!!!(e2e)', () => {
   describe(`PUT -> "/sa/blogs/:id"`, () => {
     it('STATUS 401: shouldn`t update blog with no cred data', async () => {
       await request(server)
-        .put(`${fullPathTo.saBlogs}/${validObjectIdString}`)
+        .put(`${fullPathTo.saBlogs}/${validUuidString}`)
         .send(blogDtos[1])
         .expect(401);
 
@@ -138,7 +139,7 @@ describe('<<BLOGS>> ENDPOINTS TESTING!!!(e2e)', () => {
     it(`STATUS 404: Can't found with id. Used additional methods: GET -> /blogs/:id`, async () => {
       //запрос на обонвление блога по неверному/несуществующему id
       await request(server)
-        .put(`${fullPathTo.saBlogs}/${validObjectIdString}`)
+        .put(`${fullPathTo.saBlogs}/${validUuidString}`)
         .auth(creds.login, creds.password)
         .send(blogDtos[1])
         .expect(404);
@@ -180,7 +181,7 @@ describe('<<BLOGS>> ENDPOINTS TESTING!!!(e2e)', () => {
   describe(`DELETE -> "/sa/blogs/:id"`, () => {
     it('STATUS 401: shouldn`t delete blog with no cred data', async () => {
       await request(server)
-        .delete(`${fullPathTo.saBlogs}/${validObjectIdString}`)
+        .delete(`${fullPathTo.saBlogs}/${validUuidString}`)
         .expect(401);
       //запрос на получение блогов, проверка на ошибочное удаление блога в БД
       const blogCounter = await getBlogsQty(server);
@@ -190,7 +191,7 @@ describe('<<BLOGS>> ENDPOINTS TESTING!!!(e2e)', () => {
     it(`STATUS 404: Can't found with id. Used additional methods: GET -> /blogs`, async () => {
       //запрос на удаление блога по неверному/несуществующему id
       await request(server)
-        .delete(`${fullPathTo.saBlogs}/${validObjectIdString}`)
+        .delete(`${fullPathTo.saBlogs}/${validUuidString}`)
         .auth(creds.login, creds.password)
         .expect(404);
       //запрос на получение блогов, проверка на ошибочное удаление блога в БД
@@ -211,7 +212,7 @@ describe('<<BLOGS>> ENDPOINTS TESTING!!!(e2e)', () => {
   });
   describe(`GET -> "/sa/blogs" и поиск/сортировка/пагинация`, () => {
     beforeAll(async () => {
-      await dropDbCollections(connection, dataSource);
+      await dropDbCollections(dataSource);
       for (const name of ['alpha', 'Bravo', '100%_real', 'charlie']) {
         await createBlog(server, creds, {
           ...testingDtosCreator.createBlogDto({}),

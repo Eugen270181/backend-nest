@@ -57,9 +57,26 @@ export const DeviceId = createParamDecorator(
   },
 );
 
+/** Current refresh-token version. Required for race-safe refresh rotation. */
+export const TokenVersion = createParamDecorator(
+  (data: unknown, ctx: ExecutionContext): string => {
+    const request = ctx.switchToHttp().getRequest();
+    const user: UserContextDto = request.user;
+
+    if (!user?.tokenVersion) {
+      throw new DomainException({
+        code: DomainExceptionCode.Unauthorized,
+        message: 'Missing refresh-token version',
+      });
+    }
+
+    return user.tokenVersion;
+  },
+);
+
 /**
- * Опциональный userId — для публичных роутов с OptionalJwtMiddleware
- * Возвращает undefined если токена нет или он невалидный
+ * Опциональный userId — для публичных роутов с OptionalJwtMiddleware.
+ * Возвращает undefined если токена нет или он невалидный.
  */
 export const OptionalUserId = createParamDecorator(
   (data: unknown, ctx: ExecutionContext): string | undefined => {

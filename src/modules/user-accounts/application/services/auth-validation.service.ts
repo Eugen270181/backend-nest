@@ -45,7 +45,8 @@ export class AuthValidationService {
         UserSearchType.LoginOrEmail,
         loginOrEmail,
       );
-    if (!userDocument) {
+    if (!userDocument || !userDocument.isConfirmed) {
+      // Unconfirmed accounts must complete email confirmation before login.
       return null;
     }
 
@@ -60,10 +61,36 @@ export class AuthValidationService {
     return { userId: userDocument.id! };
   }
 
-  /** ✅ НОВЫЙ: валидация RT + сессия */
+  /** Validate an access token against the currently active device session. */
+  async validateAccessToken(
+    jwtPayload: RefreshTokenPayloadDto,
+  ): Promise<UserContextDto | null> {
+    if (!jwtPayload.userId || !jwtPayload.deviceId || !jwtPayload.ver) {
+      return null;
+    }
+
+    const validUserId = await this.validateUserById(jwtPayload.userId);
+    if (!validUserId) return null;
+
+    const session = await this.sessionsRepository.findSessionById(
+      jwtPayload.deviceId,
+    );
+    if (!session) return null;
+    if (session.userId !== validUserId) return null;
+    if (session.tokenVersion !== jwtPayload.ver) return null;
+    if (session.expDate < new Date()) return null;
+
+    return { userId: validUserId, deviceId: jwtPayload.deviceId };
+  }
+
+  /** Validate a refresh token against the currently active device session. */
   async validateRefreshToken(
     jwtPayload: RefreshTokenPayloadDto,
   ): Promise<UserContextDto | null> {
+    if (!jwtPayload.userId || !jwtPayload.deviceId || !jwtPayload.ver) {
+      return null;
+    }
+
     const validUserId = await this.validateUserById(jwtPayload.userId);
     if (!validUserId) return null;
 
@@ -72,9 +99,14 @@ export class AuthValidationService {
     );
     if (!session) return null;
 
+    if (session.userId !== validUserId) return null;
     if (session.tokenVersion !== jwtPayload.ver) return null; // старый/уже использованный RT
     if (session.expDate < new Date()) return null; // сессия протухла
 
-    return { userId: validUserId, deviceId: jwtPayload.deviceId };
+    return {
+      userId: validUserId,
+      deviceId: jwtPayload.deviceId,
+      tokenVersion: jwtPayload.ver,
+    };
   }
 }

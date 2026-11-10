@@ -12,9 +12,9 @@ export class LikesPostsRepository {
     if (this.coreConfig.IOC_LOG) console.log('LikesPostsRepository created');
   }
 
-  //Выставляет реакцию пользователя на пост.
-  //None -> строка удаляется; Like/Dislike -> UPSERT по PK (post_id, user_id).
-  //WHERE в DO UPDATE: если статус не изменился, строка не трогается (updated_at сохраняется).
+  // Выставляет реакцию пользователя на пост.
+  // Запись при None НЕ удаляется (обновляется в 'None'), чтобы сохранить дату первой реакции (created_at).
+  // Если записи еще не было и прилетел None — лишнюю строку в БД не создаем.
   async setStatus(
     postId: string,
     userId: string,
@@ -22,17 +22,20 @@ export class LikesPostsRepository {
   ): Promise<void> {
     if (status === LikeStatus.None) {
       await this.dataSource.query(
-        `DELETE FROM post_likes WHERE post_id = $1 AND user_id = $2`,
-        [postId, userId],
+        `UPDATE post_likes
+         SET status = $3, updated_at = now()
+         WHERE post_id = $1 AND user_id = $2 AND status <> $3`,
+        [postId, userId, status],
       );
       return;
     }
+
     await this.dataSource.query(
       `INSERT INTO post_likes (post_id, user_id, status)
        VALUES ($1, $2, $3)
-       ON CONFLICT (post_id, user_id)
+         ON CONFLICT (post_id, user_id)
        DO UPDATE SET status = EXCLUDED.status, updated_at = now()
-       WHERE post_likes.status <> EXCLUDED.status`,
+          WHERE post_likes.status <> EXCLUDED.status`,
       [postId, userId, status],
     );
   }

@@ -1,7 +1,8 @@
-import { Connection } from 'mongoose';
 import { DataSource } from 'typeorm';
 import { App } from 'supertest/types';
-import { getConnectionToken } from '@nestjs/mongoose';
+// MongoDB e2e setup retained as disabled reference:
+// import { Connection } from 'mongoose';
+// import { getConnectionToken } from '@nestjs/mongoose';
 import { dropDbCollections } from '../dropDbCollections';
 import {
   CommentDto,
@@ -9,7 +10,7 @@ import {
   LikeStatus,
   testingDtosCreator,
   TokenDto,
-  validObjectIdString,
+  validUuidString,
 } from '../testingDtosCreator';
 import { PostViewDto } from '../../src/modules/blogers-platform/posts/api/view-dto/post.view-dto';
 import { CommentViewDto } from '../../src/modules/blogers-platform/comments/api/view-dto/comment.view-dto';
@@ -34,7 +35,6 @@ import { initTestApp } from '../init-test-app';
 
 describe('<<COMMENTS>> ENDPOINTS TESTING!!!(e2e)', () => {
   let app: INestApplication;
-  let connection: Connection;
   let dataSource: DataSource;
   let server: App;
   let userAccountsConfig: UserAccountsConfig;
@@ -43,14 +43,15 @@ describe('<<COMMENTS>> ENDPOINTS TESTING!!!(e2e)', () => {
   beforeAll(async () => {
     app = await initTestApp(false);
     server = app.getHttpServer();
-    connection = app.get<Connection>(getConnectionToken());
+    // connection = app.get<Connection>(getConnectionToken()); // MongoDB connection disabled.
     dataSource = app.get(DataSource);
     userAccountsConfig = app.get<UserAccountsConfig>(UserAccountsConfig);
     creds = {
       login: userAccountsConfig.saLogin,
       password: userAccountsConfig.saPass,
     };
-    await dropDbCollections(connection, dataSource);
+    await dropDbCollections(dataSource);
+    // await dropDbCollections(connection, dataSource); // Mongo collections cleanup disabled.
   });
 
   afterAll(async () => {
@@ -161,7 +162,7 @@ describe('<<COMMENTS>> ENDPOINTS TESTING!!!(e2e)', () => {
 
     it(`POST -> "posts/:id/comments": Not found. STATUS 404;`, async () => {
       await request(server)
-        .post(`${fullPathTo.posts}/${validObjectIdString}/comments`)
+        .post(`${fullPathTo.posts}/${validUuidString}/comments`)
         .set('Authorization', `Bearer ${tokens[0].accessToken}`)
         .send({ content: comments[0].content })
         .expect(404);
@@ -171,7 +172,7 @@ describe('<<COMMENTS>> ENDPOINTS TESTING!!!(e2e)', () => {
   describe(`GET -> "posts/:id/comments":`, () => {
     it(`GET -> "posts/:id/comments": Not found. STATUS 404;`, async () => {
       await request(server)
-        .get(`${fullPathTo.posts}/${validObjectIdString}/comments`)
+        .get(`${fullPathTo.posts}/${validUuidString}/comments`)
         .expect(404);
     });
 
@@ -191,7 +192,7 @@ describe('<<COMMENTS>> ENDPOINTS TESTING!!!(e2e)', () => {
   describe(`GET -> "comments/:id":`, () => {
     it(`GET -> "comments/:id": Not found. STATUS 404;`, async () => {
       await request(server)
-        .get(`${fullPathTo.comments}/${validObjectIdString}`)
+        .get(`${fullPathTo.comments}/${validUuidString}`)
         .expect(404);
     });
 
@@ -220,7 +221,7 @@ describe('<<COMMENTS>> ENDPOINTS TESTING!!!(e2e)', () => {
 
     it(`PUT -> "comments/:id": Not found. STATUS 404;`, async () => {
       await request(server)
-        .put(`${fullPathTo.comments}/${validObjectIdString}`)
+        .put(`${fullPathTo.comments}/${validUuidString}`)
         .set('Authorization', `Bearer ${tokens[0].accessToken}`)
         .send(commentDtos[0])
         .expect(404);
@@ -257,7 +258,7 @@ describe('<<COMMENTS>> ENDPOINTS TESTING!!!(e2e)', () => {
 
     it(`DELETE -> "comments/:id": Not found. STATUS 404;`, async () => {
       await request(server)
-        .delete(`${fullPathTo.comments}/${validObjectIdString}`)
+        .delete(`${fullPathTo.comments}/${validUuidString}`)
         .set('Authorization', `Bearer ${tokens[0].accessToken}`)
         .expect(404);
     });

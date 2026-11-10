@@ -82,8 +82,8 @@ export const getTokensWithRefreshToken = async (
   server: App,
   refreshToken: string,
 ): Promise<TokensDto> => {
-  console.log(refreshToken);
-  console.log(`${fullPathTo.auth}${routerPaths.refreshToken}`);
+  //console.log(refreshToken);
+  //console.log(`${fullPathTo.auth}${routerPaths.refreshToken}`);
   const resPost = await request(server)
     .post(`${fullPathTo.auth}${routerPaths.refreshToken}`)
     .set('Cookie', `refreshToken=${refreshToken}`)

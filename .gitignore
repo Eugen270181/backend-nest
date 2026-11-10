@@ -35,10 +35,10 @@ lerna-debug.log*
 !.vscode/launch.json
 !.vscode/extensions.json
 
-# dotenv environment variable files
-.env.development.local
-.env.test.local
-.env.testing
+# dotenv environment variable files (including production secrets)
+.env
+.env.*
+!.env.example
 
 
 # temp directory

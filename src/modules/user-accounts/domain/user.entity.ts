@@ -38,6 +38,13 @@ export class User {
 
   setUserConfirmation() {
     this.isConfirmed = true;
+    // A registration code is single-use; remove it as soon as the account is confirmed.
+    this.emailConfirmation = null;
+  }
+
+  clearPassConfirmation() {
+    // A password-recovery code is single-use and must not remain reusable in the database.
+    this.passConfirmation = null;
   }
 
   setRegConfirmationCode(dto: UserConfirmCodeDto) {

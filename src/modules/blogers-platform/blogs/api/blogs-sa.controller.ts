@@ -12,7 +12,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiBasicAuth } from '@nestjs/swagger';
-import { SkipThrottle } from '@nestjs/throttler';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { BlogViewDto } from './view-dto/blog.view-dto';
 import { GetBlogsQueryParams } from './input-dto/get-blogs-query-params.input-dto';
@@ -43,10 +43,11 @@ import { CoreConfig } from '../../../../core/core.config';
 
 //Super Admin API: блоги и посты (Basic auth).
 //Посты управляются через блог: /sa/blogs/:blogId/posts[/:postId]
-@UseGuards(BasicAuthGuard)
+// Rate-limit the Basic Auth surface to make credential guessing more expensive.
+@UseGuards(ThrottlerGuard, BasicAuthGuard)
+@Throttle({ default: { limit: 60, ttl: 60000 } })
 @ApiBasicAuth('basicAuth')
 @Controller('sa/blogs')
-@SkipThrottle()
 export class BlogsSaController {
   constructor(
     private coreConfig: CoreConfig,

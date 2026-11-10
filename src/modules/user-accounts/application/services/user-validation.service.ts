@@ -42,7 +42,8 @@ export class UserValidationService {
   ): Promise<UserDocument> {
     const userDocument = await this.findUser(searchType, value);
     if (!userDocument) {
-      const message = `User with ${searchType}:${value} - not found`;
+      // Do not include the lookup value: it may be a one-time recovery/confirmation code.
+      const message = 'User was not found.';
       throw new DomainException({
         code: DomainExceptionCode.NotFound,
         message,
@@ -55,7 +56,7 @@ export class UserValidationService {
   async checkUserUniqueByKey(searchType: UserSearchType, value: string) {
     const userDocument = await this.findUser(searchType, value);
     if (userDocument) {
-      const message = `User with ${searchType}:${value} - already exists`;
+      const message = 'User already exists.';
       throw new DomainException({
         code: DomainExceptionCode.NotUnique,
         message,
@@ -71,7 +72,8 @@ export class UserValidationService {
   ): Promise<UserDocument> {
     const userDocument = await this.findUser(searchType, value);
     if (!userDocument) {
-      const message = `User with ${searchType}:${value} - not found`;
+      // Do not include the lookup value: it may be a one-time recovery/confirmation code.
+      const message = 'User was not found.';
       throw new DomainException({
         code:
           searchType === UserSearchType.Id
@@ -91,7 +93,7 @@ export class UserValidationService {
     const userDocument = await this.ensureUserExists(searchType, value);
 
     if (userDocument.isConfirmed) {
-      const message = `User with ${searchType}:${value} - is confirmed yet`;
+      const message = 'User is already confirmed.';
       throw new DomainException({
         code: DomainExceptionCode.BadRequest,
         message,
@@ -113,7 +115,7 @@ export class UserValidationService {
         ? userDocument.emailConfirmation
         : userDocument.passConfirmation;
     if (confifmObj!.expirationDate < new Date()) {
-      const message = `User with ${searchType}:${value} - code is expired`;
+      const message = 'Confirmation code is expired.';
       throw new DomainException({
         code: DomainExceptionCode.BadRequest,
         message,
@@ -134,7 +136,7 @@ export class UserValidationService {
     );
 
     if (userDocument.isConfirmed) {
-      const message = `User with ${searchType}:${value} - is confirmed yet`;
+      const message = 'User is already confirmed.';
       throw new DomainException({
         code: DomainExceptionCode.BadRequest,
         message,

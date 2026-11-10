@@ -24,8 +24,9 @@ const errorFormatter = (
 
       for (const key of constrainKeys) {
         errorsMessages.push({
+          // Never echo submitted values: they may contain passwords or recovery codes.
           message: error.constraints[key]
-            ? `${parentName}${error.constraints[key]}; Received value: ${error?.value || 'undefined'}`
+            ? `${parentName}${error.constraints[key]}`
             : '',
           field: error.property,
         });

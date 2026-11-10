@@ -4,11 +4,14 @@ import { GenerateTokensCommand } from './generate-tokens.usecase';
 import { TokensWithTimesDto } from '../dto/tokens-with-times.dto';
 import { SessionsRepository } from '../../infrastructure/sessions.repository';
 import { CoreConfig } from '../../../../core/core.config';
+import { DomainException } from '../../../../core/exceptions/domain-exceptions';
+import { DomainExceptionCode } from '../../../../core/exceptions/domain-exception-codes';
 
 export class RefreshTokensCommand {
   constructor(
     public readonly deviceId: string,
     public readonly userId: string,
+    public readonly tokenVersion: string,
   ) {}
 }
 
@@ -27,6 +30,7 @@ export class RefreshTokensUseCase
   async execute({
     deviceId,
     userId,
+    tokenVersion,
   }: RefreshTokensCommand): Promise<TokensDto> {
     // //генерируем новую пару токенов
     // //обновляем запись сессии по полю lastActiveDate и expDate
@@ -35,22 +39,23 @@ export class RefreshTokensUseCase
       TokensWithTimesDto
     >(new GenerateTokensCommand(userId, deviceId));
 
-    // 2. Найти сессию по deviceId (Guard прошёл = точно есть!)
-    const sessionDocument =
-      await this.sessionsRepository.findSessionById(deviceId);
-    if (!sessionDocument) {
-      throw new Error('Session not found after token generation'); //хотя перед этим была проверена в гарде по deviceId
+    // Rotate only the exact token version that passed the guard.
+    // UPDATE ... WHERE version = oldVersion prevents replay and cannot recreate a deleted session.
+    const rotated = await this.sessionsRepository.rotateSessionToken(
+      deviceId,
+      userId,
+      tokenVersion,
+      newTokensData.tokenVersion,
+      newTokensData.lastActiveDate,
+      newTokensData.expDate,
+    );
+
+    if (!rotated) {
+      throw new DomainException({
+        code: DomainExceptionCode.Unauthorized,
+        message: 'Refresh token was already used or its session was revoked.',
+      });
     }
-
-    // 3. Обновить через domain method
-    sessionDocument.updateSession({
-      tokenVersion: newTokensData.tokenVersion,
-      lastActiveDate: newTokensData.lastActiveDate,
-      expDate: newTokensData.expDate,
-    });
-
-    // 4. Сохранить (atomic!)
-    await this.sessionsRepository.save(sessionDocument);
 
     // 5. Вернуть только токены (RT в cookie)
     return {

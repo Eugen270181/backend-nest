@@ -4,7 +4,9 @@ import {
   IsBoolean,
   IsEnum,
   IsNotEmpty,
+  IsInt,
   IsNumber,
+  Min,
   IsOptional,
   IsString,
 } from 'class-validator';
@@ -29,11 +31,18 @@ export class CoreConfig {
   )
   port!: number;
 
+  // Number of trusted reverse-proxy hops. Default 0 means trust no forwarded headers.
+  @IsInt()
+  @Min(0)
+  trustProxyHops!: number;
+
+  // MongoDB configuration is kept for possible future use; no Mongo connection is started.
+  @IsOptional()
   @IsNotEmpty({
     message:
       'Set Env variable MONGO_URI, example: mongodb://localhost:27017/my-app-local-db',
   })
-  mongoURI!: string;
+  mongoURI?: string;
 
   @IsNotEmpty({
     message:
@@ -89,7 +98,10 @@ export class CoreConfig {
 
   constructor(private configService: ConfigService<any, true>) {
     this.port = Number(this.configService.get('PORT'));
-    this.mongoURI = this.configService.get('MONGO_URI');
+    this.trustProxyHops = Number(
+      this.configService.get('TRUST_PROXY_HOPS') ?? 0,
+    );
+    this.mongoURI = this.configService.get('MONGO_URI') || undefined;
     this.postgresURI = this.configService.get('POSTGRES_URI');
     this.node_env = this.configService.get('NODE_ENV');
 
@@ -100,18 +112,26 @@ export class CoreConfig {
     this.geminiApiKey1 =
       geminiKey && geminiKey !== 'undefined' ? String(geminiKey) : '';
 
-    this.isSwaggerEnabled =
+    const swaggerRequested =
       configValidationUtility.convertToBoolean(
         this.configService.get('IS_SWAGGER_ENABLED'),
       ) ?? false;
+    // Swagger exposes an API catalogue and must remain disabled in production.
+    this.isSwaggerEnabled =
+      this.node_env !== Environments.PRODUCTION && swaggerRequested;
+    // The flag is opt-in, but can never enable the destructive module outside tests.
     this.includeTestingModule =
-      configValidationUtility.convertToBoolean(
+      this.node_env === Environments.TESTING &&
+      (configValidationUtility.convertToBoolean(
         this.configService.get('INCLUDE_TESTING_MODULE'),
-      ) ?? false;
-    this.sendInternalServerErrorDetails =
+      ) ?? false);
+    const internalDetailsRequested =
       configValidationUtility.convertToBoolean(
         this.configService.get('SEND_INTERNAL_SERVER_ERROR_DETAILS'),
       ) ?? false;
+    // Never reveal internal exception details to clients in production, even if env is misconfigured.
+    this.sendInternalServerErrorDetails =
+      this.node_env !== Environments.PRODUCTION && internalDetailsRequested;
     this.IOC_LOG =
       configValidationUtility.convertToBoolean(
         this.configService.get('IOC_LOG'),

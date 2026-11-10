@@ -1,13 +1,14 @@
-import { Connection } from 'mongoose';
 import { DataSource } from 'typeorm';
 import { App } from 'supertest/types';
-import { getConnectionToken } from '@nestjs/mongoose';
+// MongoDB e2e setup retained as disabled reference:
+// import { Connection } from 'mongoose';
+// import { getConnectionToken } from '@nestjs/mongoose';
 import { dropDbCollections } from '../dropDbCollections';
 import {
   LikeStatus,
   testingDtosCreator,
   TokenDto,
-  validObjectIdString,
+  validUuidString,
 } from '../testingDtosCreator';
 import { PostViewDto } from '../../src/modules/blogers-platform/posts/api/view-dto/post.view-dto';
 import { CommentViewDto } from '../../src/modules/blogers-platform/comments/api/view-dto/comment.view-dto';
@@ -34,7 +35,6 @@ import { initTestApp } from '../init-test-app';
 
 describe('<<LIKES>> ENDPOINTS TESTING!!!(e2e)', () => {
   let app: INestApplication;
-  let connection: Connection;
   let dataSource: DataSource;
   let server: App;
   let userAccountsConfig: UserAccountsConfig;
@@ -43,7 +43,7 @@ describe('<<LIKES>> ENDPOINTS TESTING!!!(e2e)', () => {
   beforeAll(async () => {
     app = await initTestApp(false);
     server = app.getHttpServer();
-    connection = app.get<Connection>(getConnectionToken());
+    // connection = app.get<Connection>(getConnectionToken()); // MongoDB connection disabled.
     dataSource = app.get(DataSource);
     userAccountsConfig = app.get<UserAccountsConfig>(UserAccountsConfig);
     creds = {
@@ -51,11 +51,11 @@ describe('<<LIKES>> ENDPOINTS TESTING!!!(e2e)', () => {
       password: userAccountsConfig.saPass,
     };
 
-    await dropDbCollections(connection, dataSource);
+    await dropDbCollections(dataSource);
+    // await dropDbCollections(connection, dataSource); // Mongo collections cleanup disabled.
   });
 
   afterAll(async () => {
-    if (connection) await connection.close(); // закрываем соединение с БД
     await app.close();
   });
 
@@ -147,7 +147,7 @@ describe('<<LIKES>> ENDPOINTS TESTING!!!(e2e)', () => {
 
     it(`PUT -> "posts/:id/like-status": Not found. STATUS 404`, async () => {
       await request(server)
-        .put(`${fullPathTo.posts}/${validObjectIdString}/like-status`)
+        .put(`${fullPathTo.posts}/${validUuidString}/like-status`)
         .set('Authorization', `Bearer ${tokens[0].accessToken}`)
         .send(likeDto)
         .expect(404);
@@ -319,7 +319,7 @@ describe('<<LIKES>> ENDPOINTS TESTING!!!(e2e)', () => {
 
     it(`PUT -> "comments/:id/like-status": Not found. STATUS 404`, async () => {
       await request(server)
-        .put(`${fullPathTo.comments}/${validObjectIdString}/like-status`)
+        .put(`${fullPathTo.comments}/${validUuidString}/like-status`)
         .set('Authorization', `Bearer ${tokens[0].accessToken}`)
         .send(likeDto)
         .expect(404);

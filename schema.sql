@@ -81,11 +81,12 @@ CREATE TABLE IF NOT EXISTS posts (
     deleted_at        TIMESTAMPTZ
 );
 
--- если таблица posts уже была создана ранней версией схемы (с blog_name и счётчиками
--- лайков) - приводим её к актуальному виду. Для чистой базы это no-op.
-ALTER TABLE posts DROP COLUMN IF EXISTS blog_name;
-ALTER TABLE posts DROP COLUMN IF EXISTS likes_count;
-ALTER TABLE posts DROP COLUMN IF EXISTS dislikes_count;
+-- These columns existed in an older schema. Dropping them here would destroy data
+-- every time the application starts. Keep them inert at runtime; remove them only
+-- through a separately reviewed, backed-up migration after confirming they are unused.
+-- ALTER TABLE posts DROP COLUMN IF EXISTS blog_name;
+-- ALTER TABLE posts DROP COLUMN IF EXISTS likes_count;
+-- ALTER TABLE posts DROP COLUMN IF EXISTS dislikes_count;
 
 DROP INDEX IF EXISTS idx_posts_blog_id;
 -- посты блога: фильтр по blog_id + сортировка по createdAt, только неудалённые
@@ -129,12 +130,16 @@ CREATE TABLE IF NOT EXISTS comment_likes (
 CREATE TABLE IF NOT EXISTS post_likes (
     post_id    UUID        NOT NULL REFERENCES posts (id) ON DELETE CASCADE,
     user_id    UUID        NOT NULL REFERENCES users (id) ON DELETE CASCADE,
-    status     VARCHAR(7)  NOT NULL CHECK (status IN ('Like', 'Dislike')),
+    status     VARCHAR(7)  NOT NULL CHECK (status IN ('Like', 'Dislike', 'None')),
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     PRIMARY KEY (post_id, user_id)
 );
 
 -- newestLikes: последние лайки поста (status = 'Like') по времени
-CREATE INDEX IF NOT EXISTS idx_post_likes_post_id_status_updated_at
-    ON post_likes (post_id, status, updated_at DESC);
+CREATE INDEX IF NOT EXISTS idx_post_likes_post_id_status_created_at
+    ON post_likes (post_id, status, created_at DESC)
+    WHERE status = 'Like';
+
+ALTER TABLE post_likes DROP CONSTRAINT IF EXISTS post_likes_status_check;
+ALTER TABLE post_likes ADD CONSTRAINT post_likes_status_check CHECK (status IN ('Like', 'Dislike', 'None'));

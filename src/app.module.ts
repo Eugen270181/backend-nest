@@ -4,7 +4,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { DataSource, DataSourceOptions } from 'typeorm';
 import { CoreModule } from './core/core.module';
 import { Logger, Module } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
+// import { MongooseModule } from '@nestjs/mongoose'; // MongoDB connection is intentionally disabled; PostgreSQL is active.
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UserAccountsModule } from './modules/user-accounts/user-accounts.module';
@@ -15,20 +15,20 @@ import { AllHttpExceptionsFilter } from './core/exceptions/filters/all-exception
 import { DomainHttpExceptionsFilter } from './core/exceptions/filters/domain-exception.filter';
 import { ThrottlerExceptionFilter } from './core/exceptions/filters/throttler-exception.filter';
 import { CoreConfig } from './core/core.config';
-import { ensureDatabaseExistCreateIfNot } from './ensure-database-exist-create-if-not';
+// Database provisioning is an explicit deployment step; the application no longer creates databases at startup.
 import { readFileSync } from 'fs';
 import { join } from 'path';
 
 @Module({
   imports: [
-    // 1. Подключение к MongoDB
-    MongooseModule.forRootAsync({
-      useFactory: (coreConfig: CoreConfig) => ({
-        uri: coreConfig.mongoURI,
-      }),
-      inject: [CoreConfig],
-    }),
-    // 2. Подключение к PostGresDB
+    // MongoDB/Mongoose connection retained for possible future use, but disabled.
+    // MongooseModule.forRootAsync({
+    //   useFactory: (coreConfig: CoreConfig) => ({
+    //     uri: coreConfig.mongoURI,
+    //   }),
+    //   inject: [CoreConfig],
+    // }),
+    // PostgreSQL is the active database connection.
     TypeOrmModule.forRootAsync({
       inject: [CoreConfig],
       useFactory: (coreConfig: CoreConfig) => ({
@@ -49,8 +49,7 @@ import { join } from 'path';
           );
         }
 
-        await ensureDatabaseExistCreateIfNot(options.url, logger);
-
+        // Never create a database implicitly at application startup. Provision it explicitly.
         const dataSource = await new DataSource(options).initialize();
 
         const schemaSql = readFileSync(

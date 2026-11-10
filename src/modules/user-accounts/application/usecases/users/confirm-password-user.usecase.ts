@@ -6,6 +6,8 @@ import { UsersRepository } from '../../../infrastructure/users.repository';
 import { ConfirmPassDto } from '../../dto/confirm-pass.dto';
 import { CryptoService } from '../../services/crypto.service';
 import { CoreConfig } from '../../../../../core/core.config';
+import { DomainException } from '../../../../../core/exceptions/domain-exceptions';
+import { DomainExceptionCode } from '../../../../../core/exceptions/domain-exception-codes';
 
 export class ConfirmPasswordUserCommand {
   constructor(public readonly dto: ConfirmPassDto) {}
@@ -33,7 +35,23 @@ export class ConfirmPasswordUseCase
 
     const newPasswordHash = await this.cryptoService.getHash(dto.newPassword);
     foundUser.updatePassHash(newPasswordHash);
+    foundUser.clearPassConfirmation();
 
-    await this.usersRepository.save(foundUser);
+    // Password update, recovery-code consumption and logout from all devices
+    // happen in one DB transaction. The user must authenticate again afterwards.
+    const updated = await this.usersRepository.updatePasswordAndRevokeSessions(
+      foundUser,
+      dto.recoveryCode,
+    );
+
+    if (!updated) {
+      throw new DomainException({
+        code: DomainExceptionCode.BadRequest,
+        message: 'Password recovery code is invalid, expired or already used.',
+        errorsMessages: [
+          { field: 'recoveryCode', message: 'Recovery code is no longer valid.' },
+        ],
+      });
+    }
   }
 }

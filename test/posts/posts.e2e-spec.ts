@@ -1,7 +1,8 @@
 import { App } from 'supertest/types';
-import { Connection } from 'mongoose';
 import { DataSource } from 'typeorm';
-import { getConnectionToken } from '@nestjs/mongoose';
+// MongoDB e2e setup retained as disabled reference:
+// import { Connection } from 'mongoose';
+// import { getConnectionToken } from '@nestjs/mongoose';
 import { dropDbCollections } from '../dropDbCollections';
 import {
   BlogPostDto,
@@ -9,7 +10,7 @@ import {
   LikeStatus,
   PostDto,
   testingDtosCreator,
-  validObjectIdString,
+  validUuidString,
 } from '../testingDtosCreator';
 import { PostViewDto } from '../../src/modules/blogers-platform/posts/api/view-dto/post.view-dto';
 import { BlogViewDto } from '../../src/modules/blogers-platform/blogs/api/view-dto/blog.view-dto';
@@ -34,7 +35,6 @@ import { initTestApp } from '../init-test-app';
 
 describe('<<POSTS>> ENDPOINTS TESTING!!!(e2e)', () => {
   let app: INestApplication;
-  let connection: Connection;
   let dataSource: DataSource;
   let server: App;
   let userAccountsConfig: UserAccountsConfig;
@@ -43,18 +43,19 @@ describe('<<POSTS>> ENDPOINTS TESTING!!!(e2e)', () => {
   beforeAll(async () => {
     app = await initTestApp(false);
     server = app.getHttpServer();
-    connection = app.get<Connection>(getConnectionToken());
+    // connection = app.get<Connection>(getConnectionToken()); // MongoDB connection disabled.
     dataSource = app.get(DataSource);
     userAccountsConfig = app.get<UserAccountsConfig>(UserAccountsConfig);
     creds = {
       login: userAccountsConfig.saLogin,
       password: userAccountsConfig.saPass,
     };
-    await dropDbCollections(connection, dataSource);
+    await dropDbCollections(dataSource);
+    // await dropDbCollections(connection, dataSource); // Mongo collections cleanup disabled.
   });
 
-  afterAll((done) => {
-    done();
+  afterAll(async () => {
+    await app.close();
   });
 
   const noValidBlogPostDto = testingDtosCreator.createBlogPostDto({
@@ -182,7 +183,7 @@ describe('<<POSTS>> ENDPOINTS TESTING!!!(e2e)', () => {
 
     it(`STATUS 404: Can't found with id`, async () => {
       await request(server)
-        .post(`${fullPathTo.saBlogs}/${validObjectIdString}/posts`)
+        .post(`${fullPathTo.saBlogs}/${validUuidString}/posts`)
         .auth(creds.login, creds.password)
         .send(blogPostDto)
         .expect(404);
@@ -209,7 +210,7 @@ describe('<<POSTS>> ENDPOINTS TESTING!!!(e2e)', () => {
   describe(`GET -> "/posts/:id":`, () => {
     it(`STATUS 404: Can't found with id.`, async () => {
       await request(server)
-        .get(`${fullPathTo.posts}/${validObjectIdString}`)
+        .get(`${fullPathTo.posts}/${validUuidString}`)
         .expect(404);
     });
 
@@ -223,7 +224,7 @@ describe('<<POSTS>> ENDPOINTS TESTING!!!(e2e)', () => {
   describe(`GET -> "/blogs/:id/posts":`, () => {
     it(`STATUS 404;: Can't found with id`, async () => {
       await request(server)
-        .get(`${fullPathTo.blogs}/${validObjectIdString}/posts`)
+        .get(`${fullPathTo.blogs}/${validUuidString}/posts`)
         .expect(404);
     });
 
@@ -273,7 +274,7 @@ describe('<<POSTS>> ENDPOINTS TESTING!!!(e2e)', () => {
 
     it(`STATUS 404: Can't found post with id`, async () => {
       await request(server)
-        .put(postUrl(blogs[1].id, validObjectIdString))
+        .put(postUrl(blogs[1].id, validUuidString))
         .auth(creds.login, creds.password)
         .send(updateDto)
         .expect(404);
@@ -281,7 +282,7 @@ describe('<<POSTS>> ENDPOINTS TESTING!!!(e2e)', () => {
 
     it(`STATUS 404: Can't found blog with id`, async () => {
       await request(server)
-        .put(postUrl(validObjectIdString, posts[2].id))
+        .put(postUrl(validUuidString, posts[2].id))
         .auth(creds.login, creds.password)
         .send(updateDto)
         .expect(404);
@@ -327,11 +328,11 @@ describe('<<POSTS>> ENDPOINTS TESTING!!!(e2e)', () => {
 
     it(`STATUS 404: Can't found with id`, async () => {
       await request(server)
-        .delete(postUrl(blogs[1].id, validObjectIdString))
+        .delete(postUrl(blogs[1].id, validUuidString))
         .auth(creds.login, creds.password)
         .expect(404);
       await request(server)
-        .delete(postUrl(validObjectIdString, posts[2].id))
+        .delete(postUrl(validUuidString, posts[2].id))
         .auth(creds.login, creds.password)
         .expect(404);
       //пост другого блога

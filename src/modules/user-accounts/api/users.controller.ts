@@ -18,7 +18,7 @@ import { ApiBadRequestResponse, ApiBasicAuth } from '@nestjs/swagger';
 import { ErrorResponseBodyDto } from '../../../core/dto/base.error-responce-body.view-dto';
 import { ApiPaginatedResponse } from '../../../core/decorators/swagger/api-paginated-response';
 import { BasicAuthGuard } from '../guards/basic/basic-auth.guard';
-import { SkipThrottle } from '@nestjs/throttler';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { CreateUserCommand } from '../application/usecases/admins/create-user.usecase';
 import { DeleteUserCommand } from '../application/usecases/admins/delete-user.usecase';
@@ -26,10 +26,11 @@ import { GetAllUsersQuery } from '../application/queries/get-all-users.query';
 import { GetUserQuery } from '../application/queries/get-user.query';
 import { CoreConfig } from '../../../core/core.config';
 
-@UseGuards(BasicAuthGuard)
+// Rate-limit the Basic Auth surface to make credential guessing more expensive.
+@UseGuards(ThrottlerGuard, BasicAuthGuard)
+@Throttle({ default: { limit: 60, ttl: 60000 } })
 @ApiBasicAuth('basicAuth')
 @Controller('sa/users')
-@SkipThrottle()
 export class UsersController {
   constructor(
     private coreConfig: CoreConfig,

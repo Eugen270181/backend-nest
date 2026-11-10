@@ -2,6 +2,7 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 import { PassportStrategy } from '@nestjs/passport';
 import { Injectable } from '@nestjs/common';
 import { UserContextDto } from '../dto/user-context.dto';
+import { RefreshTokenPayloadDto } from '../dto/refresh-token-payload.dto';
 import { DomainException } from '../../../../core/exceptions/domain-exceptions';
 import { DomainExceptionCode } from '../../../../core/exceptions/domain-exception-codes';
 import { AuthValidationService } from '../../application/services/auth-validation.service';
@@ -24,19 +25,21 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
    * функция принимает payload из jwt токена и возвращает то, что впоследствии будет записано в req.user
    * @param payload
    **/
-  async validate(payload: UserContextDto): Promise<UserContextDto> {
-    //todo with validate user by Id across AuthSevice. DI - dependency in constructor
-    const userId = await this.authValidationService.validateUserById(
-      payload.userId,
-    );
+  async validate(
+    payload: RefreshTokenPayloadDto,
+  ): Promise<UserContextDto> {
+    // Check the DB-backed session on every authenticated request.
+    // Password changes, logout and device revocation invalidate old access tokens.
+    const userContext =
+      await this.authValidationService.validateAccessToken(payload);
 
-    if (!userId) {
+    if (!userContext) {
       throw new DomainException({
         code: DomainExceptionCode.Unauthorized, //401
         message: 'UserId in jwt payload - not found',
       });
     }
 
-    return { userId };
+    return userContext;
   }
 }

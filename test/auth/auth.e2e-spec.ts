@@ -1,9 +1,10 @@
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { UserViewDto } from '../../src/modules/user-accounts/api/view-dto/user.view-dto';
-import { Connection } from 'mongoose';
 import { DataSource } from 'typeorm';
-import { getConnectionToken } from '@nestjs/mongoose';
+// MongoDB e2e setup retained as disabled reference:
+// import { Connection } from 'mongoose';
+// import { getConnectionToken } from '@nestjs/mongoose';
 import { dropDbCollections } from '../dropDbCollections';
 
 import { fullPathTo } from '../getFullPath';
@@ -42,7 +43,6 @@ import { initTestAppWithOverrides } from '../init-test-app';
 
 describe('<<AUTH>> ENDPOINTS TESTING!!!(e2e)', () => {
   let app: INestApplication;
-  let connection: Connection;
   let dataSource: DataSource;
   let server: App;
   let userAccountsConfig: UserAccountsConfig;
@@ -107,7 +107,7 @@ describe('<<AUTH>> ENDPOINTS TESTING!!!(e2e)', () => {
 
     app = appInstance;
     server = app.getHttpServer();
-    connection = moduleFixture.get<Connection>(getConnectionToken());
+    // connection = moduleFixture.get<Connection>(getConnectionToken()); // MongoDB connection disabled.
     dataSource = moduleFixture.get(DataSource);
     userAccountsConfig =
       moduleFixture.get<UserAccountsConfig>(UserAccountsConfig);
@@ -120,7 +120,8 @@ describe('<<AUTH>> ENDPOINTS TESTING!!!(e2e)', () => {
     cryptoService = moduleFixture.get(CryptoService);
     mockCodeHelper = new MockCodeHelper();
 
-    await dropDbCollections(connection, dataSource);
+    await dropDbCollections(dataSource);
+    // await dropDbCollections(connection, dataSource); // Mongo collections cleanup disabled.
   });
 
   afterAll(async () => {
@@ -159,7 +160,7 @@ describe('<<AUTH>> ENDPOINTS TESTING!!!(e2e)', () => {
       };
 
       tokens = await getTokensWithLogin(server, loginDto);
-      console.log(tokens);
+      //console.log(tokens);
     });
   });
 
@@ -176,11 +177,6 @@ describe('<<AUTH>> ENDPOINTS TESTING!!!(e2e)', () => {
         .set('Authorization', `Bearer ${tokens.accessToken}`)
         .expect(200);
 
-      //из ответа мы получим userId но как сравнить с id созданого пользователя в монгусе? к сожалению только напрямую из БД
-      // const foundUserInDB: UserDocument = (await UserModel.findOne({
-      //   login: users[0].login,
-      // }).lean()) as UserDocument;
-      // const userId = foundUserInDB._id.toString();
 
       // 3. Проверяем структуру ответа
       expect(res.body).toEqual({
@@ -241,7 +237,7 @@ describe('<<AUTH>> ENDPOINTS TESTING!!!(e2e)', () => {
         .expect(400);
 
       const resPostBody2: ErrorResponseBody = resPost2.body;
-      console.log(resPostBody2);
+      //console.log(resPostBody2);
       //expect(resPostBody2.code).toBe(DomainExceptionCode.NotUnique);
     });
 
@@ -250,7 +246,7 @@ describe('<<AUTH>> ENDPOINTS TESTING!!!(e2e)', () => {
         userHelperService,
         codes.confirmReg,
       );
-      console.log('Mock set with code:', codes.confirmReg);
+      //console.log('Mock set with code:', codes.confirmReg);
       await request(server)
         .post(`${fullPathTo.auth}${routerPaths.registration}`)
         .send(userDtos[1])
@@ -261,7 +257,7 @@ describe('<<AUTH>> ENDPOINTS TESTING!!!(e2e)', () => {
         userDtos[1].login,
       )) as UserDocument;
 
-      console.log('User in DB emailConfirmation:', userInDB?.emailConfirmation);
+      //console.log('User in DB emailConfirmation:', userInDB?.emailConfirmation);
       expect(userInDB?.emailConfirmation?.confirmationCode).toBe(
         codes.confirmReg,
       );
@@ -293,7 +289,7 @@ describe('<<AUTH>> ENDPOINTS TESTING!!!(e2e)', () => {
         userHelperService,
         codes.resendReg,
       );
-      console.log('Mock set with resend code:', codes.resendReg);
+      //console.log('Mock set with resend code:', codes.resendReg);
       await request(server)
         .post(`${fullPathTo.auth}${routerPaths.registrationEmailResending}`)
         .send({ email: userDtos[1].email })
@@ -306,7 +302,6 @@ describe('<<AUTH>> ENDPOINTS TESTING!!!(e2e)', () => {
       expect(foundRegUserInDB?.emailConfirmation?.confirmationCode).toBe(
         codes.resendReg,
       );
-      //userId = foundRegUserInDB._id.toString();
     });
   });
 
